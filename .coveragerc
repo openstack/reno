@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = reno
+omit = reno/openstack/*
+
+[report]
+ignore-errors = True
