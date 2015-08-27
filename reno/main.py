@@ -29,31 +29,31 @@ def main(argv=sys.argv[1:]):
         title='commands',
     )
 
-    new_ = subparsers.add_parser(
+    do_new = subparsers.add_parser(
         'new',
         help='create a new note',
     )
-    new_.add_argument(
+    do_new.add_argument(
         'slug',
         help='descriptive title of note (keep it short)',
     )
-    new_.set_defaults(func=create.create_cmd)
+    do_new.set_defaults(func=create.create_cmd)
 
-    list_ = subparsers.add_parser(
+    do_list = subparsers.add_parser(
         'list',
         help='list notes files based on query arguments',
     )
-    list_.add_argument(
+    do_list.add_argument(
         'reporoot',
         help='root of the git repository',
     )
-    list_.add_argument(
+    do_list.add_argument(
         '--version',
         default=[],
         action='append',
         help='the version(s) to include, defaults to all',
     )
-    list_.set_defaults(func=lister.list_cmd)
+    do_list.set_defaults(func=lister.list_cmd)
 
     args = parser.parse_args()
     return args.func(args)
