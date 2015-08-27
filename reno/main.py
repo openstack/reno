@@ -14,6 +14,7 @@ import argparse
 import sys
 
 from reno import create
+from reno import lister
 
 
 def main(argv=sys.argv[1:]):
@@ -40,7 +41,11 @@ def main(argv=sys.argv[1:]):
 
     list_ = subparsers.add_parser(
         'list',
-        help='list notes based on query arguments',
+        help='list notes files based on query arguments',
+    )
+    list_.add_argument(
+        'reporoot',
+        help='root of the git repository',
     )
     list_.add_argument(
         '--branch',
@@ -53,6 +58,7 @@ def main(argv=sys.argv[1:]):
         action='append',
         help='the version(s) to include, defaults to all',
     )
+    list_.set_defaults(func=lister.list_cmd)
 
     args = parser.parse_args()
     return args.func(args)
