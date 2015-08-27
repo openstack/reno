@@ -65,6 +65,11 @@ def main(argv=sys.argv[1:]):
         help='root of the git repository',
     )
     do_report.add_argument(
+        '--output', '-o',
+        default=None,
+        help='output filename, defaults to stdout',
+    )
+    do_report.add_argument(
         '--version',
         default=[],
         action='append',

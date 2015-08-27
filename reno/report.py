@@ -83,5 +83,9 @@ def report_cmd(args):
     else:
         versions = notes.keys()
     text = format_report(notes, versions)
-    print(text)
+    if args.output:
+        with open(args.output, 'w') as f:
+            f.write(text)
+    else:
+        print(text)
     return
