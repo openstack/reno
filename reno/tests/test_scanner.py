@@ -22,7 +22,6 @@ from reno import scanner
 from reno.tests import base
 
 import fixtures
-from testtools.content import text_content
 
 
 _SETUP_TEMPLATE = """
