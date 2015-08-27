@@ -15,6 +15,7 @@ import sys
 
 from reno import create
 from reno import lister
+from reno import report
 
 
 def main(argv=sys.argv[1:]):
@@ -54,6 +55,22 @@ def main(argv=sys.argv[1:]):
         help='the version(s) to include, defaults to all',
     )
     do_list.set_defaults(func=lister.list_cmd)
+
+    do_report = subparsers.add_parser(
+        'report',
+        help='generate release notes report',
+    )
+    do_report.add_argument(
+        'reporoot',
+        help='root of the git repository',
+    )
+    do_report.add_argument(
+        '--version',
+        default=[],
+        action='append',
+        help='the version(s) to include, defaults to all',
+    )
+    do_report.set_defaults(func=report.report_cmd)
 
     args = parser.parse_args()
     return args.func(args)
