@@ -53,6 +53,14 @@ def _pick_note_file_name(notesdir, slug):
         )
 
 
+def _make_note_file(filename):
+    notesdir = os.path.dirname(filename)
+    if not os.path.exists(notesdir):
+        os.makedirs(notesdir)
+    with open(filename, 'w') as f:
+        f.write(_TEMPLATE)
+
+
 def create_cmd(args):
     "Create a new release note file from the template."
     notesdir = utils.get_notes_dir(args)
@@ -63,9 +71,6 @@ def create_cmd(args):
     # their local git tree, and so there should not be any concurrency
     # concern.
     filename = _pick_note_file_name(notesdir, args.slug)
-    if not os.path.exists(notesdir):
-        os.makedirs(notesdir)
-    with open(filename, 'w') as f:
-        f.write(_TEMPLATE)
+    _make_note_file(filename)
     print('Created new notes file in %s' % filename)
     return

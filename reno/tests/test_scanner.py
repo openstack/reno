@@ -1,0 +1,299 @@
+# -*- coding: utf-8 -*-
+
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+import itertools
+import os.path
+import re
+import subprocess
+
+from reno import create
+from reno import scanner
+from reno.tests import base
+
+import fixtures
+from testtools.content import text_content
+
+
+_SETUP_TEMPLATE = """
+import setuptools
+try:
+    import multiprocessing  # noqa
+except ImportError:
+    pass
+
+setuptools.setup(
+    setup_requires=['pbr'],
+    pbr=True)
+"""
+
+_CFG_TEMPLATE = """
+[metadata]
+name = testpkg
+summary = Test Package
+
+[files]
+packages =
+    testpkg
+"""
+
+
+class GPGKeyFixture(fixtures.Fixture):
+    """Creates a GPG key for testing.
+
+    It's recommended that this be used in concert with a unique home
+    directory.
+    """
+
+    def setUp(self):
+        super(GPGKeyFixture, self).setUp()
+        tempdir = self.useFixture(fixtures.TempDir())
+        gnupg_version_re = re.compile('^gpg\s.*\s([\d+])\.([\d+])\.([\d+])')
+        gnupg_version = subprocess.check_output(['gpg', '--version'],
+                                                cwd=tempdir.path)
+        for line in gnupg_version[0].split('\n'):
+            gnupg_version = gnupg_version_re.match(line)
+            if gnupg_version:
+                gnupg_version = (int(gnupg_version.group(1)),
+                                 int(gnupg_version.group(2)),
+                                 int(gnupg_version.group(3)))
+                break
+        else:
+            if gnupg_version is None:
+                gnupg_version = (0, 0, 0)
+        config_file = tempdir.path + '/key-config'
+        f = open(config_file, 'wt')
+        try:
+            if gnupg_version[0] == 2 and gnupg_version[1] >= 1:
+                f.write("""
+                %no-protection
+                %transient-key
+                """)
+            f.write("""
+            %no-ask-passphrase
+            Key-Type: RSA
+            Name-Real: Example Key
+            Name-Comment: N/A
+            Name-Email: example@example.com
+            Expire-Date: 2d
+            Preferences: (setpref)
+            %commit
+            """)
+        finally:
+            f.close()
+        # Note that --quick-random (--debug-quick-random in GnuPG 2.x)
+        # does not have a corresponding preferences file setting and
+        # must be passed explicitly on the command line instead
+        # if gnupg_version[0] == 1:
+        #     gnupg_random = '--quick-random'
+        # elif gnupg_version[0] >= 2:
+        #     gnupg_random = '--debug-quick-random'
+        # else:
+        #     gnupg_random = ''
+        subprocess.check_call(
+            ['gpg', '--gen-key', '--batch',
+             # gnupg_random,
+             config_file],
+            cwd=tempdir.path)
+
+
+class Test(base.TestCase):
+
+    def _run_git(self, *args):
+        return subprocess.check_output(
+            ['git'] + list(args),
+            cwd=self.reporoot,
+        )
+
+    def _git_setup(self):
+        os.makedirs(self.reporoot)
+        self._run_git('init', '.')
+        self._run_git('config', '--local', 'user.email', 'example@example.com')
+        self._run_git('config', '--local', 'user.name', 'reno developer')
+        self._run_git('config', '--local', 'user.signingkey',
+                      'example@example.com')
+
+    def _git_commit(self, message='commit message'):
+        self._run_git('add', '.')
+        self._run_git('commit', '-m', message)
+
+    def _add_notes_file(self, slug='slug', commit=True):
+        n = self.get_note_num()
+        basename = '%016x-%s.yaml' % (n, slug)
+        filename = os.path.join(self.reporoot, 'releasenotes', 'notes',
+                                basename)
+        create._make_note_file(filename)
+        self._git_commit('add %s' % basename)
+        return filename
+
+    def _make_python_package(self):
+        setup_name = os.path.join(self.reporoot, 'setup.py')
+        with open(setup_name, 'w') as f:
+            f.write(_SETUP_TEMPLATE)
+        cfg_name = os.path.join(self.reporoot, 'setup.cfg')
+        with open(cfg_name, 'w') as f:
+            f.write(_CFG_TEMPLATE)
+        pkgdir = os.path.join(self.reporoot, 'testpkg')
+        os.makedirs(pkgdir)
+        init = os.path.join(pkgdir, '__init__.py')
+        with open(init, 'w') as f:
+            f.write("Test package")
+        self._git_commit('add test package')
+
+    def setUp(self):
+        super(Test, self).setUp()
+        # Older git does not have config --local, so create a temporary home
+        # directory to permit using git config --global without stepping on
+        # developer configuration.
+        self.useFixture(fixtures.TempHomeDir())
+        self.useFixture(GPGKeyFixture())
+        self.useFixture(fixtures.NestedTempfile())
+        self.temp_dir = self.useFixture(fixtures.TempDir()).path
+        self.reporoot = os.path.join(self.temp_dir, 'reporoot')
+        self.notesdir = os.path.join(self.reporoot,
+                                     'releasenotes',
+                                     'notes',
+                                     )
+        self._git_setup()
+        self.get_note_num = itertools.count(1).next
+
+    def test_non_python_no_tags(self):
+        filename = self._add_notes_file()
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'0.0.0': [filename]},
+            results,
+        )
+
+    def test_python_no_tags(self):
+        self._make_python_package()
+        filename = self._add_notes_file()
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'0.0.1.dev1': [filename]},
+            results,
+        )
+
+    def test_note_commit_tagged(self):
+        filename = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'1.0.0': [filename]},
+            results,
+        )
+
+    def test_note_commit_after_tag(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        filename = self._add_notes_file()
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'1.0.1.dev1': [filename]},
+            results,
+        )
+
+    def test_multiple_notes_after_tag(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file()
+        f2 = self._add_notes_file()
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'1.0.1.dev2': [f1, f2]},
+            results,
+        )
+
+    def test_multiple_notes_within_tag(self):
+        self._make_python_package()
+        f1 = self._add_notes_file(commit=False)
+        f2 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'1.0.0': [f1, f2]},
+            results,
+        )
+
+    def test_multiple_tags(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        f2 = self._add_notes_file()
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'2.0.0': [f1],
+             '2.0.1.dev1': [f2],
+             },
+            results,
+        )
+
+    def test_rename_file(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        f2 = f1.replace('slug1', 'slug2')
+        self._run_git('mv', f1, f2)
+        self._git_commit('rename note file')
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'2.0.0': [f2],
+             '2.0.1.dev1': [],
+             },
+            results,
+        )
+
+    def test_edit_file(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        with open(f1, 'w') as f:
+            f.write('---\npreamble: new contents for file')
+        self._git_commit('edit note file')
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'2.0.0': [f1],
+             '2.0.1.dev1': [],
+             },
+            results,
+        )
