@@ -70,7 +70,8 @@ def create_cmd(args):
     # because this command is expected to be run by one developer in
     # their local git tree, and so there should not be any concurrency
     # concern.
-    filename = _pick_note_file_name(notesdir, args.slug)
+    slug = args.slug.replace(' ', '-')
+    filename = _pick_note_file_name(notesdir, slug)
     _make_note_file(filename)
     print('Created new notes file in %s' % filename)
     return
