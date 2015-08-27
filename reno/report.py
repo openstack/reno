@@ -49,11 +49,11 @@ def format_report(scanner_output, versions_to_include):
         report.append('=' * len(version))
         report.append('')
 
-        # Add the preambles.
+        # Add the preludes.
         notefiles = scanner_output[version]
         for n in notefiles:
-            if 'preamble' in file_contents[n]:
-                report.append(file_contents[n]['preamble'])
+            if 'prelude' in file_contents[n]:
+                report.append(file_contents[n]['prelude'])
                 report.append('')
 
         for section_name, section_title in _SECTION_ORDER:
