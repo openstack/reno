@@ -48,11 +48,6 @@ def main(argv=sys.argv[1:]):
         help='root of the git repository',
     )
     list_.add_argument(
-        '--branch',
-        help=('the branch of the git repository to scan, ',
-              'defaults to the checked out repo'),
-    )
-    list_.add_argument(
         '--version',
         default=[],
         action='append',
