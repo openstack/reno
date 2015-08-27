@@ -21,7 +21,12 @@ def list_cmd(args):
     reporoot = args.reporoot.rstrip('/') + '/'
     notesdir = utils.get_notes_dir(args)
     notes = scanner.get_notes_by_version(reporoot, notesdir)
-    for version, notefiles in notes.items():
+    if args.version:
+        versions = args.version
+    else:
+        versions = notes.keys()
+    for version in versions:
+        notefiles = notes[version]
         print(version)
         for n in notefiles:
             if n.startswith(reporoot):
