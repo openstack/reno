@@ -1,0 +1,7 @@
+---
+prelude: >
+    This is the first release.
+features:
+  - Creating new notes files with unique names.
+  - Listing the files with notes related to each release.
+  - Producing a unified report of all of the notes for a release.
