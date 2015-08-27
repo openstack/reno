@@ -61,7 +61,7 @@ def get_notes_by_version(reporoot, notesdir):
     # FIXME(dhellmann): This might need to be more line-oriented for
     # longer histories.
     history_results = subprocess.check_output(
-        ['git', 'log', '--pretty=%x00%H %d', '--name-only', notesdir],
+        ['git', 'log', '--pretty=%x00%H %d', '--name-only', '--', notesdir],
         cwd=reporoot,
     )
     history = history_results.split('\x00')
