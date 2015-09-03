@@ -77,7 +77,7 @@ def report_cmd(args):
     "Generates a release notes report"
     reporoot = args.reporoot.rstrip('/') + '/'
     notesdir = utils.get_notes_dir(args)
-    notes = scanner.get_notes_by_version(reporoot, notesdir)
+    notes = scanner.get_notes_by_version(reporoot, notesdir, args.branch)
     if args.version:
         versions = args.version
     else:

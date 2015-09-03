@@ -11,7 +11,6 @@
 # under the License.
 
 import collections
-import glob
 import os.path
 import re
 import subprocess
@@ -19,7 +18,7 @@ import subprocess
 _TAG_PAT = re.compile('tag: ([\d\.]+)')
 
 
-def _get_current_version(reporoot):
+def _get_current_version(reporoot, branch=None):
     """Return the current version of the repository.
 
     If the repo appears to contain a python project, use setup.py to
@@ -27,21 +26,38 @@ def _get_current_version(reporoot):
     git describe.
 
     """
-    if os.path.exists(os.path.join(reporoot, 'setup.py')):
-        cmd = ['python', 'setup.py', '--version']
+    cmd = ['git', 'describe', '--tags']
+    if branch is not None:
+        cmd.append(branch)
+    try:
         result = subprocess.check_output(cmd, cwd=reporoot).strip()
-    else:
-        cmd = ['git', 'describe', '--tags']
-        try:
-            result = subprocess.check_output(cmd, cwd=reporoot).strip()
-        except subprocess.CalledProcessError:
-            # This probably means there are no tags.
-            result = '0.0.0'
+        if '-' in result:
+            # Descriptions that come after a commit look like
+            # 2.0.0-1-abcde, and we want to remove the SHA value from
+            # the end since we only care about the version number
+            # itself, but we need to recognize that the change is
+            # unreleased so keep the -1 part.
+            result, dash, ignore = result.rpartition('-')
+    except subprocess.CalledProcessError:
+        # This probably means there are no tags.
+        result = '0.0.0'
     return result
 
 
+def _file_exists_at_commit(reporoot, filename, sha):
+    "Return true if the file exists at the given commit."
+    try:
+        subprocess.check_output(
+            ['git', 'show', '%s:%s' % (sha, filename)],
+            cwd=reporoot,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 # TODO(dhellmann): Add branch arg?
-def get_notes_by_version(reporoot, notesdir):
+def get_notes_by_version(reporoot, notesdir, branch=None):
 
     """Return an OrderedDict mapping versions to lists of notes files.
 
@@ -56,25 +72,33 @@ def get_notes_by_version(reporoot, notesdir):
 
     # Determine the current version, which might be an unreleased or dev
     # version.
-    current_version = _get_current_version(reporoot)
+    current_version = _get_current_version(reporoot, branch)
+    # print('current_version = %s' % current_version)
+
+    # Remember the most current filename for each prefix, to allow for
+    # renames.
+    last_name_by_prefix = {}
 
     # FIXME(dhellmann): This might need to be more line-oriented for
     # longer histories.
-    history_results = subprocess.check_output(
-        ['git', 'log', '--pretty=%x00%H %d', '--name-only', '--', notesdir],
-        cwd=reporoot,
-    )
+    log_cmd = ['git', 'log', '--pretty=%x00%H %d', '--name-only']
+    if branch is not None:
+        log_cmd.append(branch)
+    log_cmd.extend(['--', notesdir])
+    history_results = subprocess.check_output(log_cmd, cwd=reporoot)
     history = history_results.split('\x00')
     current_version = current_version
     for h in history:
         h = h.strip()
         if not h:
             continue
+        # print(h)
 
         hlines = h.splitlines()
 
         # The first line of the block will include the SHA and may
         # include tags, the other lines are filenames.
+        sha = hlines[0].split(' ')[0]
         tags = _TAG_PAT.findall(hlines[0])
         filenames = hlines[2:]
 
@@ -95,6 +119,17 @@ def get_notes_by_version(reporoot, notesdir):
             # notes.
             prefix = os.path.basename(f)[:16]
             earliest_seen[prefix] = tags[0]
+            if prefix in last_name_by_prefix:
+                # We already have a filename for this prefix from a
+                # new commit, so use that one in case the name has
+                # changed.
+                continue
+            if _file_exists_at_commit(reporoot, f, sha):
+                # Remember this filename as the most recent version of
+                # the unique prefix we have seen, in case the name
+                # changed from an older commit.
+                last_name_by_prefix[prefix] = f
+                # print('remembering %s as last name for %s' % (f, prefix))
 
     # Invert earliest_seen to make a list of notes files for each
     # version.
@@ -104,10 +139,12 @@ def get_notes_by_version(reporoot, notesdir):
     # Produce a list of the actual files present in the repository. If
     # a note is removed, this step should let us ignore it.
     for prefix, version in earliest_seen.items():
-        filenames = glob.glob(
-            os.path.join(reporoot, notesdir, prefix + '*.yaml')
-        )
-        files_and_tags[version].extend(filenames)
+        base = last_name_by_prefix[prefix]
+        files_and_tags[version].append(os.path.join(reporoot, base))
+        # filenames = glob.glob(
+        #     os.path.join(reporoot, notesdir, prefix + '*.yaml')
+        # )
+        # files_and_tags[version].extend(filenames)
     for version, filenames in files_and_tags.items():
         files_and_tags[version] = list(reversed(filenames))
 

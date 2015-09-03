@@ -20,7 +20,7 @@ def list_cmd(args):
     "List notes files based on query arguments"
     reporoot = args.reporoot.rstrip('/') + '/'
     notesdir = utils.get_notes_dir(args)
-    notes = scanner.get_notes_by_version(reporoot, notesdir)
+    notes = scanner.get_notes_by_version(reporoot, notesdir, args.branch)
     if args.version:
         versions = args.version
     else:
