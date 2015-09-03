@@ -29,7 +29,7 @@ _SECTION_ORDER = [
 ]
 
 
-def format_report(scanner_output, versions_to_include):
+def format_report(reporoot, scanner_output, versions_to_include):
     report = []
     report.append('=============')
     report.append('Release Notes')
@@ -39,10 +39,14 @@ def format_report(scanner_output, versions_to_include):
     # Read all of the notes files.
     file_contents = {}
     for version in versions_to_include:
-        for filename in scanner_output[version]:
-            with open(filename, 'r') as f:
-                y = yaml.safe_load(f)
-                file_contents[filename] = y
+        for filename, sha in scanner_output[version]:
+            body = scanner.get_file_at_commit(
+                reporoot,
+                filename,
+                sha,
+            )
+            y = yaml.safe_load(body)
+            file_contents[filename] = y
 
     for version in versions_to_include:
         report.append(version)
@@ -51,7 +55,7 @@ def format_report(scanner_output, versions_to_include):
 
         # Add the preludes.
         notefiles = scanner_output[version]
-        for n in notefiles:
+        for n, sha in notefiles:
             if 'prelude' in file_contents[n]:
                 report.append(file_contents[n]['prelude'])
                 report.append('')
@@ -59,7 +63,7 @@ def format_report(scanner_output, versions_to_include):
         for section_name, section_title in _SECTION_ORDER:
             notes = [
                 n
-                for fn in notefiles
+                for fn, sha in notefiles
                 for n in file_contents[fn].get(section_name, [])
             ]
             if notes:
@@ -82,7 +86,7 @@ def report_cmd(args):
         versions = args.version
     else:
         versions = notes.keys()
-    text = format_report(notes, versions)
+    text = format_report(reporoot, notes, versions)
     if args.output:
         with open(args.output, 'w') as f:
             f.write(text)

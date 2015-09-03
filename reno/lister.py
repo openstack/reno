@@ -28,8 +28,8 @@ def list_cmd(args):
     for version in versions:
         notefiles = notes[version]
         print(version)
-        for n in notefiles:
+        for n, sha in notefiles:
             if n.startswith(reporoot):
                 n = n[len(reporoot):]
-            print('\t%s' % n)
+            print('\t%s (%s)' % (n, sha))
     return
