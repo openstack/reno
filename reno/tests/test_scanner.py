@@ -22,6 +22,7 @@ from reno import scanner
 from reno.tests import base
 
 import fixtures
+from testtools.content import text_content
 
 
 _SETUP_TEMPLATE = """
@@ -316,5 +317,59 @@ class BasicTest(Base):
             {'2.0.0': [f1],
              '2.0.0-1': [],
              },
+            results,
+        )
+
+
+class BranchTest(Base):
+
+    def setUp(self):
+        super(BranchTest, self).setUp()
+        self._make_python_package()
+        self.f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self.f2 = self._add_notes_file('slug2')
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        self._add_notes_file('slug3')
+        self._run_git('tag', '-s', '-m', 'first tag', '3.0.0')
+
+    def test_files_current_branch(self):
+        self._run_git('checkout', '2.0.0')
+        self._run_git('checkout', '-b', 'stable/2')
+        f21 = self._add_notes_file('slug21')
+        log_text = self._run_git('log')
+        self.addDetail('git log', text_content(log_text))
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {
+                '1.0.0': [self.f1],
+                '2.0.0': [self.f2],
+                '2.0.0-1': [f21],
+            },
+            results,
+        )
+
+    def test_files_stable_from_master(self):
+        self._run_git('checkout', '2.0.0')
+        self._run_git('checkout', '-b', 'stable/2')
+        f21 = self._add_notes_file('slug21')
+        self._run_git('checkout', 'master')
+        log_text = self._run_git('log', '--pretty=%x00%H %d', '--name-only',
+                                 'stable/2')
+        self.addDetail('git log', text_content(log_text))
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+            'stable/2',
+        )
+        self.assertEqual(
+            {
+                '1.0.0': [self.f1],
+                '2.0.0': [self.f2],
+                '2.0.0-1': [f21],
+            },
             results,
         )
