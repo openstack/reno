@@ -14,6 +14,7 @@ import binascii
 import os
 import os.path
 import random
+import subprocess
 
 
 def get_notes_dir(args):
@@ -24,8 +25,20 @@ def get_notes_dir(args):
 def get_random_string(nbytes=8):
     "Return a fixed-length random string"
     try:
-        # NOTE(dhellmann): Not all systems support urandom().
-        val = os.urandom(nbytes)
-    except Exception:
-        val = ''.join(chr(random.randrange(256)) for i in range(nbytes))
-    return binascii.hexlify(val)
+        # NOTE(dhellmann): Not all systems support urandom(). When it
+        # is supported, it returns a str() but under Python 3 we need
+        # to give a byte string to hexlify() so convert back and forth
+        # through utf-8.
+        rand_bytes_bstring = os.urandom(nbytes).encode('utf-8')
+        val = binascii.hexlify(rand_bytes_bstring).decode('utf-8')
+    except Exception as e:
+        print('ERROR: %s' % e)
+        val = ''.join('%02x' % random.randrange(256)
+                      for i in range(nbytes))
+    return val
+
+
+def check_output(*args, **kwds):
+    "Unicode-aware wrapper for subprocess.check_output"
+    raw = subprocess.check_output(*args, **kwds)
+    return raw.decode('utf-8')

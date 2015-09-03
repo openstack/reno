@@ -20,6 +20,7 @@ import subprocess
 from reno import create
 from reno import scanner
 from reno.tests import base
+from reno import utils
 
 import fixtures
 from testtools.content import text_content
@@ -59,8 +60,8 @@ class GPGKeyFixture(fixtures.Fixture):
         super(GPGKeyFixture, self).setUp()
         tempdir = self.useFixture(fixtures.TempDir())
         gnupg_version_re = re.compile('^gpg\s.*\s([\d+])\.([\d+])\.([\d+])')
-        gnupg_version = subprocess.check_output(['gpg', '--version'],
-                                                cwd=tempdir.path)
+        gnupg_version = utils.check_output(['gpg', '--version'],
+                                           cwd=tempdir.path)
         for line in gnupg_version[0].split('\n'):
             gnupg_version = gnupg_version_re.match(line)
             if gnupg_version:
@@ -110,7 +111,7 @@ class GPGKeyFixture(fixtures.Fixture):
 class Base(base.TestCase):
 
     def _run_git(self, *args):
-        return subprocess.check_output(
+        return utils.check_output(
             ['git'] + list(args),
             cwd=self.reporoot,
         )
@@ -165,7 +166,8 @@ class Base(base.TestCase):
                                      'notes',
                                      )
         self._git_setup()
-        self.get_note_num = itertools.count(1).next
+        self._counter = itertools.count(1)
+        self.get_note_num = lambda: next(self._counter)
 
 
 class BasicTest(Base):

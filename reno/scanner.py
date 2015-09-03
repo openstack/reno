@@ -15,6 +15,8 @@ import os.path
 import re
 import subprocess
 
+from reno import utils
+
 _TAG_PAT = re.compile('tag: ([\d\.]+)')
 
 
@@ -30,7 +32,7 @@ def _get_current_version(reporoot, branch=None):
     if branch is not None:
         cmd.append(branch)
     try:
-        result = subprocess.check_output(cmd, cwd=reporoot).strip()
+        result = utils.check_output(cmd, cwd=reporoot).strip()
         if '-' in result:
             # Descriptions that come after a commit look like
             # 2.0.0-1-abcde, and we want to remove the SHA value from
@@ -47,7 +49,7 @@ def _get_current_version(reporoot, branch=None):
 def get_file_at_commit(reporoot, filename, sha):
     "Return the contents of the file if it exists at the commit, or None."
     try:
-        return subprocess.check_output(
+        return utils.check_output(
             ['git', 'show', '%s:%s' % (sha, filename)],
             cwd=reporoot,
         )
@@ -89,7 +91,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     if branch is not None:
         log_cmd.append(branch)
     log_cmd.extend(['--', notesdir])
-    history_results = subprocess.check_output(log_cmd, cwd=reporoot)
+    history_results = utils.check_output(log_cmd, cwd=reporoot)
     history = history_results.split('\x00')
     current_version = current_version
     for h in history:
