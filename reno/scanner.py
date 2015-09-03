@@ -44,16 +44,20 @@ def _get_current_version(reporoot, branch=None):
     return result
 
 
-def _file_exists_at_commit(reporoot, filename, sha):
-    "Return true if the file exists at the given commit."
+def get_file_at_commit(reporoot, filename, sha):
+    "Return the contents of the file if it exists at the commit, or None."
     try:
-        subprocess.check_output(
+        return subprocess.check_output(
             ['git', 'show', '%s:%s' % (sha, filename)],
             cwd=reporoot,
         )
-        return True
     except subprocess.CalledProcessError:
-        return False
+        return None
+
+
+def _file_exists_at_commit(reporoot, filename, sha):
+    "Return true if the file exists at the given commit."
+    return bool(get_file_at_commit(reporoot, filename, sha))
 
 
 # TODO(dhellmann): Add branch arg?
@@ -128,7 +132,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
                 # Remember this filename as the most recent version of
                 # the unique prefix we have seen, in case the name
                 # changed from an older commit.
-                last_name_by_prefix[prefix] = f
+                last_name_by_prefix[prefix] = (f, sha)
                 # print('remembering %s as last name for %s' % (f, prefix))
 
     # Invert earliest_seen to make a list of notes files for each
@@ -139,12 +143,8 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     # Produce a list of the actual files present in the repository. If
     # a note is removed, this step should let us ignore it.
     for prefix, version in earliest_seen.items():
-        base = last_name_by_prefix[prefix]
-        files_and_tags[version].append(os.path.join(reporoot, base))
-        # filenames = glob.glob(
-        #     os.path.join(reporoot, notesdir, prefix + '*.yaml')
-        # )
-        # files_and_tags[version].extend(filenames)
+        base, sha = last_name_by_prefix[prefix]
+        files_and_tags[version].append((base, sha))
     for version, filenames in files_and_tags.items():
         files_and_tags[version] = list(reversed(filenames))
 

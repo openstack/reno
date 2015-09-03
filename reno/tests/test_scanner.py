@@ -134,7 +134,7 @@ class Base(base.TestCase):
                                 basename)
         create._make_note_file(filename)
         self._git_commit('add %s' % basename)
-        return filename
+        return os.path.join('releasenotes', 'notes', basename)
 
     def _make_python_package(self):
         setup_name = os.path.join(self.reporoot, 'setup.py')
@@ -172,10 +172,14 @@ class BasicTest(Base):
 
     def test_non_python_no_tags(self):
         filename = self._add_notes_file()
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'0.0.0': [filename]},
             results,
@@ -184,10 +188,14 @@ class BasicTest(Base):
     def test_python_no_tags(self):
         self._make_python_package()
         filename = self._add_notes_file()
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'0.0.0': [filename]},
             results,
@@ -196,10 +204,14 @@ class BasicTest(Base):
     def test_note_commit_tagged(self):
         filename = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'1.0.0': [filename]},
             results,
@@ -209,10 +221,14 @@ class BasicTest(Base):
         self._make_python_package()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         filename = self._add_notes_file()
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'1.0.0-1': [filename]},
             results,
@@ -223,10 +239,14 @@ class BasicTest(Base):
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         f1 = self._add_notes_file()
         f2 = self._add_notes_file()
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'1.0.0-2': [f1, f2]},
             results,
@@ -237,10 +257,14 @@ class BasicTest(Base):
         f1 = self._add_notes_file(commit=False)
         f2 = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'1.0.0': [f1, f2]},
             results,
@@ -252,10 +276,14 @@ class BasicTest(Base):
         f1 = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
         f2 = self._add_notes_file()
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'2.0.0': [f1],
              '2.0.0-1': [f2],
@@ -271,10 +299,14 @@ class BasicTest(Base):
         f2 = f1.replace('slug1', 'slug2')
         self._run_git('mv', f1, f2)
         self._git_commit('rename note file')
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'2.0.0': [f2],
              '2.0.0-1': [],
@@ -290,10 +322,14 @@ class BasicTest(Base):
         f2 = f1.replace('slug1', 'slug0')
         self._run_git('mv', f1, f2)
         self._git_commit('rename note file')
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'2.0.0': [f2],
              '2.0.0-1': [],
@@ -306,13 +342,17 @@ class BasicTest(Base):
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         f1 = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
-        with open(f1, 'w') as f:
+        with open(os.path.join(self.reporoot, f1), 'w') as f:
             f.write('---\npreamble: new contents for file')
         self._git_commit('edit note file')
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {'2.0.0': [f1],
              '2.0.0-1': [],
@@ -339,10 +379,14 @@ class BranchTest(Base):
         f21 = self._add_notes_file('slug21')
         log_text = self._run_git('log')
         self.addDetail('git log', text_content(log_text))
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {
                 '1.0.0': [self.f1],
@@ -360,11 +404,15 @@ class BranchTest(Base):
         log_text = self._run_git('log', '--pretty=%x00%H %d', '--name-only',
                                  'stable/2')
         self.addDetail('git log', text_content(log_text))
-        results = scanner.get_notes_by_version(
+        raw_results = scanner.get_notes_by_version(
             self.reporoot,
             'releasenotes/notes',
             'stable/2',
         )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
         self.assertEqual(
             {
                 '1.0.0': [self.f1],
