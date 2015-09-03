@@ -54,6 +54,11 @@ def main(argv=sys.argv[1:]):
         action='append',
         help='the version(s) to include, defaults to all',
     )
+    do_list.add_argument(
+        '--branch',
+        default=None,
+        help='the branch to scan, defaults to the current',
+    )
     do_list.set_defaults(func=lister.list_cmd)
 
     do_report = subparsers.add_parser(
@@ -68,6 +73,11 @@ def main(argv=sys.argv[1:]):
         '--output', '-o',
         default=None,
         help='output filename, defaults to stdout',
+    )
+    do_report.add_argument(
+        '--branch',
+        default=None,
+        help='the branch to scan, defaults to the current',
     )
     do_report.add_argument(
         '--version',
