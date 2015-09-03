@@ -27,16 +27,19 @@ def _get_current_version(reporoot):
     git describe.
 
     """
-    if os.path.exists(os.path.join(reporoot, 'setup.py')):
-        cmd = ['python', 'setup.py', '--version']
+    cmd = ['git', 'describe', '--tags']
+    try:
         result = subprocess.check_output(cmd, cwd=reporoot).strip()
-    else:
-        cmd = ['git', 'describe', '--tags']
-        try:
-            result = subprocess.check_output(cmd, cwd=reporoot).strip()
-        except subprocess.CalledProcessError:
-            # This probably means there are no tags.
-            result = '0.0.0'
+        if '-' in result:
+            # Descriptions that come after a commit look like
+            # 2.0.0-1-abcde, and we want to remove the SHA value from
+            # the end since we only care about the version number
+            # itself, but we need to recognize that the change is
+            # unreleased so keep the -1 part.
+            result, dash, ignore = result.rpartition('-')
+    except subprocess.CalledProcessError:
+        # This probably means there are no tags.
+        result = '0.0.0'
     return result
 
 

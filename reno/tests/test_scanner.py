@@ -106,7 +106,7 @@ class GPGKeyFixture(fixtures.Fixture):
             cwd=tempdir.path)
 
 
-class Test(base.TestCase):
+class Base(base.TestCase):
 
     def _run_git(self, *args):
         return subprocess.check_output(
@@ -150,7 +150,7 @@ class Test(base.TestCase):
         self._git_commit('add test package')
 
     def setUp(self):
-        super(Test, self).setUp()
+        super(Base, self).setUp()
         # Older git does not have config --local, so create a temporary home
         # directory to permit using git config --global without stepping on
         # developer configuration.
@@ -165,6 +165,9 @@ class Test(base.TestCase):
                                      )
         self._git_setup()
         self.get_note_num = itertools.count(1).next
+
+
+class BasicTest(Base):
 
     def test_non_python_no_tags(self):
         filename = self._add_notes_file()
@@ -185,7 +188,7 @@ class Test(base.TestCase):
             'releasenotes/notes',
         )
         self.assertEqual(
-            {'0.0.1.dev1': [filename]},
+            {'0.0.0': [filename]},
             results,
         )
 
@@ -210,7 +213,7 @@ class Test(base.TestCase):
             'releasenotes/notes',
         )
         self.assertEqual(
-            {'1.0.1.dev1': [filename]},
+            {'1.0.0-1': [filename]},
             results,
         )
 
@@ -224,7 +227,7 @@ class Test(base.TestCase):
             'releasenotes/notes',
         )
         self.assertEqual(
-            {'1.0.1.dev2': [f1, f2]},
+            {'1.0.0-2': [f1, f2]},
             results,
         )
 
@@ -254,7 +257,7 @@ class Test(base.TestCase):
         )
         self.assertEqual(
             {'2.0.0': [f1],
-             '2.0.1.dev1': [f2],
+             '2.0.0-1': [f2],
              },
             results,
         )
@@ -273,7 +276,26 @@ class Test(base.TestCase):
         )
         self.assertEqual(
             {'2.0.0': [f2],
-             '2.0.1.dev1': [],
+             '2.0.0-1': [],
+             },
+            results,
+        )
+
+    def test_rename_file_sort_earlier(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        f2 = f1.replace('slug1', 'slug0')
+        self._run_git('mv', f1, f2)
+        self._git_commit('rename note file')
+        results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        self.assertEqual(
+            {'2.0.0': [f2],
+             '2.0.0-1': [],
              },
             results,
         )
@@ -292,7 +314,7 @@ class Test(base.TestCase):
         )
         self.assertEqual(
             {'2.0.0': [f1],
-             '2.0.1.dev1': [],
+             '2.0.0-1': [],
              },
             results,
         )
