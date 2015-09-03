@@ -73,7 +73,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     # Determine the current version, which might be an unreleased or dev
     # version.
     current_version = _get_current_version(reporoot, branch)
-    print('current_version = %s' % current_version)
+    # print('current_version = %s' % current_version)
 
     # Remember the most current filename for each prefix, to allow for
     # renames.
@@ -92,7 +92,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         h = h.strip()
         if not h:
             continue
-        print(h)
+        # print(h)
 
         hlines = h.splitlines()
 
@@ -129,7 +129,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
                 # the unique prefix we have seen, in case the name
                 # changed from an older commit.
                 last_name_by_prefix[prefix] = f
-                print('remembering %s as last name for %s' % (f, prefix))
+                # print('remembering %s as last name for %s' % (f, prefix))
 
     # Invert earliest_seen to make a list of notes files for each
     # version.
