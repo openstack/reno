@@ -14,6 +14,7 @@ import argparse
 import sys
 
 from reno import create
+from reno import defaults
 from reno import lister
 from reno import report
 
@@ -23,7 +24,7 @@ def main(argv=sys.argv[1:]):
     parser.add_argument(
         '--rel-notes-dir', '-d',
         dest='relnotesdir',
-        default='releasenotes',
+        default=defaults.RELEASE_NOTES_SUBDIR,
         help='location of release notes YAML files',
     )
     subparsers = parser.add_subparsers(

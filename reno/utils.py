@@ -16,10 +16,12 @@ import os.path
 import random
 import subprocess
 
+from reno import defaults
+
 
 def get_notes_dir(args):
     "Return the path to the release notes directory."
-    return os.path.join(args.relnotesdir, 'notes')
+    return os.path.join(args.relnotesdir, defaults.NOTES_SUBDIR)
 
 
 def get_random_string(nbytes=8):
