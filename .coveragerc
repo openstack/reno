@@ -4,4 +4,4 @@ source = reno
 omit = reno/openstack/*
 
 [report]
-ignore-errors = True
+ignore_errors = True
