@@ -1,0 +1,77 @@
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+from __future__ import print_function
+
+from reno import scanner
+
+import yaml
+
+
+_SECTION_ORDER = [
+    ('features', 'New Features'),
+    ('issues', 'Known Issues'),
+    ('upgrade', 'Upgrade Notes'),
+    ('critical', 'Critical Issues'),
+    ('security', 'Security Issues'),
+    ('fixes', 'Bug Fixes'),
+    ('other', 'Other Notes'),
+]
+
+
+def format_report(reporoot, scanner_output, versions_to_include, title=None):
+    report = []
+    if title:
+        report.append('=' * len(title))
+        report.append(title)
+        report.append('=' * len(title))
+        report.append('')
+
+    # Read all of the notes files.
+    file_contents = {}
+    for version in versions_to_include:
+        for filename, sha in scanner_output[version]:
+            body = scanner.get_file_at_commit(
+                reporoot,
+                filename,
+                sha,
+            )
+            y = yaml.safe_load(body)
+            file_contents[filename] = y
+
+    for version in versions_to_include:
+        report.append(version)
+        report.append('=' * len(version))
+        report.append('')
+
+        # Add the preludes.
+        notefiles = scanner_output[version]
+        for n, sha in notefiles:
+            if 'prelude' in file_contents[n]:
+                report.append(file_contents[n]['prelude'])
+                report.append('')
+
+        for section_name, section_title in _SECTION_ORDER:
+            notes = [
+                n
+                for fn, sha in notefiles
+                for n in file_contents[fn].get(section_name, [])
+            ]
+            if notes:
+                report.append(section_title)
+                report.append('-' * len(section_title))
+                report.append('')
+                for n in notes:
+                    report.append('- %s' % n)
+                report.append('')
+
+    return '\n'.join(report)
