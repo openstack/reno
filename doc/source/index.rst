@@ -14,6 +14,7 @@ Contents:
    design
    installation
    usage
+   sphinxext
    contributing
    history
 
