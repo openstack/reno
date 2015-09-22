@@ -11,7 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   readme
+   design
    installation
    usage
    contributing
