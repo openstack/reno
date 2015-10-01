@@ -28,6 +28,18 @@ _SECTION_ORDER = [
 ]
 
 
+def _indent_for_list(text, prefix='  '):
+    """Indent some text to make it work as a list entry.
+
+    Indent all lines except the first with the prefix.
+    """
+    lines = text.splitlines()
+    return '\n'.join([lines[0]] + [
+        prefix + l
+        for l in lines[1:]
+    ]) + '\n'
+
+
 def format_report(reporoot, scanner_output, versions_to_include, title=None):
     report = []
     if title:
@@ -71,7 +83,7 @@ def format_report(reporoot, scanner_output, versions_to_include, title=None):
                 report.append('-' * len(section_title))
                 report.append('')
                 for n in notes:
-                    report.append('- %s' % n)
+                    report.append('- %s' % _indent_for_list(n))
                 report.append('')
 
     return '\n'.join(report)

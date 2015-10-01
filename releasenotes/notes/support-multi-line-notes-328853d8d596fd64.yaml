@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    Support note entries that span multiple lines using
+    preformatted syntax in YAML by prefixing the
+    list entry with ``|``.
+
+    For example::
+
+      - |
+        This entry has two paragraphs.
+
+        This is the second.
