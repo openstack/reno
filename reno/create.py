@@ -43,7 +43,7 @@ def _pick_note_file_name(notesdir, slug):
     "Pick a unique name in notesdir."
     for i in range(50):
         newid = utils.get_random_string()
-        notefilename = os.path.join(notesdir, '%s-%s.yaml' % (newid, slug))
+        notefilename = os.path.join(notesdir, '%s-%s.yaml' % (slug, newid))
         if not os.path.exists(notefilename):
             return notefilename
     else:

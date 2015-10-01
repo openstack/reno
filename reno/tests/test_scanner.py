@@ -128,9 +128,12 @@ class Base(base.TestCase):
         self._run_git('add', '.')
         self._run_git('commit', '-m', message)
 
-    def _add_notes_file(self, slug='slug', commit=True):
+    def _add_notes_file(self, slug='slug', commit=True, legacy=False):
         n = self.get_note_num()
-        basename = '%016x-%s.yaml' % (n, slug)
+        if legacy:
+            basename = '%016x-%s.yaml' % (n, slug)
+        else:
+            basename = '%s-%016x.yaml' % (slug, n)
         filename = os.path.join(self.reporoot, 'releasenotes', 'notes',
                                 basename)
         create._make_note_file(filename)
@@ -361,6 +364,70 @@ class BasicTest(Base):
              },
             results,
         )
+
+    def test_legacy_file(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file('slug1', legacy=True)
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        f2 = f1.replace('slug1', 'slug2')
+        self._run_git('mv', f1, f2)
+        self._git_commit('rename note file')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'2.0.0': [f2],
+             '2.0.0-1': [],
+             },
+            results,
+        )
+
+    def test_rename_legacy_file_to_new(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file('slug1', legacy=True)
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        # Rename the file with the new convention of placing the UUID
+        # after the slug instead of before.
+        f2 = f1.replace('0000000000000001-slug1',
+                        'slug1-0000000000000001')
+        self._run_git('mv', f1, f2)
+        self._git_commit('rename note file')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'2.0.0': [f2],
+             '2.0.0-1': [],
+             },
+            results,
+        )
+
+
+class UniqueIdTest(Base):
+
+    def test_legacy(self):
+        uid = scanner._get_unique_id(
+            'releasenotes/notes/0000000000000001-slug1.yaml'
+        )
+        self.assertEqual('0000000000000001', uid)
+
+    def test_modern(self):
+        uid = scanner._get_unique_id(
+            'releasenotes/notes/slug1-0000000000000001.yaml'
+        )
+        self.assertEqual('0000000000000001', uid)
 
 
 class BranchTest(Base):

@@ -62,6 +62,17 @@ def _file_exists_at_commit(reporoot, filename, sha):
     return bool(get_file_at_commit(reporoot, filename, sha))
 
 
+def _get_unique_id(filename):
+    base = os.path.basename(filename)
+    root, ext = os.path.splitext(base)
+    uniqueid = root[-16:]
+    if '-' in uniqueid:
+        # This is an older file with the UUID at the beginning
+        # of the name.
+        uniqueid = root[:16]
+    return uniqueid
+
+
 # TODO(dhellmann): Add branch arg?
 def get_notes_by_version(reporoot, notesdir, branch=None):
 
@@ -81,9 +92,9 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     current_version = _get_current_version(reporoot, branch)
     # print('current_version = %s' % current_version)
 
-    # Remember the most current filename for each prefix, to allow for
+    # Remember the most current filename for each id, to allow for
     # renames.
-    last_name_by_prefix = {}
+    last_name_by_id = {}
 
     # FIXME(dhellmann): This might need to be more line-oriented for
     # longer histories.
@@ -119,23 +130,22 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         if current_version not in versions:
             versions.append(current_version)
 
-        # Remember the files seen, using their prefix as a unique id.
+        # Remember the files seen, using their UUID suffix as a unique id.
         for f in filenames:
             # Updated as older tags are found, handling edits to release
             # notes.
-            prefix = os.path.basename(f)[:16]
-            earliest_seen[prefix] = tags[0]
-            if prefix in last_name_by_prefix:
-                # We already have a filename for this prefix from a
+            uniqueid = _get_unique_id(f)
+            earliest_seen[uniqueid] = tags[0]
+            if uniqueid in last_name_by_id:
+                # We already have a filename for this id from a
                 # new commit, so use that one in case the name has
                 # changed.
                 continue
             if _file_exists_at_commit(reporoot, f, sha):
                 # Remember this filename as the most recent version of
-                # the unique prefix we have seen, in case the name
+                # the unique id we have seen, in case the name
                 # changed from an older commit.
-                last_name_by_prefix[prefix] = (f, sha)
-                # print('remembering %s as last name for %s' % (f, prefix))
+                last_name_by_id[uniqueid] = (f, sha)
 
     # Invert earliest_seen to make a list of notes files for each
     # version.
@@ -144,8 +154,8 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         files_and_tags[v] = []
     # Produce a list of the actual files present in the repository. If
     # a note is removed, this step should let us ignore it.
-    for prefix, version in earliest_seen.items():
-        base, sha = last_name_by_prefix[prefix]
+    for uniqueid, version in earliest_seen.items():
+        base, sha = last_name_by_id[uniqueid]
         files_and_tags[version].append((base, sha))
     for version, filenames in files_and_tags.items():
         files_and_tags[version] = list(reversed(filenames))
