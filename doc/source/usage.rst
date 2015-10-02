@@ -7,13 +7,13 @@ Creating New Release Notes
 
 The ``reno`` command line tool is used to create a new release note
 file in the correct format and with a unique name.  The ``create``
-subcommand combines a random prefix with a "slug" value to make the
+subcommand combines a random suffix with a "slug" value to make the
 new file with a unique name that is easy to identify again later.
 
 ::
 
     $ reno new slug-goes-here
-    Created new notes file in releasenotes/notes/95915aaedd3c48d8-slug-goes-here.yaml
+    Created new notes file in releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
 
 Within OpenStack projects, ``reno`` is often run via tox instead of
 being installed globally. For example
@@ -23,14 +23,14 @@ being installed globally. For example
     $ tox -e venv -- reno new slug-goes-here
     venv develop-inst-nodeps: /mnt/projects/release-notes-generation/reno
     venv runtests: commands[0] | reno new slug-goes-here
-    Created new notes file in releasenotes/notes/95915aaedd3c48d8-slug-goes-here.yaml
+    Created new notes file in releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
       venv: commands succeeded
       congratulations :)
     $ git status
     Untracked files:
       (use "git add <file>..." to include in what will be committed)
 
-        releasenotes/notes/13041418ce6be244-slug-goes-here.yaml
+        releasenotes/notes/95915aaedd3c48d8-slug-goes-here.yaml
 
 By default the new note is created under ``./releasenotes/notes``. Use
 the ``--rel-notes-dir`` to change the parent directory (the ``notes``
