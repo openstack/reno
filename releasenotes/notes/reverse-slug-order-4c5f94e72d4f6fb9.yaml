@@ -2,7 +2,7 @@
 upgrade:
   - |
     Change the order of the slug and UUID value in the note filename so
-    the slug comes before the UUIUD to make tab completion easier to
+    the slug comes before the UUID to make tab completion easier to
     use.
 
     Older files are still supported, and can be renamed to use
