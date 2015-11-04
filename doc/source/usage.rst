@@ -30,7 +30,8 @@ being installed globally. For example
     Untracked files:
       (use "git add <file>..." to include in what will be committed)
 
-        releasenotes/notes/95915aaedd3c48d8-slug-goes-here.yaml
+        releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
+
 
 By default the new note is created under ``./releasenotes/notes``. Use
 the ``--rel-notes-dir`` to change the parent directory (the ``notes``
