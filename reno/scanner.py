@@ -101,7 +101,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     log_cmd = ['git', 'log', '--pretty=%x00%H %d', '--name-only']
     if branch is not None:
         log_cmd.append(branch)
-    log_cmd.extend(['--', notesdir])
+    log_cmd.extend(['--', notesdir + '/*.yaml'])
     history_results = utils.check_output(log_cmd, cwd=reporoot)
     history = history_results.split('\x00')
     current_version = current_version
