@@ -10,10 +10,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from __future__ import print_function
+
 import collections
 import os.path
 import re
 import subprocess
+import sys
 
 from reno import utils
 
@@ -155,8 +158,18 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     # Produce a list of the actual files present in the repository. If
     # a note is removed, this step should let us ignore it.
     for uniqueid, version in earliest_seen.items():
-        base, sha = last_name_by_id[uniqueid]
-        files_and_tags[version].append((base, sha))
+        try:
+            base, sha = last_name_by_id[uniqueid]
+            files_and_tags[version].append((base, sha))
+        except KeyError:
+            # Unable to find the file again, skip it to avoid breaking
+            # the build.
+            print(
+                '[reno] unable to find file associated '
+                'with unique id %r, skipping' %
+                uniqueid,
+                file=sys.stderr,
+            )
     for version, filenames in files_and_tags.items():
         files_and_tags[version] = list(reversed(filenames))
 
