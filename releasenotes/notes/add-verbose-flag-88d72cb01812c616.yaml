@@ -1,0 +1,3 @@
+---
+features:
+  - Add the ``--verbose``, ``-v``, and ``-q`` options to the command line tool for producing different levels of debug output.

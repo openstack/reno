@@ -13,6 +13,7 @@
 from __future__ import print_function
 
 import collections
+import logging
 import os.path
 import re
 import subprocess
@@ -21,6 +22,7 @@ import sys
 from reno import utils
 
 _TAG_PAT = re.compile('tag: ([\d\.]+)')
+LOG = logging.getLogger(__name__)
 
 
 def _get_current_version(reporoot, branch=None):
@@ -87,13 +89,15 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     they were available, regardless of whether they changed later.
     """
 
+    LOG.debug('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
+
     versions = []
     earliest_seen = collections.OrderedDict()
 
     # Determine the current version, which might be an unreleased or dev
     # version.
     current_version = _get_current_version(reporoot, branch)
-    # print('current_version = %s' % current_version)
+    LOG.debug('current repository version: %s' % current_version)
 
     # Remember the most current filename for each id, to allow for
     # renames.
@@ -105,6 +109,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     if branch is not None:
         log_cmd.append(branch)
     log_cmd.extend(['--', notesdir + '/*.yaml'])
+    LOG.debug('running %s' % ' '.join(log_cmd))
     history_results = utils.check_output(log_cmd, cwd=reporoot)
     history = history_results.split('\x00')
     current_version = current_version
@@ -121,34 +126,43 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         sha = hlines[0].split(' ')[0]
         tags = _TAG_PAT.findall(hlines[0])
         filenames = hlines[2:]
+        LOG.debug('%s contains files %s' % (sha, filenames))
 
         # If there are no tags in this block, assume the most recently
         # seen version.
         if not tags:
+            LOG.debug('%s is untagged, using %s' % (sha, current_version))
             tags = [current_version]
         else:
             current_version = tags[0]
+            LOG.debug('%s has tags, updating current version to %s' %
+                      (sha, current_version))
 
         # Remember each version we have seen.
         if current_version not in versions:
+            LOG.debug('%s is a new version' % current_version)
             versions.append(current_version)
 
         # Remember the files seen, using their UUID suffix as a unique id.
         for f in filenames:
             # Updated as older tags are found, handling edits to release
             # notes.
+            LOG.debug('setting earliest reference to %s to %s' %
+                      (f, tags[0]))
             uniqueid = _get_unique_id(f)
             earliest_seen[uniqueid] = tags[0]
             if uniqueid in last_name_by_id:
                 # We already have a filename for this id from a
                 # new commit, so use that one in case the name has
                 # changed.
+                LOG.debug('%s was seen before' % f)
                 continue
             if _file_exists_at_commit(reporoot, f, sha):
                 # Remember this filename as the most recent version of
                 # the unique id we have seen, in case the name
                 # changed from an older commit.
                 last_name_by_id[uniqueid] = (f, sha)
+                LOG.debug('remembering %s as filename for %s' % (f, uniqueid))
 
     # Invert earliest_seen to make a list of notes files for each
     # version.

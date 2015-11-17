@@ -12,12 +12,17 @@
 
 from __future__ import print_function
 
+import logging
+
 from reno import scanner
 from reno import utils
+
+LOG = logging.getLogger(__name__)
 
 
 def list_cmd(args):
     "List notes files based on query arguments"
+    LOG.debug('starting list')
     reporoot = args.reporoot.rstrip('/') + '/'
     notesdir = utils.get_notes_dir(args)
     notes = scanner.get_notes_by_version(reporoot, notesdir, args.branch)

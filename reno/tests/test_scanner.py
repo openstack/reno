@@ -13,6 +13,7 @@
 # under the License.
 
 import itertools
+import logging
 import os.path
 import re
 import subprocess
@@ -156,6 +157,13 @@ class Base(base.TestCase):
 
     def setUp(self):
         super(Base, self).setUp()
+        self.logger = self.useFixture(
+            fixtures.FakeLogger(
+                format='%(levelname)8s %(name)s %(message)s',
+                level=logging.DEBUG,
+                nuke_handlers=True,
+            )
+        )
         # Older git does not have config --local, so create a temporary home
         # directory to permit using git config --global without stepping on
         # developer configuration.

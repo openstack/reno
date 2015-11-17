@@ -11,6 +11,7 @@
 # under the License.
 
 import argparse
+import logging
 import sys
 
 from reno import create
@@ -21,6 +22,21 @@ from reno import report
 
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-v', '--verbose',
+        dest='verbosity',
+        default=logging.INFO,
+        help='produce more output',
+        action='store_const',
+        const=logging.DEBUG,
+    )
+    parser.add_argument(
+        '-q', '--quiet',
+        dest='verbosity',
+        action='store_const',
+        const=logging.WARN,
+        help='produce less output',
+    )
     parser.add_argument(
         '--rel-notes-dir', '-d',
         dest='relnotesdir',
@@ -89,4 +105,10 @@ def main(argv=sys.argv[1:]):
     do_report.set_defaults(func=report.report_cmd)
 
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=args.verbosity,
+        format='%(message)s',
+    )
+
     return args.func(args)
