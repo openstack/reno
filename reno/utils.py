@@ -34,8 +34,8 @@ def get_random_string(nbytes=8):
         val = binascii.hexlify(os.urandom(nbytes)).decode('utf-8')
     except Exception as e:
         print('ERROR, perhaps urandom is not supported: %s' % e)
-        val = ''.join('%02x' % random.randrange(256)
-                      for i in range(nbytes))
+        val = u''.join(u'%02x' % random.randrange(256)
+                       for i in range(nbytes))
     return val
 
 

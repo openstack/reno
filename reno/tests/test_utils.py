@@ -16,6 +16,7 @@ from reno.tests import base
 from reno import utils
 
 import mock
+import six
 
 
 class TestGetRandomString(base.TestCase):
@@ -27,13 +28,15 @@ class TestGetRandomString(base.TestCase):
         randrange.return_value = ord('a')
         actual = utils.get_random_string()
         expected = '61' * 8  # hex for ord('a')
+        self.assertIsInstance(actual, six.text_type)
         self.assertEqual(expected, actual)
 
     @mock.patch('random.randrange')
     @mock.patch('os.urandom')
     def test_with_urandom(self, urandom, randrange):
-        urandom.return_value = '\x62' * 8
+        urandom.return_value = b'\x62' * 8
         randrange.return_value = ord('a')
         actual = utils.get_random_string()
         expected = '62' * 8  # hex for ord('b')
+        self.assertIsInstance(actual, six.text_type)
         self.assertEqual(expected, actual)
