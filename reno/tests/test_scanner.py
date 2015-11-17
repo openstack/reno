@@ -129,6 +129,11 @@ class Base(base.TestCase):
         self._run_git('add', '.')
         self._run_git('commit', '-m', message)
 
+    def _add_other_file(self, name):
+        with open(os.path.join(self.reporoot, name), 'w') as f:
+            f.write('adding %s\n' % name)
+        self._git_commit('add %s' % name)
+
     def _add_notes_file(self, slug='slug', commit=True, legacy=False):
         n = self.get_note_num()
         if legacy:
@@ -214,6 +219,23 @@ class BasicTest(Base):
             results,
         )
 
+    def test_note_before_tag(self):
+        filename = self._add_notes_file()
+        self._add_other_file('not-a-release-note.txt')
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0': [filename]},
+            results,
+        )
+
     def test_note_commit_tagged(self):
         filename = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
@@ -244,6 +266,24 @@ class BasicTest(Base):
         }
         self.assertEqual(
             {'1.0.0-1': [filename]},
+            results,
+        )
+
+    def test_other_commit_after_tag(self):
+        filename = self._add_notes_file()
+        self._add_other_file('ignore-1.txt')
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self._add_other_file('ignore-2.txt')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0': [filename]},
             results,
         )
 
@@ -322,7 +362,6 @@ class BasicTest(Base):
         }
         self.assertEqual(
             {'2.0.0': [f2],
-             '2.0.0-1': [],
              },
             results,
         )
@@ -345,7 +384,6 @@ class BasicTest(Base):
         }
         self.assertEqual(
             {'2.0.0': [f2],
-             '2.0.0-1': [],
              },
             results,
         )
@@ -368,7 +406,6 @@ class BasicTest(Base):
         }
         self.assertEqual(
             {'2.0.0': [f1],
-             '2.0.0-1': [],
              },
             results,
         )
@@ -391,7 +428,6 @@ class BasicTest(Base):
         }
         self.assertEqual(
             {'2.0.0': [f2],
-             '2.0.0-1': [],
              },
             results,
         )
@@ -417,7 +453,6 @@ class BasicTest(Base):
         }
         self.assertEqual(
             {'2.0.0': [f2],
-             '2.0.0-1': [],
              },
             results,
         )

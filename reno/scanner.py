@@ -13,6 +13,7 @@
 from __future__ import print_function
 
 import collections
+import fnmatch
 import logging
 import os.path
 import re
@@ -80,7 +81,6 @@ def _get_unique_id(filename):
 
 # TODO(dhellmann): Add branch arg?
 def get_notes_by_version(reporoot, notesdir, branch=None):
-
     """Return an OrderedDict mapping versions to lists of notes files.
 
     The versions are presented in reverse chronological order.
@@ -108,7 +108,6 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
     log_cmd = ['git', 'log', '--pretty=%x00%H %d', '--name-only']
     if branch is not None:
         log_cmd.append(branch)
-    log_cmd.extend(['--', notesdir + '/*.yaml'])
     LOG.debug('running %s' % ' '.join(log_cmd))
     history_results = utils.check_output(log_cmd, cwd=reporoot)
     history = history_results.split('\x00')
@@ -125,13 +124,22 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         # include tags, the other lines are filenames.
         sha = hlines[0].split(' ')[0]
         tags = _TAG_PAT.findall(hlines[0])
-        filenames = hlines[2:]
-        LOG.debug('%s contains files %s' % (sha, filenames))
+        # Filter the files based on the notes directory we were
+        # given. We cannot do this in the git log command directly
+        # because it means we end up skipping some of the tags if the
+        # commits being tagged don't include any release note
+        # files. Even if this list ends up empty, we continue doing
+        # the other processing so that we record all of the known
+        # versions.
+        filenames = [
+            f
+            for f in hlines[2:]
+            if fnmatch.fnmatch(f, notesdir + '/*.yaml')
+        ]
 
         # If there are no tags in this block, assume the most recently
         # seen version.
         if not tags:
-            LOG.debug('%s is untagged, using %s' % (sha, current_version))
             tags = [current_version]
         else:
             current_version = tags[0]
@@ -142,6 +150,8 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         if current_version not in versions:
             LOG.debug('%s is a new version' % current_version)
             versions.append(current_version)
+
+        LOG.debug('%s contains files %s' % (sha, filenames))
 
         # Remember the files seen, using their UUID suffix as a unique id.
         for f in filenames:
@@ -184,7 +194,14 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
                 uniqueid,
                 file=sys.stderr,
             )
-    for version, filenames in files_and_tags.items():
-        files_and_tags[version] = list(reversed(filenames))
 
-    return files_and_tags
+    # Only return the parts of files_and_tags that actually have
+    # filenames associated with the versions.
+    trimmed = {
+        k: list(reversed(v))
+        for (k, v)
+        in files_and_tags.items()
+        if v
+    }
+
+    return trimmed

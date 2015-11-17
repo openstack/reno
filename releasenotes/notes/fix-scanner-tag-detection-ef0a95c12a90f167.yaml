@@ -1,0 +1,5 @@
+---
+fixes:
+  - Fix `bug 1517175 <https://bugs.launchpad.net/reno/+bug/1517175>`__ to
+    ensure that all tagged versions are detected and that notes are associated
+    with the correct version numbers.
