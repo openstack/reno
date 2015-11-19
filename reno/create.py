@@ -52,6 +52,13 @@ upgrade:
     needs to be worded so that it does not depend on any
     information only available in another section, such
     as the prelude. This may mean repeating some details.
+deprecations:
+  - List deprecations notes here, or remove this section.
+    All of the list items in this section are combined
+    when the release notes are rendered, so the text
+    needs to be worded so that it does not depend on any
+    information only available in another section, such
+    as the prelude. This may mean repeating some details.
 critical:
   - Add critical notes here, or remove this section.
     All of the list items in this section are combined

@@ -21,6 +21,7 @@ _SECTION_ORDER = [
     ('features', 'New Features'),
     ('issues', 'Known Issues'),
     ('upgrade', 'Upgrade Notes'),
+    ('deprecations', 'Deprecation Notes'),
     ('critical', 'Critical Issues'),
     ('security', 'Security Issues'),
     ('fixes', 'Bug Fixes'),
