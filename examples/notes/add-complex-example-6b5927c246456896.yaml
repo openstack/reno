@@ -1,0 +1,28 @@
+---
+prelude: |
+  This paragraph will
+  retain its newlines
+  when the value is passed to the
+  reStructuredText parser, which
+  will then merge them into
+  a single paragraph without
+  breaks.
+
+  | These
+  | lines
+  | are prefixed
+  | with | so the reStructuredText
+  | parser will retain
+  | the line breaks.
+other:
+  - |
+    This bullet item includes a paragraph and a nested list.
+
+    * list item 1
+    * list item 2
+
+    ::
+
+      This example is also rendered
+      correctly on multiple lines
+      as a pre-formatted block.

@@ -105,6 +105,25 @@ entirely.
    other:
      - Add other notes here, or remove this section.
 
+Formatting
+----------
+
+Release notes may include embedded reStructuredText, including simple
+inline markup like emphasis and pre-formatted text as well as complex
+body structures such as nested lists and tables. To use these
+formatting features, the note must be escaped from the YAML parser.
+
+The default template sets up the ``prelude`` section to use ``>`` so
+that line breaks in the text are removed. This escaping mechanism is
+not needed for the bullet items in the other sections of the template.
+
+To escape the text of any section and *retain* the newlines, prefix
+the value with ``|``. For example:
+
+.. include:: ../../examples/notes/add-complex-example-6b5927c246456896.yaml
+   :literal:
+
+See :doc:`examples` for the rendered version of the note.
 
 Generating a Report
 ===================

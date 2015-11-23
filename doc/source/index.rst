@@ -17,6 +17,7 @@ Contents:
    sphinxext
    contributing
    history
+   examples
 
 Indices and tables
 ==================
