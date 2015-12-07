@@ -1,0 +1,6 @@
+---
+fixes:
+  - Fixes `bug 1522153
+    <https://bugs.launchpad.net/reno/+bug/1522153>`__ so that notes
+    added in commits that are merged after tags are associated with
+    the correct version.

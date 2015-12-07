@@ -17,6 +17,7 @@ import logging
 import os.path
 import re
 import subprocess
+import textwrap
 
 from reno import create
 from reno import scanner
@@ -24,6 +25,7 @@ from reno.tests import base
 from reno import utils
 
 import fixtures
+import mock
 from testtools.content import text_content
 
 
@@ -458,6 +460,145 @@ class BasicTest(Base):
         )
 
 
+class MergeCommitTest(Base):
+
+    def test_1(self):
+        # Create changes on master and in the branch
+        # in order so the history is "normal"
+        n1 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self._run_git('checkout', '-b', 'test_merge_commit')
+        n2 = self._add_notes_file()
+        self._run_git('checkout', 'master')
+        self._add_other_file('ignore-1.txt')
+        self._run_git('merge', '--no-ff', 'test_merge_commit')
+        self._add_other_file('ignore-2.txt')
+        self._run_git('tag', '-s', '-m', 'second tag', '2.0.0')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0': [n1],
+             '2.0.0': [n2]},
+            results,
+        )
+        self.assertEqual(
+            ['2.0.0', '1.0.0'],
+            list(raw_results.keys()),
+        )
+
+    def test_2(self):
+        # Create changes on the branch before the tag into which it is
+        # actually merged.
+        self._add_other_file('ignore-0.txt')
+        self._run_git('checkout', '-b', 'test_merge_commit')
+        n1 = self._add_notes_file()
+        self._run_git('checkout', 'master')
+        n2 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self._add_other_file('ignore-1.txt')
+        self._run_git('merge', '--no-ff', 'test_merge_commit')
+        self._add_other_file('ignore-2.txt')
+        self._run_git('tag', '-s', '-m', 'second tag', '2.0.0')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0': [n2],
+             '2.0.0': [n1]},
+            results,
+        )
+        self.assertEqual(
+            ['2.0.0', '1.0.0'],
+            list(raw_results.keys()),
+        )
+
+    def test_3(self):
+        # Create changes on the branch before the tag into which it is
+        # actually merged, with another tag in between the time of the
+        # commit and the time of the merge. This should reflect the
+        # order of events described in bug #1522153.
+        self._add_other_file('ignore-0.txt')
+        self._run_git('checkout', '-b', 'test_merge_commit')
+        n1 = self._add_notes_file()
+        self._run_git('checkout', 'master')
+        n2 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self._add_other_file('ignore-1.txt')
+        self._run_git('tag', '-s', '-m', 'second tag', '1.1.0')
+        self._run_git('merge', '--no-ff', 'test_merge_commit')
+        self._add_other_file('ignore-2.txt')
+        self._run_git('tag', '-s', '-m', 'third tag', '2.0.0')
+        self._add_other_file('ignore-3.txt')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        # Since the 1.1.0 tag has no notes files, it does not appear
+        # in the output. It's only there to trigger the bug as it was
+        # originally reported.
+        self.assertEqual(
+            {'1.0.0': [n2],
+             '2.0.0': [n1]},
+            results,
+        )
+        self.assertEqual(
+            ['2.0.0', '1.0.0'],
+            list(raw_results.keys()),
+        )
+
+    def test_4(self):
+        # Create changes on the branch before the tag into which it is
+        # actually merged, with another tag in between the time of the
+        # commit and the time of the merge. This should reflect the
+        # order of events described in bug #1522153.
+        self._add_other_file('ignore-0.txt')
+        self._run_git('checkout', '-b', 'test_merge_commit')
+        n1 = self._add_notes_file()
+        self._run_git('checkout', 'master')
+        n2 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self._add_other_file('ignore-1.txt')
+        n3 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'second tag', '1.1.0')
+        self._run_git('merge', '--no-ff', 'test_merge_commit')
+        self._add_other_file('ignore-2.txt')
+        self._run_git('tag', '-s', '-m', 'third tag', '2.0.0')
+        self._add_other_file('ignore-3.txt')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0': [n2],
+             '1.1.0': [n3],
+             '2.0.0': [n1]},
+            results,
+        )
+        self.assertEqual(
+            ['2.0.0', '1.1.0', '1.0.0'],
+            list(raw_results.keys()),
+        )
+
+
 class UniqueIdTest(Base):
 
     def test_legacy(self):
@@ -533,3 +674,165 @@ class BranchTest(Base):
             },
             results,
         )
+
+
+class GetTagsParseTest(base.TestCase):
+
+    EXPECTED = [
+        '2.0.0',
+        '1.8.1',
+        '1.8.0',
+        '1.7.1',
+        '1.7.0',
+        '1.6.0',
+        '1.5.0',
+        '1.4.0',
+        '1.3.0',
+        '1.2.0',
+        '1.1.0',
+        '1.0.0',
+        '0.11.2',
+        '0.11.1',
+        '0.11.0',
+        '0.10.1',
+        '0.10.0',
+        '0.9.0',
+        '0.8.0',
+        '0.7.1',
+        '0.7.0',
+        '0.6.0',
+        '0.5.1',
+        '0.5.0',
+        '0.4.2',
+        '0.4.1',
+        '0.4.0',
+        '0.3.2',
+        '0.3.1',
+        '0.3.0',
+        '0.2.5',
+        '0.2.4',
+        '0.2.3',
+        '0.2.2',
+        '0.2.1',
+        '0.2.0',
+        '0.1.3',
+        '0.1.2',
+        '0.1.1',
+        '0.1.0',
+    ]
+
+    def test_keystoneclient_ubuntu_1_9_1(self):
+        # git 1.9.1 as it produces output on ubuntu for python-keystoneclient
+        # git log --simplify-by-decoration --pretty="%d"
+        tag_list_output = textwrap.dedent("""
+         (HEAD, origin/master, origin/HEAD, gerrit/master, master)
+         (apu/master)
+         (tag: 2.0.0)
+         (tag: 1.8.1)
+         (tag: 1.8.0)
+         (tag: 1.7.1)
+         (tag: 1.7.0)
+         (tag: 1.6.0)
+         (tag: 1.5.0)
+         (tag: 1.4.0)
+         (uncap-requirements)
+         (tag: 1.3.0)
+         (tag: 1.2.0)
+         (tag: 1.1.0)
+         (tag: 1.0.0)
+         (tag: 0.11.2)
+         (tag: 0.11.1)
+         (tag: 0.11.0)
+         (tag: 0.10.1)
+         (tag: 0.10.0)
+         (tag: 0.9.0)
+         (tag: 0.8.0)
+         (tag: 0.7.1)
+         (tag: 0.7.0)
+         (tag: 0.6.0)
+         (tag: 0.5.1)
+         (tag: 0.5.0)
+         (tag: 0.4.2)
+         (tag: 0.4.1)
+         (tag: 0.4.0)
+         (tag: 0.3.2)
+         (tag: 0.3.1)
+         (tag: 0.3.0)
+         (tag: 0.2.5)
+         (tag: 0.2.4)
+         (tag: 0.2.3)
+         (tag: 0.2.2)
+         (tag: 0.2.1)
+         (tag: 0.2.0)
+
+         (origin/feature/keystone-v3, gerrit/feature/keystone-v3)
+         (tag: 0.1.3)
+         (tag: 0.1.2)
+         (tag: 0.1.1)
+         (tag: 0.1.0)
+         (tag: folsom-1)
+         (tag: essex-rc1)
+         (tag: essex-4)
+         (tag: essex-3)
+        """)
+        with mock.patch('reno.utils.check_output') as co:
+            co.return_value = tag_list_output
+            actual = scanner._get_version_tags_on_branch('reporoot',
+                                                         branch=None)
+        self.assertEqual(self.EXPECTED, actual)
+
+    def test_keystoneclient_rhel_1_7_1(self):
+        # git 1.7.1 as it produces output on RHEL 6 for python-keystoneclient
+        # git log --simplify-by-decoration --pretty="%d"
+        tag_list_output = textwrap.dedent("""
+         (HEAD, origin/master, origin/HEAD, master)
+         (tag: 2.0.0)
+         (tag: 1.8.1)
+         (tag: 1.8.0)
+         (tag: 1.7.1)
+         (tag: 1.7.0)
+         (tag: 1.6.0)
+         (tag: 1.5.0)
+         (tag: 1.4.0)
+         (tag: 1.3.0)
+         (tag: 1.2.0)
+         (tag: 1.1.0)
+         (tag: 1.0.0)
+         (tag: 0.11.2)
+         (tag: 0.11.1)
+         (tag: 0.11.0)
+         (tag: 0.10.1)
+         (tag: 0.10.0)
+         (tag: 0.9.0)
+         (tag: 0.8.0)
+         (tag: 0.7.1)
+         (tag: 0.7.0)
+         (tag: 0.6.0)
+         (tag: 0.5.1)
+         (tag: 0.5.0)
+         (tag: 0.4.2)
+         (tag: 0.4.1)
+         (tag: 0.4.0)
+         (tag: 0.3.2)
+         (tag: 0.3.1)
+         (tag: 0.3.0)
+         (tag: 0.2.5)
+         (tag: 0.2.4)
+         (tag: 0.2.3)
+         (tag: 0.2.2)
+         (tag: 0.2.1)
+         (tag: 0.2.0)
+         (tag: 0.1.3)
+         (0.1.2)
+         (tag: 0.1.1)
+         (0.1.0)
+         (tag: folsom-1)
+         (tag: essex-rc1)
+         (essex-4)
+         (essex-3)
+        """)
+        with mock.patch('reno.utils.check_output') as co:
+            co.return_value = tag_list_output
+            actual = scanner._get_version_tags_on_branch('reporoot',
+                                                         branch=None)
+        self.assertEqual(self.EXPECTED, actual)
