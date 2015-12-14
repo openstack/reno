@@ -6,7 +6,7 @@ Creating New Release Notes
 ==========================
 
 The ``reno`` command line tool is used to create a new release note
-file in the correct format and with a unique name.  The ``create``
+file in the correct format and with a unique name.  The ``new``
 subcommand combines a random suffix with a "slug" value to make the
 new file with a unique name that is easy to identify again later.
 
