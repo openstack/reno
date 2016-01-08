@@ -79,7 +79,70 @@ def _get_unique_id(filename):
     return uniqueid
 
 
-# TODO(dhellmann): Add branch arg?
+# The git log output from _get_tags_on_branch() looks like this sample
+# from the openstack/nova repository for git 1.9.1:
+#
+# git log --simplify-by-decoration --pretty="%d"
+# (HEAD, origin/master, origin/HEAD, gerrit/master, master)
+# (apu/master)
+# (tag: 13.0.0.0b1)
+# (tag: 12.0.0.0rc3, tag: 12.0.0)
+#
+# And this for git 1.7.1 (RHEL):
+#
+# $ git log --simplify-by-decoration --pretty="%d"
+# (HEAD, origin/master, origin/HEAD, master)
+# (tag: 13.0.0.0b1)
+# (tag: 12.0.0.0rc3, tag: 12.0.0)
+# (tag: 12.0.0.0rc2)
+# (tag: 2015.1.0rc3, tag: 2015.1.0)
+# ...
+# (tag: folsom-2)
+# (tag: folsom-1)
+# (essex-1)
+# (diablo-2)
+# (diablo-1)
+# (2011.2)
+#
+# The difference in the tags with "tag:" and without appears to be
+# caused by some being annotated and others not.
+#
+# So we might have multiple tags on a given commit, and we might have
+# lines that have no tags or are completely blank, and we might have
+# "tag:" or not. This pattern is used to find the tag entries on each
+# line, ignoring tags that don't look like version numbers.
+TAG_RE = re.compile('(?:[(]|tag: )([\d.ab]+)[,)]')
+
+
+def _get_version_tags_on_branch(reporoot, branch):
+    """Return tags from the branch, in date order.
+
+    Need to get the list of tags in the right order, because the topo
+    search breaks the date ordering. Use git to ask for the tags in
+    order, rather than trying to sort them, because many repositories
+    have "non-standard" tags or have renumbered projects (from
+    date-based to SemVer), for which sorting would require complex
+    logic.
+
+    """
+    tags = []
+    tag_cmd = [
+        'git', 'log',
+        '--simplify-by-decoration',
+        '--pretty="%d"',
+    ]
+    if branch:
+        tag_cmd.append(branch)
+    LOG.debug('running %s' % ' '.join(tag_cmd))
+    tag_results = utils.check_output(tag_cmd, cwd=reporoot)
+    LOG.debug(tag_results)
+    for line in tag_results.splitlines():
+        LOG.debug('line %r' % line)
+        for match in TAG_RE.findall(line):
+            tags.append(match)
+    return tags
+
+
 def get_notes_by_version(reporoot, notesdir, branch=None):
     """Return an OrderedDict mapping versions to lists of notes files.
 
@@ -91,13 +154,26 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
 
     LOG.debug('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
 
+    # Determine all of the tags known on the branch, in their date
+    # order. We scan the commit history in topological order to ensure
+    # we have the commits in the right version, so we might encounter
+    # the tags in a different order during that phase.
+    versions_by_date = _get_version_tags_on_branch(reporoot, branch)
+    LOG.debug('versions by date %r' % (versions_by_date,))
     versions = []
     earliest_seen = collections.OrderedDict()
 
-    # Determine the current version, which might be an unreleased or dev
-    # version.
+    # Determine the current version, which might be an unreleased or
+    # dev version if there are unreleased commits at the head of the
+    # branch in question. Since the version may not already be known,
+    # make sure it is in the list of versions by date. And since it is
+    # the most recent version, go ahead and insert it at the front of
+    # the list.
     current_version = _get_current_version(reporoot, branch)
     LOG.debug('current repository version: %s' % current_version)
+    if current_version not in versions_by_date:
+        LOG.debug('adding %s to versions by date' % current_version)
+        versions_by_date.insert(0, current_version)
 
     # Remember the most current filename for each id, to allow for
     # renames.
@@ -105,7 +181,12 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
 
     # FIXME(dhellmann): This might need to be more line-oriented for
     # longer histories.
-    log_cmd = ['git', 'log', '--pretty=%x00%H %d', '--name-only']
+    log_cmd = [
+        'git', 'log',
+        '--topo-order',  # force traversal order rather than date order
+        '--pretty=%x00%H %d',  # output contents in parsable format
+        '--name-only'  # only include the names of the files in the patch
+    ]
     if branch is not None:
         log_cmd.append(branch)
     LOG.debug('running %s' % ' '.join(log_cmd))
@@ -188,20 +269,26 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         except KeyError:
             # Unable to find the file again, skip it to avoid breaking
             # the build.
-            print(
-                '[reno] unable to find file associated '
-                'with unique id %r, skipping' %
-                uniqueid,
-                file=sys.stderr,
-            )
+            msg = ('[reno] unable to find file associated '
+                   'with unique id %r, skipping') % uniqueid
+            LOG.debug(msg)
+            print(msg, file=sys.stderr)
 
     # Only return the parts of files_and_tags that actually have
     # filenames associated with the versions.
-    trimmed = {
-        k: list(reversed(v))
-        for (k, v)
-        in files_and_tags.items()
-        if v
-    }
+    trimmed = collections.OrderedDict()
+    for ov in versions_by_date:
+        if not files_and_tags.get(ov):
+            continue
+        # Sort the notes associated with the version so they are in a
+        # deterministic order, to avoid having the same data result in
+        # different output depending on random factors. Earlier
+        # versions of the scanner assumed the notes were recorded in
+        # chronological order based on the commit date, but with the
+        # change to use topological sorting that is no longer
+        # necessarily true. We want the notes to always show up in the
+        # same order, but it doesn't really matter what order that is,
+        # so just sort based on the unique id.
+        trimmed[ov] = sorted(files_and_tags[ov])
 
     return trimmed
