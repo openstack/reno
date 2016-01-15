@@ -11,11 +11,15 @@
 # under the License.
 
 import binascii
+import logging
+import os
 import os.path
 import random
 import subprocess
 
 from reno import defaults
+
+LOG = logging.getLogger(__name__)
 
 
 def get_notes_dir(args):
@@ -41,5 +45,15 @@ def get_random_string(nbytes=8):
 
 def check_output(*args, **kwds):
     """Unicode-aware wrapper for subprocess.check_output"""
-    raw = subprocess.check_output(*args, **kwds)
-    return raw.decode('utf-8')
+    process = subprocess.Popen(stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE,
+                               *args, **kwds)
+    output, errors = process.communicate()
+    retcode = process.poll()
+    if errors:
+        LOG.debug('error output from (%s): %s',
+                  ' '.join(*args),
+                  errors.rstrip())
+    if retcode:
+        raise subprocess.CalledProcessError(retcode, args, output=output)
+    return output.decode('utf-8')
