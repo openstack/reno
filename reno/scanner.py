@@ -22,7 +22,6 @@ import sys
 
 from reno import utils
 
-_TAG_PAT = re.compile('tag: ([\d\.]+)')
 LOG = logging.getLogger(__name__)
 
 
@@ -111,7 +110,11 @@ def _get_unique_id(filename):
 # lines that have no tags or are completely blank, and we might have
 # "tag:" or not. This pattern is used to find the tag entries on each
 # line, ignoring tags that don't look like version numbers.
-TAG_RE = re.compile('(?:[(]|tag: )([\d.ab]+)[,)]')
+TAG_RE = re.compile('''
+    (?:[(]|tag:\s)  # look for tag: prefix and drop
+    ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and pre-releases
+    [,)]  # possible trailing comma or closing paren
+''', flags=re.VERBOSE | re.UNICODE)
 
 
 def _get_version_tags_on_branch(reporoot, branch):
@@ -204,7 +207,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         # The first line of the block will include the SHA and may
         # include tags, the other lines are filenames.
         sha = hlines[0].split(' ')[0]
-        tags = _TAG_PAT.findall(hlines[0])
+        tags = TAG_RE.findall(hlines[0])
         # Filter the files based on the notes directory we were
         # given. We cannot do this in the git log command directly
         # because it means we end up skipping some of the tags if the
@@ -224,8 +227,8 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
             tags = [current_version]
         else:
             current_version = tags[0]
-            LOG.debug('%s has tags, updating current version to %s' %
-                      (sha, current_version))
+            LOG.debug('%s has tags %s (%r), updating current version to %s' %
+                      (sha, tags, hlines[0], current_version))
 
         # Remember each version we have seen.
         if current_version not in versions:
@@ -291,4 +294,6 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
         # so just sort based on the unique id.
         trimmed[ov] = sorted(files_and_tags[ov])
 
+    LOG.debug('[reno] found %d versions and %d files',
+              len(trimmed.keys()), sum(len(ov) for ov in trimmed.values()))
     return trimmed

@@ -1,0 +1,6 @@
+---
+fixes:
+  - Resolves `a bug <https://bugs.launchpad.net/reno/+bug/1537451>`__
+    with properly detecting pre-release versions in the existing
+    history of a repository that resulted in some release notes not
+    appearing in the report output.

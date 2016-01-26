@@ -460,6 +460,66 @@ class BasicTest(Base):
         )
 
 
+class PreReleaseTest(Base):
+
+    def test_alpha(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0a1')
+        f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0a2')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0.0a2': [f1],
+             },
+            results,
+        )
+
+    def test_beta(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0b1')
+        f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0b2')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0.0b2': [f1],
+             },
+            results,
+        )
+
+    def test_release_candidate(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0rc1')
+        f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0rc2')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0.0rc2': [f1],
+             },
+            results,
+        )
+
+
 class MergeCommitTest(Base):
 
     def test_1(self):
