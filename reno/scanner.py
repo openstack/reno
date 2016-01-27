@@ -115,6 +115,9 @@ TAG_RE = re.compile('''
     ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and pre-releases
     [,)]  # possible trailing comma or closing paren
 ''', flags=re.VERBOSE | re.UNICODE)
+PRE_RELEASE_RE = re.compile('''
+    \.(\d+(?:[ab]|rc)+\d*)$
+''', flags=re.VERBOSE | re.UNICODE)
 
 
 def _get_version_tags_on_branch(reporoot, branch):
@@ -146,13 +149,24 @@ def _get_version_tags_on_branch(reporoot, branch):
     return tags
 
 
-def get_notes_by_version(reporoot, notesdir, branch=None):
+def get_notes_by_version(reporoot, notesdir, branch=None,
+                         collapse_pre_releases=False):
     """Return an OrderedDict mapping versions to lists of notes files.
 
     The versions are presented in reverse chronological order.
 
     Notes files are associated with the earliest version for which
     they were available, regardless of whether they changed later.
+
+    :param reporoot: Path to the root of the git repository.
+    :type reporoot: str
+    :param notesdir: The directory under *reporoot* with the release notes.
+    :type notesdir: str
+    :param branch: The name of the branch to scan. Defaults to current.
+    :type branch: str
+    :param collapse_pre_releases: When true, merge pre-release versions
+        into the final release, if it is present.
+    :type collapse_pre_releases: bool
     """
 
     LOG.debug('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
@@ -276,6 +290,36 @@ def get_notes_by_version(reporoot, notesdir, branch=None):
                    'with unique id %r, skipping') % uniqueid
             LOG.debug(msg)
             print(msg, file=sys.stderr)
+
+    # Combine pre-releases into the final release, if we are told to
+    # and the final release exists.
+    if collapse_pre_releases:
+        collapsing = files_and_tags
+        files_and_tags = collections.OrderedDict()
+        for ov in versions_by_date:
+            if ov not in collapsing:
+                # We don't need to collapse this one because there are
+                # no notes attached to it.
+                continue
+            pre_release_match = PRE_RELEASE_RE.search(ov)
+            LOG.debug('checking %r', ov)
+            if pre_release_match:
+                # Remove the trailing pre-release part of the version
+                # from the string.
+                pre_rel_str = pre_release_match.groups()[0]
+                canonical_ver = ov[:-len(pre_rel_str)].rstrip('.')
+                if canonical_ver not in versions_by_date:
+                    # This canonical version was never tagged, so we
+                    # do not want to collapse the pre-releases. Reset
+                    # to the original version.
+                    canonical_ver = ov
+                else:
+                    LOG.debug('combining into %r', canonical_ver)
+            else:
+                canonical_ver = ov
+            if canonical_ver not in files_and_tags:
+                files_and_tags[canonical_ver] = []
+            files_and_tags[canonical_ver].extend(collapsing[ov])
 
     # Only return the parts of files_and_tags that actually have
     # filenames associated with the versions.

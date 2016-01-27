@@ -33,6 +33,7 @@ class ReleaseNotesDirective(rst.Directive):
         'relnotessubdir': directives.unchanged,
         'notesdir': directives.unchanged,
         'version': directives.unchanged,
+        'collapse-pre-releases': directives.flag,
     }
 
     def run(self):
@@ -50,12 +51,16 @@ class ReleaseNotesDirective(rst.Directive):
                                           defaults.RELEASE_NOTES_SUBDIR)
         notessubdir = self.options.get('notesdir', defaults.NOTES_SUBDIR)
         version_opt = self.options.get('version')
+        collapse = self.options.get('collapse-pre-releases')
 
         notesdir = os.path.join(relnotessubdir, notessubdir)
         info('scanning %s for %s release notes' %
              (os.path.join(reporoot, notesdir), branch or 'current branch'))
 
-        notes = scanner.get_notes_by_version(reporoot, notesdir, branch)
+        notes = scanner.get_notes_by_version(
+            reporoot, notesdir, branch,
+            collapse_pre_releases=collapse,
+        )
         if version_opt is not None:
             versions = [
                 v.strip()

@@ -21,7 +21,11 @@ def report_cmd(args):
     "Generates a release notes report"
     reporoot = args.reporoot.rstrip('/') + '/'
     notesdir = utils.get_notes_dir(args)
-    notes = scanner.get_notes_by_version(reporoot, notesdir, args.branch)
+    collapse = args.collapse_pre_releases
+    notes = scanner.get_notes_by_version(
+        reporoot, notesdir, args.branch,
+        collapse_pre_releases=collapse,
+    )
     if args.version:
         versions = args.version
     else:

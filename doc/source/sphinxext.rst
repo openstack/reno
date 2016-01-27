@@ -46,6 +46,12 @@ Enable the extension by adding ``'reno.sphinxext'`` to the
      A comma separated list of versions to include in the notes. The
      default is to include all versions found on ``branch``.
 
+   *collapse-pre-releases*
+
+     A flag indicating that notes attached to pre-release versions
+     should be incorporated into the notes for the final release,
+     after the final release is tagged.
+
 Examples
 ========
 

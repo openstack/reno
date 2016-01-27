@@ -519,6 +519,83 @@ class PreReleaseTest(Base):
             results,
         )
 
+    def test_collapse(self):
+        files = []
+        self._make_python_package()
+        files.append(self._add_notes_file('slug1'))
+        self._run_git('tag', '-s', '-m', 'alpha tag', '1.0.0.0a1')
+        files.append(self._add_notes_file('slug2'))
+        self._run_git('tag', '-s', '-m', 'beta tag', '1.0.0.0b1')
+        files.append(self._add_notes_file('slug3'))
+        self._run_git('tag', '-s', '-m', 'release candidate tag', '1.0.0.0rc1')
+        files.append(self._add_notes_file('slug4'))
+        self._run_git('tag', '-s', '-m', 'full release tag', '1.0.0')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+            collapse_pre_releases=True,
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0': files,
+             },
+            results,
+        )
+
+    def test_collapse_without_full_release(self):
+        self._make_python_package()
+        f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'alpha tag', '1.0.0.0a1')
+        f2 = self._add_notes_file('slug2')
+        self._run_git('tag', '-s', '-m', 'beta tag', '1.0.0.0b1')
+        f3 = self._add_notes_file('slug3')
+        self._run_git('tag', '-s', '-m', 'release candidate tag', '1.0.0.0rc1')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+            collapse_pre_releases=True,
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0.0a1': [f1],
+             '1.0.0.0b1': [f2],
+             '1.0.0.0rc1': [f3],
+             },
+            results,
+        )
+
+    def test_collapse_without_notes(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'earlier tag', '0.1.0')
+        f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'alpha tag', '1.0.0.0a1')
+        f2 = self._add_notes_file('slug2')
+        self._run_git('tag', '-s', '-m', 'beta tag', '1.0.0.0b1')
+        f3 = self._add_notes_file('slug3')
+        self._run_git('tag', '-s', '-m', 'release candidate tag', '1.0.0.0rc1')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+            collapse_pre_releases=True,
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0.0a1': [f1],
+             '1.0.0.0b1': [f2],
+             '1.0.0.0rc1': [f3],
+             },
+            results,
+        )
+
 
 class MergeCommitTest(Base):
 
