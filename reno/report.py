@@ -25,6 +25,7 @@ def report_cmd(args):
     notes = scanner.get_notes_by_version(
         reporoot, notesdir, args.branch,
         collapse_pre_releases=collapse,
+        earliest_version=args.earliest_version,
     )
     if args.version:
         versions = args.version

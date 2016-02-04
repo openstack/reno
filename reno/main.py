@@ -82,6 +82,11 @@ def main(argv=sys.argv[1:]):
         default=False,
         help='combine pre-releases with their final release',
     )
+    do_list.add_argument(
+        '--earliest-version',
+        default=None,
+        help='stop when this version is reached in the history',
+    )
     do_list.set_defaults(func=lister.list_cmd)
 
     do_report = subparsers.add_parser(
@@ -113,6 +118,11 @@ def main(argv=sys.argv[1:]):
         action='store_true',
         default=False,
         help='combine pre-releases with their final release',
+    )
+    do_report.add_argument(
+        '--earliest-version',
+        default=None,
+        help='stop when this version is reached in the history',
     )
     do_report.set_defaults(func=report.report_cmd)
 

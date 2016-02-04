@@ -459,6 +459,30 @@ class BasicTest(Base):
             results,
         )
 
+    def test_limit_by_earliest_version(self):
+        self._make_python_package()
+        self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f2 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'middle tag', '2.0.0')
+        f3 = self._add_notes_file()
+        self._run_git('tag', '-s', '-m', 'last tag', '3.0.0')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+            earliest_version='2.0.0',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'2.0.0': [f2],
+             '3.0.0': [f3],
+             },
+            results,
+        )
+
 
 class PreReleaseTest(Base):
 

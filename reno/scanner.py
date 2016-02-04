@@ -150,7 +150,8 @@ def _get_version_tags_on_branch(reporoot, branch):
 
 
 def get_notes_by_version(reporoot, notesdir, branch=None,
-                         collapse_pre_releases=False):
+                         collapse_pre_releases=False,
+                         earliest_version=None):
     """Return an OrderedDict mapping versions to lists of notes files.
 
     The versions are presented in reverse chronological order.
@@ -337,6 +338,10 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
         # same order, but it doesn't really matter what order that is,
         # so just sort based on the unique id.
         trimmed[ov] = sorted(files_and_tags[ov])
+        # If we have been told to stop at a version, we can do that
+        # now.
+        if earliest_version and ov == earliest_version:
+            break
 
     LOG.debug('[reno] found %d versions and %d files',
               len(trimmed.keys()), sum(len(ov) for ov in trimmed.values()))

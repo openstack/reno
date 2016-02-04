@@ -52,6 +52,13 @@ Enable the extension by adding ``'reno.sphinxext'`` to the
      should be incorporated into the notes for the final release,
      after the final release is tagged.
 
+   *earliest-version*
+
+     A string containing the version number of the earliest version to
+     be included. For example, when scanning a branch, this is
+     typically set to the version used to create the branch to limit
+     the output to only versions on that branch.
+
 Examples
 ========
 
