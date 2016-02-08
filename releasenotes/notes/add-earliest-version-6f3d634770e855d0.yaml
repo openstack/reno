@@ -1,0 +1,6 @@
+---
+features:
+  - Add the ability to limit queries by stopping at an "earliest
+    version". This is intended to be used when scanning a branch, for
+    example, to stop at a point when the branch was created and not
+    include all of the history from the parent branch.
