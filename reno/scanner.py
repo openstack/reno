@@ -150,7 +150,7 @@ def _get_version_tags_on_branch(reporoot, branch):
 
 
 def get_notes_by_version(reporoot, notesdir, branch=None,
-                         collapse_pre_releases=False,
+                         collapse_pre_releases=True,
                          earliest_version=None):
     """Return an OrderedDict mapping versions to lists of notes files.
 
