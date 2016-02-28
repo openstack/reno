@@ -65,7 +65,7 @@ class GPGKeyFixture(fixtures.Fixture):
         gnupg_version_re = re.compile('^gpg\s.*\s([\d+])\.([\d+])\.([\d+])')
         gnupg_version = utils.check_output(['gpg', '--version'],
                                            cwd=tempdir.path)
-        for line in gnupg_version[0].split('\n'):
+        for line in gnupg_version.split('\n'):
             gnupg_version = gnupg_version_re.match(line)
             if gnupg_version:
                 gnupg_version = (int(gnupg_version.group(1)),
@@ -98,17 +98,17 @@ class GPGKeyFixture(fixtures.Fixture):
         # Note that --quick-random (--debug-quick-random in GnuPG 2.x)
         # does not have a corresponding preferences file setting and
         # must be passed explicitly on the command line instead
-        # if gnupg_version[0] == 1:
-        #     gnupg_random = '--quick-random'
-        # elif gnupg_version[0] >= 2:
-        #     gnupg_random = '--debug-quick-random'
-        # else:
-        #     gnupg_random = ''
-        subprocess.check_call(
-            ['gpg', '--gen-key', '--batch',
-             # gnupg_random,
-             config_file],
-            cwd=tempdir.path)
+        if gnupg_version[0] == 1:
+            gnupg_random = '--quick-random'
+        elif gnupg_version[0] >= 2:
+            gnupg_random = '--debug-quick-random'
+        else:
+            gnupg_random = ''
+        cmd = ['gpg', '--gen-key', '--batch']
+        if gnupg_random:
+            cmd.append(gnupg_random)
+        cmd.append(config_file)
+        subprocess.check_call(cmd, cwd=tempdir.path)
 
 
 class Base(base.TestCase):
