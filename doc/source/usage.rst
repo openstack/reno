@@ -64,6 +64,13 @@ upgrade
   A list of upgrade notes in the release. For example, if a database
   schema alteration is needed.
 
+deprecations
+
+  A list of features, APIs, configuration options to be deprecated in the
+  release. Deprecations should not be used for something that is removed in the
+  release, use upgrade section instead. Deprecation should allow time for users
+  to make necessary changes for the removal to happen in a future release.
+
 critical
 
   A list of *fixed* critical bugs.
@@ -96,6 +103,8 @@ entirely.
      - List known issues here, or remove this section.
    upgrade:
      - List upgrade notes here, or remove this section.
+   deprecations:
+     - List deprecation notes here, or remove this section
    critical:
      - Add critical notes here, or remove this section.
    security:
