@@ -79,8 +79,14 @@ def main(argv=sys.argv[1:]):
     do_list.add_argument(
         '--collapse-pre-releases',
         action='store_true',
-        default=False,
+        default=True,
         help='combine pre-releases with their final release',
+    )
+    do_list.add_argument(
+        '--no-collapse-pre-releases',
+        action='store_false',
+        dest='collapse_pre_releases',
+        help='show pre-releases separately',
     )
     do_list.add_argument(
         '--earliest-version',
@@ -116,8 +122,14 @@ def main(argv=sys.argv[1:]):
     do_report.add_argument(
         '--collapse-pre-releases',
         action='store_true',
-        default=False,
+        default=True,
         help='combine pre-releases with their final release',
+    )
+    do_report.add_argument(
+        '--no-collapse-pre-releases',
+        action='store_false',
+        dest='collapse_pre_releases',
+        help='show pre-releases separately',
     )
     do_report.add_argument(
         '--earliest-version',
