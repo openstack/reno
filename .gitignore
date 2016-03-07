@@ -52,3 +52,4 @@ ChangeLog
 *~
 .*.swp
 .*sw?
+/cover/
