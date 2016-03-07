@@ -39,6 +39,10 @@ _query_args = [
     (('--earliest-version',),
      dict(default=None,
           help='stop when this version is reached in the history')),
+    (('--ignore-cache',),
+     dict(default=False,
+          action='store_true',
+          help='if there is a cache file present, do not use it')),
 ]
 
 

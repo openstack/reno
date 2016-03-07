@@ -53,3 +53,4 @@ ChangeLog
 .*.swp
 .*sw?
 /cover/
+/releasenotes/notes/reno.cache

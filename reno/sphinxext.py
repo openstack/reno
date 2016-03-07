@@ -14,7 +14,7 @@ import os.path
 
 from reno import defaults
 from reno import formatter
-from reno import scanner
+from reno import loader
 
 from docutils import nodes
 from docutils.parsers import rst
@@ -59,8 +59,10 @@ class ReleaseNotesDirective(rst.Directive):
         info('scanning %s for %s release notes' %
              (os.path.join(reporoot, notesdir), branch or 'current branch'))
 
-        notes = scanner.get_notes_by_version(
-            reporoot, notesdir, branch,
+        ldr = loader.Loader(
+            reporoot=reporoot,
+            notesdir=notesdir,
+            branch=branch,
             collapse_pre_releases=collapse,
             earliest_version=earliest_version,
         )
@@ -70,10 +72,9 @@ class ReleaseNotesDirective(rst.Directive):
                 for v in version_opt.split(',')
             ]
         else:
-            versions = notes.keys()
+            versions = ldr.versions
         text = formatter.format_report(
-            reporoot,
-            notes,
+            ldr,
             versions,
             title=title,
         )
