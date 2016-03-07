@@ -127,7 +127,9 @@ def main(argv=sys.argv[1:]):
     do_cache.add_argument(
         '--output', '-o',
         default=None,
-        help='output filename, defaults to stdout',
+        help=('output filename, '
+              'defaults to the cache file within the notesdir, '
+              'use "-" for stdout'),
     )
     _build_query_arg_group(do_cache)
     do_cache.set_defaults(func=cache.cache_cmd)
