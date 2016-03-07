@@ -19,6 +19,33 @@ from reno import defaults
 from reno import lister
 from reno import report
 
+_query_args = [
+    (('--version',),
+     dict(default=[],
+          action='append',
+          help='the version(s) to include, defaults to all')),
+    (('--branch',),
+     dict(default=None,
+          help='the branch to scan, defaults to the current')),
+    (('--collapse-pre-releases',),
+     dict(action='store_true',
+          default=True,
+          help='combine pre-releases with their final release')),
+    (('--no-collapse-pre-releases',),
+     dict(action='store_false',
+          dest='collapse_pre_releases',
+          help='show pre-releases separately')),
+    (('--earliest-version',),
+     dict(default=None,
+          help='stop when this version is reached in the history')),
+]
+
+
+def _build_query_arg_group(parser):
+    group = parser.add_argument_group('query')
+    for args, kwds in _query_args:
+        group.add_argument(*args, **kwds)
+
 
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser()
@@ -61,37 +88,10 @@ def main(argv=sys.argv[1:]):
         'list',
         help='list notes files based on query arguments',
     )
+    _build_query_arg_group(do_list)
     do_list.add_argument(
         'reporoot',
         help='root of the git repository',
-    )
-    do_list.add_argument(
-        '--version',
-        default=[],
-        action='append',
-        help='the version(s) to include, defaults to all',
-    )
-    do_list.add_argument(
-        '--branch',
-        default=None,
-        help='the branch to scan, defaults to the current',
-    )
-    do_list.add_argument(
-        '--collapse-pre-releases',
-        action='store_true',
-        default=True,
-        help='combine pre-releases with their final release',
-    )
-    do_list.add_argument(
-        '--no-collapse-pre-releases',
-        action='store_false',
-        dest='collapse_pre_releases',
-        help='show pre-releases separately',
-    )
-    do_list.add_argument(
-        '--earliest-version',
-        default=None,
-        help='stop when this version is reached in the history',
     )
     do_list.set_defaults(func=lister.list_cmd)
 
@@ -108,34 +108,7 @@ def main(argv=sys.argv[1:]):
         default=None,
         help='output filename, defaults to stdout',
     )
-    do_report.add_argument(
-        '--branch',
-        default=None,
-        help='the branch to scan, defaults to the current',
-    )
-    do_report.add_argument(
-        '--version',
-        default=[],
-        action='append',
-        help='the version(s) to include, defaults to all',
-    )
-    do_report.add_argument(
-        '--collapse-pre-releases',
-        action='store_true',
-        default=True,
-        help='combine pre-releases with their final release',
-    )
-    do_report.add_argument(
-        '--no-collapse-pre-releases',
-        action='store_false',
-        dest='collapse_pre_releases',
-        help='show pre-releases separately',
-    )
-    do_report.add_argument(
-        '--earliest-version',
-        default=None,
-        help='stop when this version is reached in the history',
-    )
+    _build_query_arg_group(do_report)
     do_report.set_defaults(func=report.report_cmd)
 
     args = parser.parse_args()
