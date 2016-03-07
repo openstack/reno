@@ -15,6 +15,7 @@
 from reno import create
 from reno.tests import base
 
+import fixtures
 import mock
 
 
@@ -29,3 +30,24 @@ class TestPickFileName(base.TestCase):
             'somepath',
             'someslug',
         )
+
+    @mock.patch('os.path.exists')
+    def test_random_enough(self, exists):
+        exists.return_value = False
+        result = create._pick_note_file_name('somepath', 'someslug')
+        self.assertIn('somepath', result)
+        self.assertIn('someslug', result)
+
+
+class TestCreate(base.TestCase):
+
+    def setUp(self):
+        super(TestCreate, self).setUp()
+        self.tmpdir = self.useFixture(fixtures.TempDir()).path
+
+    def test_create_from_template(self):
+        filename = create._pick_note_file_name(self.tmpdir, 'theslug')
+        create._make_note_file(filename)
+        with open(filename, 'r') as f:
+            body = f.read()
+        self.assertEqual(create._TEMPLATE, body)
