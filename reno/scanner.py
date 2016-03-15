@@ -197,6 +197,9 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
     # renames.
     last_name_by_id = {}
 
+    # Remember uniqueids that have had files deleted.
+    uniqueids_deleted = collections.defaultdict(set)
+
     # FIXME(dhellmann): This might need to be more line-oriented for
     # longer histories.
     log_cmd = [
@@ -256,22 +259,45 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
         for f in filenames:
             # Updated as older tags are found, handling edits to release
             # notes.
-            LOG.debug('setting earliest reference to %s to %s' %
-                      (f, tags[0]))
             uniqueid = _get_unique_id(f)
+            LOG.debug('%s: found file %s',
+                      uniqueid, f)
+            LOG.debug('%s: setting earliest reference to %s' %
+                      (uniqueid, tags[0]))
             earliest_seen[uniqueid] = tags[0]
             if uniqueid in last_name_by_id:
                 # We already have a filename for this id from a
                 # new commit, so use that one in case the name has
                 # changed.
-                LOG.debug('%s was seen before' % f)
+                LOG.debug('%s: was seen before in %s',
+                          uniqueid, last_name_by_id[uniqueid])
                 continue
-            if _file_exists_at_commit(reporoot, f, sha):
-                # Remember this filename as the most recent version of
-                # the unique id we have seen, in case the name
-                # changed from an older commit.
-                last_name_by_id[uniqueid] = (f, sha)
-                LOG.debug('remembering %s as filename for %s' % (f, uniqueid))
+            elif _file_exists_at_commit(reporoot, f, sha):
+                LOG.debug('%s: looking for %s in deleted files %s',
+                          uniqueid, f, uniqueids_deleted[uniqueid])
+                if f in uniqueids_deleted[uniqueid]:
+                    # The file exists in the commit, but was deleted
+                    # later in the history.
+                    LOG.debug('%s: skipping deleted file %s',
+                              uniqueid, f)
+                else:
+                    # Remember this filename as the most recent version of
+                    # the unique id we have seen, in case the name
+                    # changed from an older commit.
+                    last_name_by_id[uniqueid] = (f, sha)
+                    LOG.debug('%s: remembering %s as filename',
+                              uniqueid, f)
+            else:
+                # Track files that have been deleted. The rename logic
+                # above checks for repeated references to files that
+                # are deleted later, and the inversion logic below
+                # checks for any remaining values and skips those
+                # entries.
+                LOG.debug('%s: saw a file that no longer exists',
+                          uniqueid)
+                uniqueids_deleted[uniqueid].add(f)
+                LOG.debug('%s: deleted files %s',
+                          uniqueid, uniqueids_deleted[uniqueid])
 
     # Invert earliest_seen to make a list of notes files for each
     # version.
@@ -283,6 +309,9 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
     for uniqueid, version in earliest_seen.items():
         try:
             base, sha = last_name_by_id[uniqueid]
+            if base in uniqueids_deleted.get(uniqueid, set()):
+                LOG.debug('skipping deleted note %s' % uniqueid)
+                continue
             files_and_tags[version].append((base, sha))
         except KeyError:
             # Unable to find the file again, skip it to avoid breaking

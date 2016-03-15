@@ -483,6 +483,53 @@ class BasicTest(Base):
             results,
         )
 
+    def test_delete_file(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file('slug1')
+        f2 = self._add_notes_file('slug2')
+        self._run_git('rm', f1)
+        self._git_commit('remove note file')
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'2.0.0': [f2],
+             },
+            results,
+        )
+
+    def test_rename_then_delete_file(self):
+        self._make_python_package()
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file('slug1')
+        f2 = f1.replace('slug1', 'slug2')
+        self._run_git('mv', f1, f2)
+        self._git_commit('rename note file')
+        self._run_git('rm', f2)
+        self._git_commit('remove note file')
+        f3 = self._add_notes_file('slug3')
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        raw_results = scanner.get_notes_by_version(
+            self.reporoot,
+            'releasenotes/notes',
+        )
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'2.0.0': [f3],
+             },
+            results,
+        )
+
 
 class PreReleaseTest(Base):
 

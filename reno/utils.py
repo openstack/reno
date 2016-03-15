@@ -51,9 +51,11 @@ def check_output(*args, **kwds):
     output, errors = process.communicate()
     retcode = process.poll()
     if errors:
-        LOG.debug('error output from (%s): %s',
-                  ' '.join(*args),
-                  errors.rstrip())
+        LOG.debug('ran: %s', ' '.join(*args))
+        LOG.debug('returned: %s', retcode)
+        LOG.debug('error output: %s', errors.rstrip())
+        LOG.debug('regular output: %s', output.rstrip())
     if retcode:
+        LOG.debug('raising error')
         raise subprocess.CalledProcessError(retcode, args, output=output)
     return output.decode('utf-8')
