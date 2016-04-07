@@ -52,7 +52,9 @@ class ReleaseNotesDirective(rst.Directive):
                                           defaults.RELEASE_NOTES_SUBDIR)
         notessubdir = self.options.get('notesdir', defaults.NOTES_SUBDIR)
         version_opt = self.options.get('version')
-        collapse = self.options.get('collapse-pre-releases')
+        # FIXME(dhellmann): Force this flag True for now and figure
+        # out how Sphinx passes a "false" flag later.
+        collapse = True  # 'collapse-pre-releases' in self.options
         earliest_version = self.options.get('earliest-version')
 
         notesdir = os.path.join(relnotessubdir, notessubdir)
