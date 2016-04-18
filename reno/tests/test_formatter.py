@@ -12,12 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import textwrap
-
 from reno import formatter
+from reno import loader
 from reno.tests import base
 
-from oslotest import mockpatch
+import mock
 
 
 class TestFormatter(base.TestCase):
@@ -30,19 +29,20 @@ class TestFormatter(base.TestCase):
     versions = ['0.0.0', '1.0.0']
 
     note_bodies = {
-        'note1': textwrap.dedent("""
-        prelude: >
-          This is the prelude.
-        """),
-        'note2': textwrap.dedent("""
-        issues:
-          - This is the first issue.
-          - This is the second issue.
-        """),
-        'note3': textwrap.dedent("""
-        features:
-          - We added a feature!
-        """)
+        'note1': {
+            'prelude': 'This is the prelude.',
+        },
+        'note2': {
+            'issues': [
+                'This is the first issue.',
+                'This is the second issue.',
+            ],
+        },
+        'note3': {
+            'features': [
+                'We added a feature!',
+            ],
+        },
     }
 
     def _get_note_body(self, reporoot, filename, sha):
@@ -50,15 +50,26 @@ class TestFormatter(base.TestCase):
 
     def setUp(self):
         super(TestFormatter, self).setUp()
-        self.useFixture(
-            mockpatch.Patch('reno.scanner.get_file_at_commit',
-                            new=self._get_note_body)
-        )
+
+        def _load(ldr):
+            ldr._scanner_output = self.scanner_output
+            ldr._cache = {
+                'file-contents': self.note_bodies
+            }
+
+        with mock.patch('reno.loader.Loader._load_data', _load):
+            self.ldr = loader.Loader(
+                reporoot='reporoot',
+                notesdir='notesdir',
+                branch=None,
+                collapse_pre_releases=None,
+                earliest_version=None,
+                ignore_cache=False,
+            )
 
     def test_with_title(self):
         result = formatter.format_report(
-            reporoot=None,
-            scanner_output=self.scanner_output,
+            loader=self.ldr,
             versions_to_include=self.versions,
             title='This is the title',
         )
@@ -66,8 +77,7 @@ class TestFormatter(base.TestCase):
 
     def test_versions(self):
         result = formatter.format_report(
-            reporoot=None,
-            scanner_output=self.scanner_output,
+            loader=self.ldr,
             versions_to_include=self.versions,
             title='This is the title',
         )
@@ -76,8 +86,7 @@ class TestFormatter(base.TestCase):
 
     def test_without_title(self):
         result = formatter.format_report(
-            reporoot=None,
-            scanner_output=self.scanner_output,
+            loader=self.ldr,
             versions_to_include=self.versions,
             title=None,
         )
@@ -85,8 +94,7 @@ class TestFormatter(base.TestCase):
 
     def test_section_order(self):
         result = formatter.format_report(
-            reporoot=None,
-            scanner_output=self.scanner_output,
+            loader=self.ldr,
             versions_to_include=self.versions,
             title=None,
         )

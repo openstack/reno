@@ -12,10 +12,6 @@
 
 from __future__ import print_function
 
-from reno import scanner
-
-import yaml
-
 
 _SECTION_ORDER = [
     ('features', 'New Features'),
@@ -41,7 +37,7 @@ def _indent_for_list(text, prefix='  '):
     ]) + '\n'
 
 
-def format_report(reporoot, scanner_output, versions_to_include, title=None):
+def format_report(loader, versions_to_include, title=None):
     report = []
     if title:
         report.append('=' * len(title))
@@ -52,14 +48,9 @@ def format_report(reporoot, scanner_output, versions_to_include, title=None):
     # Read all of the notes files.
     file_contents = {}
     for version in versions_to_include:
-        for filename, sha in scanner_output[version]:
-            body = scanner.get_file_at_commit(
-                reporoot,
-                filename,
-                sha,
-            )
-            y = yaml.safe_load(body)
-            file_contents[filename] = y
+        for filename, sha in loader[version]:
+            body = loader.parse_note_file(filename, sha)
+            file_contents[filename] = body
 
     for version in versions_to_include:
         report.append(version)
@@ -67,7 +58,7 @@ def format_report(reporoot, scanner_output, versions_to_include, title=None):
         report.append('')
 
         # Add the preludes.
-        notefiles = scanner_output[version]
+        notefiles = loader[version]
         for n, sha in notefiles:
             if 'prelude' in file_contents[n]:
                 report.append(file_contents[n]['prelude'])

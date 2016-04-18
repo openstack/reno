@@ -14,7 +14,7 @@ from __future__ import print_function
 
 import logging
 
-from reno import scanner
+from reno import loader
 from reno import utils
 
 LOG = logging.getLogger(__name__)
@@ -26,17 +26,19 @@ def list_cmd(args):
     reporoot = args.reporoot.rstrip('/') + '/'
     notesdir = utils.get_notes_dir(args)
     collapse = args.collapse_pre_releases
-    notes = scanner.get_notes_by_version(
-        reporoot, notesdir, args.branch,
+    ldr = loader.Loader(
+        reporoot=reporoot,
+        notesdir=notesdir,
+        branch=args.branch,
         collapse_pre_releases=collapse,
         earliest_version=args.earliest_version,
     )
     if args.version:
         versions = args.version
     else:
-        versions = notes.keys()
+        versions = ldr.versions
     for version in versions:
-        notefiles = notes[version]
+        notefiles = ldr[version]
         print(version)
         for n, sha in notefiles:
             if n.startswith(reporoot):
