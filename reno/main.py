@@ -14,6 +14,7 @@ import argparse
 import logging
 import sys
 
+from reno import cache
 from reno import create
 from reno import defaults
 from reno import lister
@@ -110,6 +111,22 @@ def main(argv=sys.argv[1:]):
     )
     _build_query_arg_group(do_report)
     do_report.set_defaults(func=report.report_cmd)
+
+    do_cache = subparsers.add_parser(
+        'cache',
+        help='generate release notes cache',
+    )
+    do_cache.add_argument(
+        'reporoot',
+        help='root of the git repository',
+    )
+    do_cache.add_argument(
+        '--output', '-o',
+        default=None,
+        help='output filename, defaults to stdout',
+    )
+    _build_query_arg_group(do_cache)
+    do_cache.set_defaults(func=cache.cache_cmd)
 
     args = parser.parse_args()
 
