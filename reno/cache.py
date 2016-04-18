@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from reno import loader
 from reno import scanner
 from reno import utils
 
@@ -62,10 +63,15 @@ def cache_cmd(args):
     "Generates a release notes cache"
     reporoot = args.reporoot.rstrip('/') + '/'
     notesdir = utils.get_notes_dir(args)
-    if args.output:
-        stream = open(args.output, 'w')
-    else:
+    if args.output == '-':
         stream = sys.stdout
+        close_stream = False
+    elif args.output:
+        stream = open(args.output, 'w')
+        close_stream = True
+    else:
+        stream = open(loader.get_cache_filename(reporoot, notesdir), 'w')
+        close_stream = True
     try:
         cache = build_cache_db(
             reporoot=reporoot,
@@ -83,6 +89,6 @@ def cache_cmd(args):
             encoding='utf-8',
         )
     finally:
-        if args.output:
+        if close_stream:
             stream.close()
     return
