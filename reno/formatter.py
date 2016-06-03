@@ -68,6 +68,7 @@ def format_report(loader, versions_to_include, title=None):
             notes = [
                 n
                 for fn, sha in notefiles
+                if file_contents[fn].get(section_name)
                 for n in file_contents[fn].get(section_name, [])
             ]
             if notes:

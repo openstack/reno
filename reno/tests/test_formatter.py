@@ -42,6 +42,7 @@ class TestFormatter(base.TestCase):
             'features': [
                 'We added a feature!',
             ],
+            'upgrade': None,
         },
     }
 
