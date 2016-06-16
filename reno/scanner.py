@@ -233,11 +233,12 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
         # files. Even if this list ends up empty, we continue doing
         # the other processing so that we record all of the known
         # versions.
-        filenames = [
-            f
-            for f in hlines[2:]
-            if fnmatch.fnmatch(f, notesdir + '/*.yaml')
-        ]
+        filenames = []
+        for f in hlines[2:]:
+            if fnmatch.fnmatch(f, notesdir + '/*.yaml'):
+                filenames.append(f)
+            elif fnmatch.fnmatch(f, notesdir + '/*'):
+                LOG.warn('found and ignored extra file %s', f)
 
         # If there are no tags in this block, assume the most recently
         # seen version.
