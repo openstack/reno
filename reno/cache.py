@@ -10,13 +10,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import os
+import sys
+
 from reno import loader
 from reno import scanner
 from reno import utils
 
 import yaml
-
-import sys
 
 
 def build_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
@@ -59,27 +60,41 @@ def build_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
     return cache
 
 
-def cache_cmd(args):
-    "Generates a release notes cache"
-    reporoot = args.reporoot.rstrip('/') + '/'
-    notesdir = utils.get_notes_dir(args)
-    if args.output == '-':
+def write_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
+                   versions_to_include, earliest_version,
+                   outfilename=None):
+    """Create a cache database file for the release notes data.
+
+    Build the cache database from scanning the project history and
+    write it to a file within the project.
+
+    By default, the data is written to the same file the scanner will
+    try to read when it cannot look at the git history. If outfilename
+    is given and is '-' the data is written to stdout
+    instead. Otherwise, if outfilename is given, the data overwrites
+    the named file.
+
+    """
+    if outfilename == '-':
         stream = sys.stdout
         close_stream = False
-    elif args.output:
-        stream = open(args.output, 'w')
+    elif outfilename:
+        stream = open(outfilename, 'w')
         close_stream = True
     else:
-        stream = open(loader.get_cache_filename(reporoot, notesdir), 'w')
+        outfilename = loader.get_cache_filename(reporoot, notesdir)
+        if not os.path.exists(os.path.dirname(outfilename)):
+            os.makedirs(os.path.dirname(outfilename))
+        stream = open(outfilename, 'w')
         close_stream = True
     try:
         cache = build_cache_db(
             reporoot=reporoot,
             notesdir=notesdir,
-            branch=args.branch,
-            collapse_pre_releases=args.collapse_pre_releases,
-            versions_to_include=args.version,
-            earliest_version=args.earliest_version,
+            branch=branch,
+            collapse_pre_releases=collapse_pre_releases,
+            versions_to_include=versions_to_include,
+            earliest_version=earliest_version,
         )
         yaml.safe_dump(
             cache,
@@ -91,4 +106,19 @@ def cache_cmd(args):
     finally:
         if close_stream:
             stream.close()
+
+
+def cache_cmd(args):
+    "Generates a release notes cache"
+    reporoot = args.reporoot.rstrip('/') + '/'
+    notesdir = utils.get_notes_dir(args)
+    write_cache_db(
+        reporoot=reporoot,
+        notesdir=notesdir,
+        branch=args.branch,
+        collapse_pre_releases=args.collapse_pre_releases,
+        versions_to_include=args.version,
+        earliest_version=args.earliest_version,
+        outfilename=args.output,
+    )
     return
