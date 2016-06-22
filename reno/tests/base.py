@@ -15,9 +15,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from oslotest import base
+import fixtures
+import testtools
 
 
-class TestCase(base.BaseTestCase):
+class TestCase(testtools.TestCase):
 
     """Test case base class for all unit tests."""
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+        self._stdout_fixture = fixtures.StringStream('stdout')
+        self.stdout = self.useFixture(self._stdout_fixture).stream
+        self.useFixture(fixtures.MonkeyPatch('sys.stdout', self.stdout))
+        self._stderr_fixture = fixtures.StringStream('stderr')
+        self.stderr = self.useFixture(self._stderr_fixture).stream
+        self.useFixture(fixtures.MonkeyPatch('sys.stderr', self.stderr))

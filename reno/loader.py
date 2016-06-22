@@ -15,6 +15,7 @@ import os.path
 
 from reno import scanner
 
+import six
 import yaml
 
 LOG = logging.getLogger(__name__)
@@ -101,9 +102,44 @@ class Loader(object):
         return self._scanner_output[version]
 
     def parse_note_file(self, filename, sha):
-        "Return the data structure encoded in the note file."
+        """Return the data structure encoded in the note file.
+
+        Emit warnings for content that does not look valid in some
+        way, but return it anway for backwards-compatibility.
+
+        """
         if self._cache:
-            return self._cache['file-contents'][filename]
+            content = self._cache['file-contents'][filename]
         else:
             body = scanner.get_file_at_commit(self._reporoot, filename, sha)
-            return yaml.safe_load(body)
+            content = yaml.safe_load(body)
+
+        for section_name, section_content in content.items():
+            if section_name == 'prelude':
+                if not isinstance(section_content, six.string_types):
+                    LOG.warning(
+                        ('The prelude section of %s '
+                         'does not parse as a single string. '
+                         'Is the YAML input escaped properly?') %
+                        filename,
+                    )
+            else:
+                if not isinstance(section_content, list):
+                    LOG.warning(
+                        ('The %s section of %s '
+                         'does not parse as a list of strings. '
+                         'Is the YAML input escaped properly?') % (
+                             section_name, filename),
+                    )
+                else:
+                    for item in section_content:
+                        if not isinstance(item, six.string_types):
+                            LOG.warning(
+                                ('The item %r in the %s section of %s '
+                                 'parses as a %s instead of a string. '
+                                 'Is the YAML input escaped properly?'
+                                 ) % (item, section_name,
+                                      filename, type(item)),
+                            )
+
+        return content
