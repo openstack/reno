@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from reno.tests import base
-from reno import utils
-
 import mock
 import six
+
+from reno.tests import base
+from reno import utils
 
 
 class TestGetRandomString(base.TestCase):

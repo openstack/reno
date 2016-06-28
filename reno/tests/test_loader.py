@@ -15,13 +15,13 @@
 import logging
 import textwrap
 
-from reno import loader
-from reno.tests import base
-
 import fixtures
 import mock
 import six
 import yaml
+
+from reno import loader
+from reno.tests import base
 
 
 class TestValidate(base.TestCase):

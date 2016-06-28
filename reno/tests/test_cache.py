@@ -14,12 +14,11 @@
 
 import textwrap
 
-from reno import cache
-from reno.tests import base
-
+import mock
 from oslotest import mockpatch
 
-import mock
+from reno import cache
+from reno.tests import base
 
 
 class TestCache(base.TestCase):

@@ -19,14 +19,14 @@ import re
 import subprocess
 import textwrap
 
+import fixtures
+import mock
+from testtools.content import text_content
+
 from reno import create
 from reno import scanner
 from reno.tests import base
 from reno import utils
-
-import fixtures
-import mock
-from testtools.content import text_content
 
 
 _SETUP_TEMPLATE = """

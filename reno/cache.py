@@ -13,11 +13,11 @@
 import os
 import sys
 
+import yaml
+
 from reno import loader
 from reno import scanner
 from reno import utils
-
-import yaml
 
 
 def build_cache_db(reporoot, notesdir, branch, collapse_pre_releases,

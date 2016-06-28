@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
+
 from reno import formatter
 from reno import loader
 from reno.tests import base
-
-import mock
 
 
 class TestFormatter(base.TestCase):

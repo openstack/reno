@@ -12,15 +12,15 @@
 
 import os.path
 
-from reno import defaults
-from reno import formatter
-from reno import loader
-
 from docutils import nodes
 from docutils.parsers import rst
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from sphinx.util.nodes import nested_parse_with_titles
+
+from reno import defaults
+from reno import formatter
+from reno import loader
 
 
 class ReleaseNotesDirective(rst.Directive):

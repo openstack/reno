@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from reno import create
-from reno.tests import base
-
 import fixtures
 import mock
+
+from reno import create
+from reno.tests import base
 
 
 class TestPickFileName(base.TestCase):

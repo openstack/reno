@@ -13,10 +13,10 @@
 import logging
 import os.path
 
-from reno import scanner
-
 import six
 import yaml
+
+from reno import scanner
 
 LOG = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class Loader(object):
         """Return the data structure encoded in the note file.
 
         Emit warnings for content that does not look valid in some
-        way, but return it anway for backwards-compatibility.
+        way, but return it anyway for backwards-compatibility.
 
         """
         if self._cache:
