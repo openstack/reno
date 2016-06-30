@@ -32,56 +32,64 @@ prelude: >
     major features or adding release theme details should
     have a prelude.
 features:
-  - List new features here, or remove this section.
+  - |
+    List new features here, or remove this section.
     All of the list items in this section are combined
     when the release notes are rendered, so the text
     needs to be worded so that it does not depend on any
     information only available in another section, such
     as the prelude. This may mean repeating some details.
 issues:
-  - List known issues here, or remove this section.
+  - |
+    List known issues here, or remove this section.
     All of the list items in this section are combined
     when the release notes are rendered, so the text
     needs to be worded so that it does not depend on any
     information only available in another section, such
     as the prelude. This may mean repeating some details.
 upgrade:
-  - List upgrade notes here, or remove this section.
+  - |
+    List upgrade notes here, or remove this section.
     All of the list items in this section are combined
     when the release notes are rendered, so the text
     needs to be worded so that it does not depend on any
     information only available in another section, such
     as the prelude. This may mean repeating some details.
 deprecations:
-  - List deprecations notes here, or remove this section.
+  - |
+    List deprecations notes here, or remove this section.
     All of the list items in this section are combined
     when the release notes are rendered, so the text
     needs to be worded so that it does not depend on any
     information only available in another section, such
     as the prelude. This may mean repeating some details.
 critical:
-  - Add critical notes here, or remove this section.
+  - |
+    Add critical notes here, or remove this section.
     All of the list items in this section are combined
     when the release notes are rendered, so the text
     needs to be worded so that it does not depend on any
     information only available in another section, such
     as the prelude. This may mean repeating some details.
 security:
-  - Add security notes here, or remove this section.
+  - |
+    Add security notes here, or remove this section.
     All of the list items in this section are combined
     when the release notes are rendered, so the text
     needs to be worded so that it does not depend on any
     information only available in another section, such
     as the prelude. This may mean repeating some details.
 fixes:
-  - Add normal bug fixes here, or remove this section.
+  - |
+    Add normal bug fixes here, or remove this section.
     All of the list items in this section are combined
     when the release notes are rendered, so the text
     needs to be worded so that it does not depend on any
     information only available in another section, such
     as the prelude. This may mean repeating some details.
 other:
-  - Add other notes here, or remove this section.
+  - |
+    Add other notes here, or remove this section.
     All of the list items in this section are combined
     when the release notes are rendered, so the text
     needs to be worded so that it does not depend on any
