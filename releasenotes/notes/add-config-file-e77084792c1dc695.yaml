@@ -1,0 +1,10 @@
+---
+prelude: >
+    Reno now supports having a configuration file!
+features:
+  - |
+    Reno now supports having a ``config.yaml`` file in your release notes
+    directory. It will search for file in the directory specified by
+    ``--rel-notes-dir`` and parse it. It will apply whatever options are
+    valid for that particular command. If an option is not relevant to a
+    particular sub-command, it will not attempt to apply them.

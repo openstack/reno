@@ -32,6 +32,7 @@ def list_cmd(args):
         branch=args.branch,
         collapse_pre_releases=collapse,
         earliest_version=args.earliest_version,
+        config=args._config
     )
     if args.version:
         versions = args.version

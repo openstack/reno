@@ -15,6 +15,7 @@ import logging
 import sys
 
 from reno import cache
+from reno import config
 from reno import create
 from reno import defaults
 from reno import lister
@@ -134,7 +135,13 @@ def main(argv=sys.argv[1:]):
     _build_query_arg_group(do_cache)
     do_cache.set_defaults(func=cache.cache_cmd)
 
-    args = parser.parse_args()
+    original_args = parser.parse_args(argv)
+    config.parse_config_into(original_args)
+    # NOTE(sigmavirus24): We parse twice to avoid having to guess if a parsed
+    # option is the default value or not. This allows us to apply the config
+    # to the proper command and then make sure that the command-line values
+    # take precedence
+    args = parser.parse_args(argv, original_args)
 
     logging.basicConfig(
         level=args.verbosity,

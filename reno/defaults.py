@@ -12,3 +12,4 @@
 
 RELEASE_NOTES_SUBDIR = 'releasenotes'
 NOTES_SUBDIR = 'notes'
+RELEASE_NOTES_CONFIG_FILENAME = 'config.yml'

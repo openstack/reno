@@ -147,3 +147,28 @@ repeated).
 Notes are output in the order they are found by ``git log`` looking
 over the history of the branch. This is deterministic, but not
 necessarily predictable or mutable.
+
+Configuring Reno
+================
+
+Reno looks for an optional ``config.yml`` file in your release notes
+directory.  This file may contain optional flags that you might use with a
+command. If the values do not apply to the command, they are ignored in the
+configuration file. For example, a couple reno commands allow you to specify
+
+- ``--branch``
+- ``--earliest-version``
+- ``--collapse-pre-releases``/``--no-collapse-pre-releases``
+- ``--ignore-cache``
+
+So you might write a config file (if you use these often) like:
+
+.. code-block:: yaml
+
+    ---
+    branch: master
+    earliest_version: 12.0.0
+    collapse_pre_releases: false
+
+These will be parsed first and then the CLI options will be applied after
+the config files.
