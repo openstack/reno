@@ -122,7 +122,6 @@ def _make_note_file(filename):
 
 def create_cmd(args, conf):
     "Create a new release note file from the template."
-    notesdir = utils.get_notes_dir(conf)
     # NOTE(dhellmann): There is a short race window where we might try
     # to pick a name that does not exist, then overwrite the file if
     # it is created before we try to write it. This isn't a problem
@@ -130,7 +129,7 @@ def create_cmd(args, conf):
     # their local git tree, and so there should not be any concurrency
     # concern.
     slug = args.slug.replace(' ', '-')
-    filename = _pick_note_file_name(notesdir, slug)
+    filename = _pick_note_file_name(conf.notespath, slug)
     _make_note_file(filename)
     print('Created new notes file in %s' % filename)
     return

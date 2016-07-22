@@ -15,7 +15,6 @@ from __future__ import print_function
 import logging
 
 from reno import loader
-from reno import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -24,11 +23,9 @@ def list_cmd(args, conf):
     "List notes files based on query arguments"
     LOG.debug('starting list')
     reporoot = conf.reporoot
-    notesdir = utils.get_notes_dir(conf)
     collapse = conf.collapse_pre_releases
     ldr = loader.Loader(
         reporoot=reporoot,
-        notesdir=notesdir,
         branch=conf.branch,
         collapse_pre_releases=collapse,
         earliest_version=conf.earliest_version,

@@ -141,10 +141,15 @@ class TestConfigProperties(base.TestCase):
         super(TestConfigProperties, self).setUp()
         # Temporary directory to store our config
         self.tempdir = self.useFixture(fixtures.TempDir())
-        self.c = config.Config(self.tempdir.path)
+        self.c = config.Config('releasenotes')
 
     def test_reporoot(self):
         self.c.reporoot = 'blah//'
         self.assertEqual('blah/', self.c.reporoot)
         self.c.reporoot = 'blah'
         self.assertEqual('blah/', self.c.reporoot)
+
+    def test_notespath(self):
+        self.assertEqual('releasenotes/notes', self.c.notespath)
+        self.c.override(notesdir='thenotes')
+        self.assertEqual('releasenotes/thenotes', self.c.notespath)

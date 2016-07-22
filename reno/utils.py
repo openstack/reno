@@ -20,11 +20,6 @@ import subprocess
 LOG = logging.getLogger(__name__)
 
 
-def get_notes_dir(conf):
-    """Return the path to the release notes directory."""
-    return os.path.join(conf.relnotesdir, conf.notesdir)
-
-
 def get_random_string(nbytes=8):
     """Return a fixed-length random string
 

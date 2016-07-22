@@ -74,7 +74,6 @@ class ReleaseNotesDirective(rst.Directive):
 
         ldr = loader.Loader(
             reporoot=conf.reporoot,
-            notesdir=notesdir,
             branch=branch,
             collapse_pre_releases=conf.collapse_pre_releases,
             earliest_version=conf.earliest_version,

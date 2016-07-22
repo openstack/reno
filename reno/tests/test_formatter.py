@@ -62,7 +62,6 @@ class TestFormatter(base.TestCase):
         with mock.patch('reno.loader.Loader._load_data', _load):
             self.ldr = loader.Loader(
                 reporoot='reporoot',
-                notesdir='notesdir',
                 branch=None,
                 collapse_pre_releases=None,
                 earliest_version=None,

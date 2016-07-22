@@ -28,7 +28,7 @@ def get_cache_filename(reporoot, notesdir):
 class Loader(object):
     "Load the release notes for a given repository."
 
-    def __init__(self, reporoot, notesdir, branch=None,
+    def __init__(self, reporoot, branch=None,
                  collapse_pre_releases=True,
                  earliest_version=None,
                  ignore_cache=False,
@@ -42,8 +42,6 @@ class Loader(object):
 
         :param reporoot: Path to the root of the git repository.
         :type reporoot: str
-        :param notesdir: The directory under *reporoot* with the release notes.
-        :type notesdir: str
         :param branch: The name of the branch to scan. Defaults to current.
         :type branch: str
         :param collapse_pre_releases: When true, merge pre-release versions
@@ -57,7 +55,7 @@ class Loader(object):
         :type conf: reno.config.Config
         """
         self._reporoot = reporoot
-        self._notesdir = notesdir
+        self._notespath = conf.notespath
         self._branch = branch
         self._config = conf
         self._collapse_pre_releases = self._config.collapse_pre_releases
@@ -66,7 +64,7 @@ class Loader(object):
 
         self._cache = None
         self._scanner_output = None
-        self._cache_filename = get_cache_filename(reporoot, notesdir)
+        self._cache_filename = get_cache_filename(reporoot, self._notespath)
 
         self._load_data()
 
@@ -89,7 +87,7 @@ class Loader(object):
         else:
             self._scanner_output = scanner.get_notes_by_version(
                 reporoot=self._reporoot,
-                notesdir=self._notesdir,
+                notesdir=self._notespath,
                 branch=self._branch,
                 collapse_pre_releases=self._collapse_pre_releases,
                 earliest_version=self._earliest_version,

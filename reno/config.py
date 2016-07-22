@@ -114,6 +114,10 @@ class Config(object):
     def reporoot(self, value):
         self._reporoot = value.rstrip('/') + '/'
 
+    @property
+    def notespath(self):
+        "The path in the repo where notes are kept."
+        return os.path.join(self.relnotesdir, self.notesdir)
 
 # def parse_config_into(parsed_arguments):
 
