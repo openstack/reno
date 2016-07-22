@@ -1,0 +1,5 @@
+---
+features:
+  - Set the default value of the reporoot argument
+    for all command line programs to "." and make
+    it an optional parameter.

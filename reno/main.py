@@ -97,6 +97,8 @@ def main(argv=sys.argv[1:]):
     _build_query_arg_group(do_list)
     do_list.add_argument(
         'reporoot',
+        default='.',
+        nargs='?',
         help='root of the git repository',
     )
     do_list.set_defaults(func=lister.list_cmd)
@@ -107,6 +109,8 @@ def main(argv=sys.argv[1:]):
     )
     do_report.add_argument(
         'reporoot',
+        default='.',
+        nargs='?',
         help='root of the git repository',
     )
     do_report.add_argument(
@@ -123,6 +127,8 @@ def main(argv=sys.argv[1:]):
     )
     do_cache.add_argument(
         'reporoot',
+        default='.',
+        nargs='?',
         help='root of the git repository',
     )
     do_cache.add_argument(
