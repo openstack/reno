@@ -19,7 +19,7 @@ from reno import utils
 
 def report_cmd(args, conf):
     "Generates a release notes report"
-    reporoot = conf.reporoot.rstrip('/') + '/'
+    reporoot = conf.reporoot
     notesdir = utils.get_notes_dir(conf)
     collapse = conf.collapse_pre_releases
     ldr = loader.Loader(

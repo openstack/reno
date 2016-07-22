@@ -23,7 +23,7 @@ class Config(object):
 
     _OPTS = {
         # The root directory of the git repository to scan.
-        'reporoot': '.',
+        'reporoot': './',
 
         # The notes subdirectory within the relnotesdir where the
         # notes live.
@@ -104,6 +104,15 @@ class Config(object):
             if hasattr(parsed_args, o)
         }
         self.override(**arg_values)
+
+    @property
+    def reporoot(self):
+        return self._reporoot
+
+    # Ensure that the 'reporoot' value always only ends in one '/'.
+    @reporoot.setter
+    def reporoot(self, value):
+        self._reporoot = value.rstrip('/') + '/'
 
 
 # def parse_config_into(parsed_arguments):

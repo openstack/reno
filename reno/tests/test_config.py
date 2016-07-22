@@ -133,3 +133,18 @@ collapse_pre_releases: false
         c = config.Config(self.tempdir.path)
         c.override_from_parsed_args(args)
         self.assertFalse(hasattr(c, 'not_a_config_option'))
+
+
+class TestConfigProperties(base.TestCase):
+
+    def setUp(self):
+        super(TestConfigProperties, self).setUp()
+        # Temporary directory to store our config
+        self.tempdir = self.useFixture(fixtures.TempDir())
+        self.c = config.Config(self.tempdir.path)
+
+    def test_reporoot(self):
+        self.c.reporoot = 'blah//'
+        self.assertEqual('blah/', self.c.reporoot)
+        self.c.reporoot = 'blah'
+        self.assertEqual('blah/', self.c.reporoot)

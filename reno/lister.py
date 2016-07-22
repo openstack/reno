@@ -23,7 +23,7 @@ LOG = logging.getLogger(__name__)
 def list_cmd(args, conf):
     "List notes files based on query arguments"
     LOG.debug('starting list')
-    reporoot = conf.reporoot.rstrip('/') + '/'
+    reporoot = conf.reporoot
     notesdir = utils.get_notes_dir(conf)
     collapse = conf.collapse_pre_releases
     ldr = loader.Loader(

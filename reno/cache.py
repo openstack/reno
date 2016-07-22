@@ -110,7 +110,7 @@ def write_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
 
 def cache_cmd(args, conf):
     "Generates a release notes cache"
-    reporoot = conf.reporoot.rstrip('/') + '/'
+    reporoot = conf.reporoot
     notesdir = utils.get_notes_dir(conf)
     write_cache_db(
         reporoot=reporoot,
