@@ -18,15 +18,7 @@ from reno import loader
 
 def report_cmd(args, conf):
     "Generates a release notes report"
-    reporoot = conf.reporoot
-    collapse = conf.collapse_pre_releases
-    ldr = loader.Loader(
-        reporoot=reporoot,
-        branch=conf.branch,
-        collapse_pre_releases=collapse,
-        earliest_version=conf.earliest_version,
-        conf=conf,
-    )
+    ldr = loader.Loader(conf)
     if args.version:
         versions = args.version
     else:

@@ -149,9 +149,7 @@ def _get_version_tags_on_branch(reporoot, branch):
     return tags
 
 
-def get_notes_by_version(reporoot, notesdir, branch=None,
-                         collapse_pre_releases=True,
-                         earliest_version=None):
+def get_notes_by_version(conf):
     """Return an OrderedDict mapping versions to lists of notes files.
 
     The versions are presented in reverse chronological order.
@@ -161,14 +159,11 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
 
     :param reporoot: Path to the root of the git repository.
     :type reporoot: str
-    :param notesdir: The directory under *reporoot* with the release notes.
-    :type notesdir: str
-    :param branch: The name of the branch to scan. Defaults to current.
-    :type branch: str
-    :param collapse_pre_releases: When true, merge pre-release versions
-        into the final release, if it is present.
-    :type collapse_pre_releases: bool
     """
+
+    reporoot = conf.reporoot
+    notesdir = conf.notespath
+    branch = conf.branch
 
     LOG.debug('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
 
@@ -324,7 +319,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
 
     # Combine pre-releases into the final release, if we are told to
     # and the final release exists.
-    if collapse_pre_releases:
+    if conf.collapse_pre_releases:
         collapsing = files_and_tags
         files_and_tags = collections.OrderedDict()
         for ov in versions_by_date:
@@ -370,7 +365,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
         trimmed[ov] = sorted(files_and_tags[ov])
         # If we have been told to stop at a version, we can do that
         # now.
-        if earliest_version and ov == earliest_version:
+        if conf.earliest_version and ov == conf.earliest_version:
             break
 
     LOG.debug('[reno] found %d versions and %d files',

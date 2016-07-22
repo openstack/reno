@@ -51,10 +51,8 @@ class ReleaseNotesDirective(rst.Directive):
         reporoot = os.path.abspath(reporoot_opt)
         relnotessubdir = self.options.get('relnotessubdir',
                                           defaults.RELEASE_NOTES_SUBDIR)
-        conf = config.Config(relnotessubdir)
-        opt_overrides = {
-            'reporoot': reporoot,
-        }
+        conf = config.Config(reporoot, relnotessubdir)
+        opt_overrides = {}
         if 'notesdir' in self.options:
             opt_overrides['notesdir'] = self.options.get('notesdir')
         version_opt = self.options.get('version')
@@ -72,13 +70,7 @@ class ReleaseNotesDirective(rst.Directive):
              (os.path.join(conf.reporoot, notesdir),
               branch or 'current branch'))
 
-        ldr = loader.Loader(
-            reporoot=conf.reporoot,
-            branch=branch,
-            collapse_pre_releases=conf.collapse_pre_releases,
-            earliest_version=conf.earliest_version,
-            conf=conf,
-        )
+        ldr = loader.Loader(conf)
         if version_opt is not None:
             versions = [
                 v.strip()

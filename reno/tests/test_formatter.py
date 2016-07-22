@@ -59,14 +59,12 @@ class TestFormatter(base.TestCase):
                 'file-contents': self.note_bodies
             }
 
+        self.c = config.Config('reporoot')
+
         with mock.patch('reno.loader.Loader._load_data', _load):
             self.ldr = loader.Loader(
-                reporoot='reporoot',
-                branch=None,
-                collapse_pre_releases=None,
-                earliest_version=None,
+                self.c,
                 ignore_cache=False,
-                conf=config.Config('reporoot/releasenotes'),
             )
 
     def test_with_title(self):

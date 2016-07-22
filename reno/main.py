@@ -136,7 +136,7 @@ def main(argv=sys.argv[1:]):
     do_cache.set_defaults(func=cache.cache_cmd)
 
     args = parser.parse_args(argv)
-    conf = config.Config(args.relnotesdir)
+    conf = config.Config(args.reporoot, args.relnotesdir)
     conf.override_from_parsed_args(args)
 
     logging.basicConfig(

@@ -41,6 +41,7 @@ class TestValidate(base.TestCase):
                 level=logging.WARNING,
             )
         )
+        self.c = config.Config('reporoot')
 
     def _make_loader(self, note_bodies):
         def _load(ldr):
@@ -51,12 +52,8 @@ class TestValidate(base.TestCase):
 
         with mock.patch('reno.loader.Loader._load_data', _load):
             return loader.Loader(
-                reporoot='reporoot',
-                branch=None,
-                collapse_pre_releases=None,
-                earliest_version=None,
+                self.c,
                 ignore_cache=False,
-                conf=config.Config('reporoot/releasenotes'),
             )
 
     def test_prelude_list(self):

@@ -18,6 +18,7 @@ import mock
 from oslotest import mockpatch
 
 from reno import cache
+from reno import config
 from reno.tests import base
 
 
@@ -53,17 +54,14 @@ class TestCache(base.TestCase):
             mockpatch.Patch('reno.scanner.get_file_at_commit',
                             new=self._get_note_body)
         )
+        self.c = config.Config('.')
 
     def test_build_cache_db(self):
         with mock.patch('reno.scanner.get_notes_by_version') as gnbv:
             gnbv.return_value = self.scanner_output
             db = cache.build_cache_db(
-                reporoot=None,
-                notesdir=None,
-                branch=None,
-                collapse_pre_releases=True,
+                self.c,
                 versions_to_include=[],
-                earliest_version=None,
             )
             expected = {
                 'notes': [

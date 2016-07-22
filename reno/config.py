@@ -14,6 +14,8 @@ import os.path
 
 import yaml
 
+from reno import defaults
+
 LOG = logging.getLogger(__name__)
 
 
@@ -22,9 +24,6 @@ class Config(object):
     _FILENAME = 'config.yaml'
 
     _OPTS = {
-        # The root directory of the git repository to scan.
-        'reporoot': './',
-
         # The notes subdirectory within the relnotesdir where the
         # notes live.
         'notesdir': 'notes',
@@ -51,18 +50,23 @@ class Config(object):
         except KeyError:
             raise ValueError('unknown option name %r' % (opt,))
 
-    def __init__(self, relnotesdir):
+    def __init__(self, reporoot, relnotesdir=defaults.RELEASE_NOTES_SUBDIR):
         """Instantiate a Config object
 
+        :param str reporoot:
+            The root directory of the repository.
         :param str relnotesdir:
-            The directory containing release notes.
+            The directory containing release notes. Defaults to
+            'releasenotes'.
 
         """
+        self.reporoot = reporoot
         self.relnotesdir = relnotesdir
         # Initialize attributes from the defaults.
         self.override(**self._OPTS)
 
-        self._filename = os.path.join(relnotesdir, self._FILENAME)
+        self._filename = os.path.join(self.reporoot, relnotesdir,
+                                      self._FILENAME)
         self._contents = {}
         self._load_file()
 

@@ -17,16 +17,10 @@ import yaml
 
 from reno import loader
 from reno import scanner
-from reno import utils
 
 
-def build_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
-                   versions_to_include, earliest_version):
-    notes = scanner.get_notes_by_version(
-        reporoot, notesdir, branch,
-        collapse_pre_releases=collapse_pre_releases,
-        earliest_version=earliest_version,
-    )
+def build_cache_db(conf, versions_to_include):
+    notes = scanner.get_notes_by_version(conf)
 
     # Default to including all versions returned by the scanner.
     if not versions_to_include:
@@ -38,7 +32,7 @@ def build_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
     for version in versions_to_include:
         for filename, sha in notes[version]:
             body = scanner.get_file_at_commit(
-                reporoot,
+                conf.reporoot,
                 filename,
                 sha,
             )
@@ -60,8 +54,7 @@ def build_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
     return cache
 
 
-def write_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
-                   versions_to_include, earliest_version,
+def write_cache_db(conf, versions_to_include,
                    outfilename=None):
     """Create a cache database file for the release notes data.
 
@@ -82,19 +75,15 @@ def write_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
         stream = open(outfilename, 'w')
         close_stream = True
     else:
-        outfilename = loader.get_cache_filename(reporoot, notesdir)
+        outfilename = loader.get_cache_filename(conf.reporoot, conf.notespath)
         if not os.path.exists(os.path.dirname(outfilename)):
             os.makedirs(os.path.dirname(outfilename))
         stream = open(outfilename, 'w')
         close_stream = True
     try:
         cache = build_cache_db(
-            reporoot=reporoot,
-            notesdir=notesdir,
-            branch=branch,
-            collapse_pre_releases=collapse_pre_releases,
+            conf,
             versions_to_include=versions_to_include,
-            earliest_version=earliest_version,
         )
         yaml.safe_dump(
             cache,
@@ -110,15 +99,9 @@ def write_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
 
 def cache_cmd(args, conf):
     "Generates a release notes cache"
-    reporoot = conf.reporoot
-    notesdir = utils.get_notes_dir(conf)
     write_cache_db(
-        reporoot=reporoot,
-        notesdir=notesdir,
-        branch=conf.branch,
-        collapse_pre_releases=conf.collapse_pre_releases,
+        conf=conf,
         versions_to_include=args.version,
-        earliest_version=conf.earliest_version,
         outfilename=args.output,
     )
     return

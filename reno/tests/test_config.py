@@ -78,7 +78,10 @@ collapse_pre_releases: false
             self.assertEqual(1, logger.call_count)
 
     def test_load_file(self):
-        config_path = self.tempdir.join(config.Config._FILENAME)
+        rn_path = self.tempdir.join('releasenotes')
+        os.mkdir(rn_path)
+        config_path = self.tempdir.join('releasenotes/' +
+                                        config.Config._FILENAME)
         with open(config_path, 'w') as fd:
             fd.write(self.EXAMPLE_CONFIG)
         self.addCleanup(os.unlink, config_path)

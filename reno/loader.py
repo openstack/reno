@@ -28,11 +28,8 @@ def get_cache_filename(reporoot, notesdir):
 class Loader(object):
     "Load the release notes for a given repository."
 
-    def __init__(self, reporoot, branch=None,
-                 collapse_pre_releases=True,
-                 earliest_version=None,
-                 ignore_cache=False,
-                 conf=None):
+    def __init__(self, conf,
+                 ignore_cache=False):
         """Initialize a Loader.
 
         The versions are presented in reverse chronological order.
@@ -40,31 +37,24 @@ class Loader(object):
         Notes files are associated with the earliest version for which
         they were available, regardless of whether they changed later.
 
-        :param reporoot: Path to the root of the git repository.
-        :type reporoot: str
-        :param branch: The name of the branch to scan. Defaults to current.
-        :type branch: str
-        :param collapse_pre_releases: When true, merge pre-release versions
-            into the final release, if it is present.
-        :type collapse_pre_releases: bool
-        :param earliest_version: The oldest version to include.
-        :type earliest_version: str
-        :param ignore_cache: Do not load a cache file if it is present.
-        :type ignore_cache: bool
         :param conf: Parsed configuration from file
         :type conf: reno.config.Config
+        :param ignore_cache: Do not load a cache file if it is present.
+        :type ignore_cache: bool
         """
-        self._reporoot = reporoot
-        self._notespath = conf.notespath
-        self._branch = branch
         self._config = conf
-        self._collapse_pre_releases = self._config.collapse_pre_releases
-        self._earliest_version = self._config.earliest_version
         self._ignore_cache = ignore_cache
+
+        self._reporoot = conf.reporoot
+        self._notespath = conf.notespath
+        self._branch = conf.branch
+        self._collapse_pre_releases = conf.collapse_pre_releases
+        self._earliest_version = conf.earliest_version
 
         self._cache = None
         self._scanner_output = None
-        self._cache_filename = get_cache_filename(reporoot, self._notespath)
+        self._cache_filename = get_cache_filename(self._reporoot,
+                                                  self._notespath)
 
         self._load_data()
 
@@ -85,13 +75,7 @@ class Loader(object):
                     for n in self._cache['notes']
                 }
         else:
-            self._scanner_output = scanner.get_notes_by_version(
-                reporoot=self._reporoot,
-                notesdir=self._notespath,
-                branch=self._branch,
-                collapse_pre_releases=self._collapse_pre_releases,
-                earliest_version=self._earliest_version,
-            )
+            self._scanner_output = scanner.get_notes_by_version(self._config)
 
     @property
     def versions(self):

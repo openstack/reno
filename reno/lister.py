@@ -23,14 +23,7 @@ def list_cmd(args, conf):
     "List notes files based on query arguments"
     LOG.debug('starting list')
     reporoot = conf.reporoot
-    collapse = conf.collapse_pre_releases
-    ldr = loader.Loader(
-        reporoot=reporoot,
-        branch=conf.branch,
-        collapse_pre_releases=collapse,
-        earliest_version=conf.earliest_version,
-        conf=conf,
-    )
+    ldr = loader.Loader(conf)
     if args.version:
         versions = args.version
     else:
