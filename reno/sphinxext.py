@@ -18,6 +18,7 @@ from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from sphinx.util.nodes import nested_parse_with_titles
 
+from reno import config
 from reno import defaults
 from reno import formatter
 from reno import loader
@@ -50,23 +51,34 @@ class ReleaseNotesDirective(rst.Directive):
         reporoot = os.path.abspath(reporoot_opt)
         relnotessubdir = self.options.get('relnotessubdir',
                                           defaults.RELEASE_NOTES_SUBDIR)
-        notessubdir = self.options.get('notesdir', defaults.NOTES_SUBDIR)
+        conf = config.Config(relnotessubdir)
+        opt_overrides = {
+            'reporoot': reporoot,
+        }
+        if 'notesdir' in self.options:
+            opt_overrides['notesdir'] = self.options.get('notesdir')
         version_opt = self.options.get('version')
         # FIXME(dhellmann): Force this flag True for now and figure
         # out how Sphinx passes a "false" flag later.
-        collapse = True  # 'collapse-pre-releases' in self.options
-        earliest_version = self.options.get('earliest-version')
+        # 'collapse-pre-releases' in self.options
+        opt_overrides['collapse_pre_releases'] = True
+        if 'earliest-version' in self.options:
+            opt_overrides['earliest_version'] = self.options.get(
+                'earliest-version')
+        conf.override(**opt_overrides)
 
-        notesdir = os.path.join(relnotessubdir, notessubdir)
+        notesdir = os.path.join(relnotessubdir, conf.notesdir)
         info('scanning %s for %s release notes' %
-             (os.path.join(reporoot, notesdir), branch or 'current branch'))
+             (os.path.join(conf.reporoot, notesdir),
+              branch or 'current branch'))
 
         ldr = loader.Loader(
-            reporoot=reporoot,
+            reporoot=conf.reporoot,
             notesdir=notesdir,
             branch=branch,
-            collapse_pre_releases=collapse,
-            earliest_version=earliest_version,
+            collapse_pre_releases=conf.collapse_pre_releases,
+            earliest_version=conf.earliest_version,
+            conf=conf,
         )
         if version_opt is not None:
             versions = [

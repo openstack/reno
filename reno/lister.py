@@ -20,19 +20,19 @@ from reno import utils
 LOG = logging.getLogger(__name__)
 
 
-def list_cmd(args):
+def list_cmd(args, conf):
     "List notes files based on query arguments"
     LOG.debug('starting list')
-    reporoot = args.reporoot.rstrip('/') + '/'
-    notesdir = utils.get_notes_dir(args)
-    collapse = args.collapse_pre_releases
+    reporoot = conf.reporoot.rstrip('/') + '/'
+    notesdir = utils.get_notes_dir(conf)
+    collapse = conf.collapse_pre_releases
     ldr = loader.Loader(
         reporoot=reporoot,
         notesdir=notesdir,
-        branch=args.branch,
+        branch=conf.branch,
         collapse_pre_releases=collapse,
-        earliest_version=args.earliest_version,
-        config=args._config
+        earliest_version=conf.earliest_version,
+        conf=conf,
     )
     if args.version:
         versions = args.version

@@ -17,14 +17,12 @@ import os.path
 import random
 import subprocess
 
-from reno import defaults
-
 LOG = logging.getLogger(__name__)
 
 
-def get_notes_dir(args):
+def get_notes_dir(conf):
     """Return the path to the release notes directory."""
-    return os.path.join(args.relnotesdir, defaults.NOTES_SUBDIR)
+    return os.path.join(conf.relnotesdir, conf.notesdir)
 
 
 def get_random_string(nbytes=8):

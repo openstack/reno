@@ -27,11 +27,11 @@ _query_args = [
           action='append',
           help='the version(s) to include, defaults to all')),
     (('--branch',),
-     dict(default=None,
+     dict(default=config.Config.get_default('branch'),
           help='the branch to scan, defaults to the current')),
     (('--collapse-pre-releases',),
      dict(action='store_true',
-          default=True,
+          default=config.Config.get_default('collapse_pre_releases'),
           help='combine pre-releases with their final release')),
     (('--no-collapse-pre-releases',),
      dict(action='store_false',
@@ -135,17 +135,13 @@ def main(argv=sys.argv[1:]):
     _build_query_arg_group(do_cache)
     do_cache.set_defaults(func=cache.cache_cmd)
 
-    original_args = parser.parse_args(argv)
-    config.parse_config_into(original_args)
-    # NOTE(sigmavirus24): We parse twice to avoid having to guess if a parsed
-    # option is the default value or not. This allows us to apply the config
-    # to the proper command and then make sure that the command-line values
-    # take precedence
-    args = parser.parse_args(argv, original_args)
+    args = parser.parse_args(argv)
+    conf = config.Config(args.relnotesdir)
+    conf.override_from_parsed_args(args)
 
     logging.basicConfig(
         level=args.verbosity,
         format='%(message)s',
     )
 
-    return args.func(args)
+    return args.func(args, conf)

@@ -120,9 +120,9 @@ def _make_note_file(filename):
         f.write(_TEMPLATE)
 
 
-def create_cmd(args):
+def create_cmd(args, conf):
     "Create a new release note file from the template."
-    notesdir = utils.get_notes_dir(args)
+    notesdir = utils.get_notes_dir(conf)
     # NOTE(dhellmann): There is a short race window where we might try
     # to pick a name that does not exist, then overwrite the file if
     # it is created before we try to write it. This isn't a problem

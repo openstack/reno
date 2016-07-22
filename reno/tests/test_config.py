@@ -17,15 +17,15 @@ import os
 import fixtures
 
 from reno import config
-from reno import defaults
+from reno import main
 from reno.tests import base
+
+import mock
 
 
 class TestConfig(base.TestCase):
     EXAMPLE_CONFIG = """
-branch: master
 collapse_pre_releases: false
-earliest_version: true
 """
 
     def setUp(self):
@@ -33,62 +33,103 @@ earliest_version: true
         # Temporary directory to store our config
         self.tempdir = self.useFixture(fixtures.TempDir())
 
-        # Argument parser and parsed arguments for our config function
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--branch')
-        parser.add_argument('--collapse-pre-releases')
-        parser.add_argument('--earliest-version')
-        self.args = parser.parse_args([])
-        self.args.relnotesdir = self.tempdir.path
+    def test_defaults(self):
+        c = config.Config(self.tempdir.path)
+        actual = {
+            o: getattr(c, o)
+            for o in config.Config._OPTS.keys()
+        }
+        self.assertEqual(config.Config._OPTS, actual)
 
-        config_path = self.tempdir.join(defaults.RELEASE_NOTES_CONFIG_FILENAME)
+    def test_override(self):
+        c = config.Config(self.tempdir.path)
+        c.override(
+            collapse_pre_releases=False,
+        )
+        actual = {
+            o: getattr(c, o)
+            for o in config.Config._OPTS.keys()
+        }
+        expected = {}
+        expected.update(config.Config._OPTS)
+        expected['collapse_pre_releases'] = False
+        self.assertEqual(expected, actual)
 
+    def test_override_multiple(self):
+        c = config.Config(self.tempdir.path)
+        c.override(
+            notesdir='value1',
+        )
+        c.override(
+            notesdir='value2',
+        )
+        actual = {
+            o: getattr(c, o)
+            for o in config.Config._OPTS.keys()
+        }
+        expected = {}
+        expected.update(config.Config._OPTS)
+        expected['notesdir'] = 'value2'
+        self.assertEqual(expected, actual)
+
+    def test_load_file_not_present(self):
+        with mock.patch.object(config.LOG, 'info') as logger:
+            config.Config(self.tempdir.path)
+            self.assertEqual(1, logger.call_count)
+
+    def test_load_file(self):
+        config_path = self.tempdir.join(config.Config._FILENAME)
         with open(config_path, 'w') as fd:
             fd.write(self.EXAMPLE_CONFIG)
-
         self.addCleanup(os.unlink, config_path)
-        self.config_path = config_path
+        c = config.Config(self.tempdir.path)
+        self.assertEqual(False, c.collapse_pre_releases)
 
-    def test_applies_relevant_config_values(self):
-        """Verify that our config function overrides default values."""
-        config.parse_config_into(self.args)
-        del self.args._config
-        expected_value = {
-            'relnotesdir': self.tempdir.path,
-            'branch': 'master',
-            'collapse_pre_releases': False,
-            'earliest_version': True,
+    def test_get_default(self):
+        d = config.Config.get_default('notesdir')
+        self.assertEqual('notes', d)
+
+    def test_get_default_unknown(self):
+        self.assertRaises(
+            ValueError,
+            config.Config.get_default,
+            'unknownopt',
+        )
+
+    def _run_override_from_parsed_args(self, argv):
+        parser = argparse.ArgumentParser()
+        main._build_query_arg_group(parser)
+        args = parser.parse_args(argv)
+        c = config.Config(self.tempdir.path)
+        c.override_from_parsed_args(args)
+        return c
+
+    def test_override_from_parsed_args_empty(self):
+        c = self._run_override_from_parsed_args([])
+        actual = {
+            o: getattr(c, o)
+            for o in config.Config._OPTS.keys()
         }
-        self.assertDictEqual(expected_value, vars(self.args))
+        self.assertEqual(config.Config._OPTS, actual)
 
-    def test_does_not_add_extra_options(self):
-        """Show that earliest_version is not set when missing."""
-        del self.args.earliest_version
-        self.assertEqual(0, getattr(self.args, 'earliest_version', 0))
-
-        config.parse_config_into(self.args)
-        del self.args._config
-        expected_value = {
-            'relnotesdir': self.tempdir.path,
-            'branch': 'master',
-            'collapse_pre_releases': False,
+    def test_override_from_parsed_args(self):
+        c = self._run_override_from_parsed_args([
+            '--no-collapse-pre-releases',
+        ])
+        actual = {
+            o: getattr(c, o)
+            for o in config.Config._OPTS.keys()
         }
+        expected = {}
+        expected.update(config.Config._OPTS)
+        expected['collapse_pre_releases'] = False
+        self.assertEqual(expected, actual)
 
-        self.assertDictEqual(expected_value, vars(self.args))
-
-    def test_get_congfig_path(self):
-        """Show that we generate the path appropriately."""
-        self.assertEqual('releasenotes/config.yml',
-                         config.get_config_path('releasenotes'))
-
-    def test_read_config_shortcircuits(self):
-        """Verify we don't try to open a non-existent file."""
-        self.assertDictEqual({},
-                             config.read_config('fake/path/to/config.yml'))
-
-    def test_read_config(self):
-        """Verify we read and parse the config file specified if it exists."""
-        self.assertDictEqual({'branch': 'master',
-                              'collapse_pre_releases': False,
-                              'earliest_version': True},
-                             config.read_config(self.config_path))
+    def test_override_from_parsed_args_ignore_non_options(self):
+        parser = argparse.ArgumentParser()
+        main._build_query_arg_group(parser)
+        parser.add_argument('not_a_config_option')
+        args = parser.parse_args(['value'])
+        c = config.Config(self.tempdir.path)
+        c.override_from_parsed_args(args)
+        self.assertFalse(hasattr(c, 'not_a_config_option'))

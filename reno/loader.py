@@ -16,7 +16,6 @@ import os.path
 import six
 import yaml
 
-from reno import config
 from reno import scanner
 
 LOG = logging.getLogger(__name__)
@@ -33,7 +32,7 @@ class Loader(object):
                  collapse_pre_releases=True,
                  earliest_version=None,
                  ignore_cache=False,
-                 parsedconfig=None):
+                 conf=None):
         """Initialize a Loader.
 
         The versions are presented in reverse chronological order.
@@ -54,22 +53,15 @@ class Loader(object):
         :type earliest_version: str
         :param ignore_cache: Do not load a cache file if it is present.
         :type ignore_cache: bool
-        :param parsedconfig: Parsed configuration from file
-        :type parsedconfig: dict
+        :param conf: Parsed configuration from file
+        :type conf: reno.config.Config
         """
         self._reporoot = reporoot
         self._notesdir = notesdir
         self._branch = branch
-        self._config = parsedconfig
-        if parsedconfig is None:
-            # NOTE(sigmavirus24): This should only happen when it is being
-            # used by the reStructuredText directive in our sphinx extension.
-            notesconfig = config.get_config_path(notesdir)
-            self._config = config.read_config(notesconfig)
-        self._collapse_pre_releases = self._value_from_config(
-            'collapse_pre_releases', collapse_pre_releases, default=True)
-        self._earliest_version = self._value_from_config('earliest_version',
-                                                         earliest_version)
+        self._config = conf
+        self._collapse_pre_releases = self._config.collapse_pre_releases
+        self._earliest_version = self._config.earliest_version
         self._ignore_cache = ignore_cache
 
         self._cache = None
@@ -77,13 +69,6 @@ class Loader(object):
         self._cache_filename = get_cache_filename(reporoot, notesdir)
 
         self._load_data()
-
-    def _value_from_config(self, name, value, default=None):
-        # NOTE(sigmavirus24): If it's the default value for the parameter
-        # definition then we might want to look at the config.
-        if value is default:
-            value = self._config.get(name, default)
-        return value
 
     def _load_data(self):
         cache_file_exists = os.path.exists(self._cache_filename)

@@ -14,6 +14,7 @@
 
 import mock
 
+from reno import config
 from reno import formatter
 from reno import loader
 from reno.tests import base
@@ -66,6 +67,7 @@ class TestFormatter(base.TestCase):
                 collapse_pre_releases=None,
                 earliest_version=None,
                 ignore_cache=False,
+                conf=config.Config('reporoot/releasenotes'),
             )
 
     def test_with_title(self):

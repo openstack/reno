@@ -108,17 +108,17 @@ def write_cache_db(reporoot, notesdir, branch, collapse_pre_releases,
             stream.close()
 
 
-def cache_cmd(args):
+def cache_cmd(args, conf):
     "Generates a release notes cache"
-    reporoot = args.reporoot.rstrip('/') + '/'
-    notesdir = utils.get_notes_dir(args)
+    reporoot = conf.reporoot.rstrip('/') + '/'
+    notesdir = utils.get_notes_dir(conf)
     write_cache_db(
         reporoot=reporoot,
         notesdir=notesdir,
-        branch=args.branch,
-        collapse_pre_releases=args.collapse_pre_releases,
+        branch=conf.branch,
+        collapse_pre_releases=conf.collapse_pre_releases,
         versions_to_include=args.version,
-        earliest_version=args.earliest_version,
+        earliest_version=conf.earliest_version,
         outfilename=args.output,
     )
     return

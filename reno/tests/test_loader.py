@@ -20,6 +20,7 @@ import mock
 import six
 import yaml
 
+from reno import config
 from reno import loader
 from reno.tests import base
 
@@ -56,6 +57,7 @@ class TestValidate(base.TestCase):
                 collapse_pre_releases=None,
                 earliest_version=None,
                 ignore_cache=False,
+                conf=config.Config('reporoot/releasenotes'),
             )
 
     def test_prelude_list(self):
