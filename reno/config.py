@@ -50,7 +50,7 @@ class Config(object):
         except KeyError:
             raise ValueError('unknown option name %r' % (opt,))
 
-    def __init__(self, reporoot, relnotesdir=defaults.RELEASE_NOTES_SUBDIR):
+    def __init__(self, reporoot, relnotesdir=None):
         """Instantiate a Config object
 
         :param str reporoot:
@@ -61,6 +61,8 @@ class Config(object):
 
         """
         self.reporoot = reporoot
+        if relnotesdir is None:
+            relnotesdir = defaults.RELEASE_NOTES_SUBDIR
         self.relnotesdir = relnotesdir
         # Initialize attributes from the defaults.
         self.override(**self._OPTS)
