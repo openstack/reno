@@ -67,6 +67,8 @@ def write_cache_db(conf, versions_to_include,
     instead. Otherwise, if outfilename is given, the data overwrites
     the named file.
 
+    Return the name of the file created, if any.
+
     """
     if outfilename == '-':
         stream = sys.stdout
@@ -95,6 +97,7 @@ def write_cache_db(conf, versions_to_include,
     finally:
         if close_stream:
             stream.close()
+    return outfilename
 
 
 def cache_cmd(args, conf):
