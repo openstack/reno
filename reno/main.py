@@ -88,6 +88,12 @@ def main(argv=sys.argv[1:]):
         'slug',
         help='descriptive title of note (keep it short)',
     )
+    do_new.add_argument(
+        'reporoot',
+        default='.',
+        nargs='?',
+        help='root of the git repository',
+    )
     do_new.set_defaults(func=create.create_cmd)
 
     do_list = subparsers.add_parser(
