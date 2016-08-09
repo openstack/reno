@@ -172,3 +172,14 @@ So you might write a config file (if you use these often) like:
 
 These will be parsed first and then the CLI options will be applied after
 the config files.
+
+Debugging
+=========
+
+The way release notes are included into sphinx documents may mask where
+formatting errors occur. To generate the release notes manually, so that
+they can be put into a sphinx document directly for debugging, run:
+
+.. code-block::
+
+    reno report .
