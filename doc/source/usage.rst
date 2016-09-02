@@ -180,6 +180,6 @@ The way release notes are included into sphinx documents may mask where
 formatting errors occur. To generate the release notes manually, so that
 they can be put into a sphinx document directly for debugging, run:
 
-.. code-block::
+.. code-block:: console
 
-    reno report .
+    $ reno report .
