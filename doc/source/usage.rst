@@ -183,3 +183,12 @@ they can be put into a sphinx document directly for debugging, run:
 .. code-block:: console
 
     $ reno report .
+
+Within OpenStack
+================
+
+The OpenStack project maintains separate instructions for configuring
+the CI jobs and other project-specific settings used for reno. Refer
+to the `Managing Release Notes
+<http://docs.openstack.org/project-team-guide/release-management.html#managing-release-notes>`__
+section of the Project Team Guide for details.
