@@ -233,7 +233,7 @@ def get_notes_by_version(conf):
             if fnmatch.fnmatch(f, notesdir + '/*.yaml'):
                 filenames.append(f)
             elif fnmatch.fnmatch(f, notesdir + '/*'):
-                LOG.warn('found and ignored extra file %s', f)
+                LOG.warning('found and ignored extra file %s', f)
 
         # If there are no tags in this block, assume the most recently
         # seen version.
