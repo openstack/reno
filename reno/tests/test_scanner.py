@@ -821,6 +821,34 @@ class BranchTest(Base):
             results,
         )
 
+    def test_files_stable_from_master_no_stop_base(self):
+        self._run_git('checkout', '2.0.0')
+        self._run_git('checkout', '-b', 'stable/2')
+        f21 = self._add_notes_file('slug21')
+        self._run_git('checkout', 'master')
+        log_text = self._run_git('log', '--pretty=%x00%H %d', '--name-only',
+                                 'stable/2')
+        self.addDetail('git log', text_content(log_text))
+        self.c.override(
+            branch='stable/2',
+        )
+        self.c.override(
+            stop_at_branch_base=False,
+        )
+        raw_results = scanner.get_notes_by_version(self.c)
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {
+                '1.0.0': [self.f1],
+                '2.0.0': [self.f2],
+                '2.0.0-1': [f21],
+            },
+            results,
+        )
+
     def test_pre_release_branch_no_collapse(self):
         f4 = self._add_notes_file('slug4')
         self._run_git('tag', '-s', '-m', 'pre-release', '4.0.0.0rc1')

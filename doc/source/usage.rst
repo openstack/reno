@@ -160,6 +160,7 @@ configuration file. For example, a couple reno commands allow you to specify
 - ``--earliest-version``
 - ``--collapse-pre-releases``/``--no-collapse-pre-releases``
 - ``--ignore-cache``
+- ``--stop-at-branch-base``/``--no-stop-at-branch-base``
 
 So you might write a config file (if you use these often) like:
 
@@ -169,6 +170,7 @@ So you might write a config file (if you use these often) like:
     branch: master
     earliest_version: 12.0.0
     collapse_pre_releases: false
+    stop_at_branch_base: true
 
 These will be parsed first and then the CLI options will be applied after
 the config files.

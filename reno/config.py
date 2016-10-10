@@ -32,6 +32,10 @@ class Config(object):
         # of the same number (1.0.0.0a1 notes appear under 1.0.0).
         'collapse_pre_releases': True,
 
+        # Should the scanner stop at the base of a branch (True) or go
+        # ahead and scan the entire history (False)?
+        'stop_at_branch_base': True,
+
         # The git branch to scan. Defaults to the "current" branch
         # checked out.
         'branch': None,

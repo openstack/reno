@@ -36,6 +36,7 @@ class ReleaseNotesDirective(rst.Directive):
         'version': directives.unchanged,
         'collapse-pre-releases': directives.flag,
         'earliest-version': directives.unchanged,
+        'stop-at-branch-base': directives.flag,
     }
 
     def run(self):
@@ -56,10 +57,11 @@ class ReleaseNotesDirective(rst.Directive):
         if 'notesdir' in self.options:
             opt_overrides['notesdir'] = self.options.get('notesdir')
         version_opt = self.options.get('version')
-        # FIXME(dhellmann): Force this flag True for now and figure
+        # FIXME(dhellmann): Force these flags True for now and figure
         # out how Sphinx passes a "false" flag later.
         # 'collapse-pre-releases' in self.options
         opt_overrides['collapse_pre_releases'] = True
+        opt_overrides['stop_at_branch_base'] = True
         if 'earliest-version' in self.options:
             opt_overrides['earliest_version'] = self.options.get(
                 'earliest-version')

@@ -224,13 +224,15 @@ def get_notes_by_version(conf):
     branch = conf.branch
     earliest_version = conf.earliest_version
     collapse_pre_releases = conf.collapse_pre_releases
+    stop_at_branch_base = conf.stop_at_branch_base
 
     LOG.debug('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
 
     # If the user has not told us where to stop, try to work it out
     # for ourselves. If branch is set and is not "master", then we
     # want to stop at the base of the branch.
-    if (not earliest_version) and branch and (branch != 'master'):
+    if (stop_at_branch_base and
+            (not earliest_version) and branch and (branch != 'master')):
         LOG.debug('determining earliest_version from branch')
         earliest_version = _get_branch_base(reporoot, branch)
         if earliest_version and collapse_pre_releases:

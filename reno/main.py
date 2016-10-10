@@ -44,6 +44,15 @@ _query_args = [
      dict(default=False,
           action='store_true',
           help='if there is a cache file present, do not use it')),
+    (('--stop-at-branch-base',),
+     dict(action='store_true',
+          default=True,
+          dest='stop_at_branch_base',
+          help='stop scanning when the branch meets master')),
+    (('--no-stop-at-branch-base',),
+     dict(action='store_false',
+          dest='stop_at_branch_base',
+          help='do not stop scanning when the branch meets master')),
 ]
 
 

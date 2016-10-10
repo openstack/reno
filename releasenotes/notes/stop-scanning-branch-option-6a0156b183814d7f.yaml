@@ -1,0 +1,9 @@
+---
+features:
+  - Add a new configuration option, stop_at_branch_base, to control
+    whether or not the scanner stops looking for changes at the point
+    where a branch diverges from master. The default is True, meaning
+    that the scanner does stop. A false value means that versions that
+    appear on master from a point earlier than when the branch was
+    created will be included when scanning the branch for release
+    notes.
