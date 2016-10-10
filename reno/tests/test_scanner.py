@@ -109,7 +109,13 @@ class GPGKeyFixture(fixtures.Fixture):
         if gnupg_random:
             cmd.append(gnupg_random)
         cmd.append(config_file)
-        subprocess.check_call(cmd, cwd=tempdir.path)
+        subprocess.check_call(
+            cmd,
+            cwd=tempdir.path,
+            # Direct stderr to its own pipe, from which we don't read,
+            # to quiet the commands.
+            stderr=subprocess.PIPE,
+        )
 
 
 class Base(base.TestCase):
