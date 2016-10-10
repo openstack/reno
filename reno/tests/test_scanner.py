@@ -123,10 +123,13 @@ class GPGKeyFixture(fixtures.Fixture):
 class Base(base.TestCase):
 
     def _run_git(self, *args):
-        return utils.check_output(
+        logging.debug('$ git %s', ' '.join(args))
+        output = utils.check_output(
             ['git'] + list(args),
             cwd=self.reporoot,
         )
+        logging.debug(output)
+        return output
 
     def _git_setup(self):
         os.makedirs(self.reporoot)
