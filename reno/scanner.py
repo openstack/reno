@@ -78,6 +78,64 @@ def _get_unique_id(filename):
     return uniqueid
 
 
+def _get_branch_base(reporoot, branch):
+    "Return the tag at base of the branch."
+    # Based on
+    # http://stackoverflow.com/questions/1527234/finding-a-branch-point-with-git
+    # git rev-list $(git rev-list --first-parent \
+    #   ^origin/stable/newton master | tail -n1)^^!
+    #
+    # Determine the list of commits accessible from the branch we are
+    # supposed to be scanning, but not on master.
+    cmd = [
+        'git',
+        'rev-list',
+        '--first-parent',
+        branch,  # on the branch
+        '^master',  # not on master
+    ]
+    try:
+        LOG.debug(' '.join(cmd))
+        parents = utils.check_output(cmd, cwd=reporoot).strip()
+        if not parents:
+            # There are no commits on the branch, yet, so we can use
+            # our current-version logic.
+            return _get_current_version(reporoot, branch)
+    except subprocess.CalledProcessError as e:
+        LOG.warning('failed to retrieve branch base: %s [%s]',
+                    e, e.output.strip())
+        return None
+    parent = parents.splitlines()[-1]
+    LOG.debug('parent = %r', parent)
+    # Now get the previous commit, which should be the one we tagged
+    # to create the branch.
+    cmd = [
+        'git',
+        'rev-list',
+        '{}^^!'.format(parent),
+    ]
+    try:
+        sha = utils.check_output(cmd, cwd=reporoot).strip()
+        LOG.debug('sha = %r', sha)
+    except subprocess.CalledProcessError as e:
+        LOG.warning('failed to retrieve branch base: %s [%s]',
+                    e, e.output.strip())
+        return None
+    # Now get the tag for that commit.
+    cmd = [
+        'git',
+        'describe',
+        '--abbrev=0',
+        sha,
+    ]
+    try:
+        return utils.check_output(cmd, cwd=reporoot).strip()
+    except subprocess.CalledProcessError as e:
+        LOG.warning('failed to retrieve branch base: %s [%s]',
+                    e, e.output.strip())
+        return None
+
+
 # The git log output from _get_tags_on_branch() looks like this sample
 # from the openstack/nova repository for git 1.9.1:
 #
@@ -164,8 +222,25 @@ def get_notes_by_version(conf):
     reporoot = conf.reporoot
     notesdir = conf.notespath
     branch = conf.branch
+    earliest_version = conf.earliest_version
+    collapse_pre_releases = conf.collapse_pre_releases
 
     LOG.debug('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
+
+    # If the user has not told us where to stop, try to work it out
+    # for ourselves. If branch is set and is not "master", then we
+    # want to stop at the base of the branch.
+    if (not earliest_version) and branch and (branch != 'master'):
+        LOG.debug('determining earliest_version from branch')
+        earliest_version = _get_branch_base(reporoot, branch)
+        if earliest_version and collapse_pre_releases:
+            if PRE_RELEASE_RE.search(earliest_version):
+                # The earliest version won't actually be the pre-release
+                # that might have been tagged when the branch was created,
+                # but the final version. Strip the pre-release portion of
+                # the version number.
+                earliest_version = '.'.join(earliest_version.split('.')[:-1])
+    LOG.debug('using earliest_version = %r', earliest_version)
 
     # Determine all of the tags known on the branch, in their date
     # order. We scan the commit history in topological order to ensure
@@ -319,7 +394,7 @@ def get_notes_by_version(conf):
 
     # Combine pre-releases into the final release, if we are told to
     # and the final release exists.
-    if conf.collapse_pre_releases:
+    if collapse_pre_releases:
         collapsing = files_and_tags
         files_and_tags = collections.OrderedDict()
         for ov in versions_by_date:
@@ -365,7 +440,7 @@ def get_notes_by_version(conf):
         trimmed[ov] = sorted(files_and_tags[ov])
         # If we have been told to stop at a version, we can do that
         # now.
-        if conf.earliest_version and ov == conf.earliest_version:
+        if earliest_version and ov == earliest_version:
             break
 
     LOG.debug('[reno] found %d versions and %d files',

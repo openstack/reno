@@ -815,9 +815,175 @@ class BranchTest(Base):
         }
         self.assertEqual(
             {
-                '1.0.0': [self.f1],
                 '2.0.0': [self.f2],
                 '2.0.0-1': [f21],
+            },
+            results,
+        )
+
+    def test_pre_release_branch_no_collapse(self):
+        f4 = self._add_notes_file('slug4')
+        self._run_git('tag', '-s', '-m', 'pre-release', '4.0.0.0rc1')
+        # Add a commit on master after the tag
+        self._add_notes_file('slug5')
+        # Move back to the tag and create the branch
+        self._run_git('checkout', '4.0.0.0rc1')
+        self._run_git('checkout', '-b', 'stable/4')
+        # Create a commit on the branch
+        f41 = self._add_notes_file('slug41')
+        log_text = self._run_git(
+            'log', '--pretty=%x00%H %d', '--name-only', '--graph',
+            '--all', '--decorate',
+        )
+        self.addDetail('git log', text_content(log_text))
+        rev_list = self._run_git('rev-list', '--first-parent',
+                                 '^stable/4', 'master')
+        self.addDetail('rev-list', text_content(rev_list))
+        self.c.override(
+            branch='stable/4',
+            collapse_pre_releases=False,
+        )
+        raw_results = scanner.get_notes_by_version(self.c)
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {
+                '4.0.0.0rc1': [f4],
+                '4.0.0.0rc1-1': [f41],
+            },
+            results,
+        )
+
+    def test_pre_release_branch_collapse(self):
+        f4 = self._add_notes_file('slug4')
+        self._run_git('tag', '-s', '-m', 'pre-release', '4.0.0.0rc1')
+        # Add a commit on master after the tag
+        self._add_notes_file('slug5')
+        # Move back to the tag and create the branch
+        self._run_git('checkout', '4.0.0.0rc1')
+        self._run_git('checkout', '-b', 'stable/4')
+        # Create a commit on the branch
+        f41 = self._add_notes_file('slug41')
+        self._run_git('tag', '-s', '-m', 'release', '4.0.0')
+        log_text = self._run_git(
+            'log', '--pretty=%x00%H %d', '--name-only', '--graph',
+            '--all', '--decorate',
+        )
+        self.addDetail('git log', text_content(log_text))
+        rev_list = self._run_git('rev-list', '--first-parent',
+                                 '^stable/4', 'master')
+        self.addDetail('rev-list', text_content(rev_list))
+        self.c.override(
+            branch='stable/4',
+            collapse_pre_releases=True,
+        )
+        raw_results = scanner.get_notes_by_version(self.c)
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {
+                '4.0.0': [f4, f41],
+            },
+            results,
+        )
+
+    def test_full_release_branch(self):
+        f4 = self._add_notes_file('slug4')
+        self._run_git('tag', '-s', '-m', 'release', '4.0.0')
+        # Add a commit on master after the tag
+        self._add_notes_file('slug5')
+        # Move back to the tag and create the branch
+        self._run_git('checkout', '4.0.0')
+        self._run_git('checkout', '-b', 'stable/4')
+        # Create a commit on the branch
+        f41 = self._add_notes_file('slug41')
+        log_text = self._run_git(
+            'log', '--pretty=%x00%H %d', '--name-only', '--graph',
+            '--all', '--decorate',
+        )
+        self.addDetail('git log', text_content(log_text))
+        rev_list = self._run_git('rev-list', '--first-parent',
+                                 '^stable/4', 'master')
+        self.addDetail('rev-list', text_content(rev_list))
+        self.c.override(
+            branch='stable/4',
+        )
+        raw_results = scanner.get_notes_by_version(self.c)
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {
+                '4.0.0': [f4],
+                '4.0.0-1': [f41],
+            },
+            results,
+        )
+
+    def test_branch_tip_of_master(self):
+        # We have branched from master, but not added any commits to
+        # master.
+        f4 = self._add_notes_file('slug4')
+        self._run_git('tag', '-s', '-m', 'release', '4.0.0')
+        self._run_git('checkout', '-b', 'stable/4')
+        # Create a commit on the branch
+        f41 = self._add_notes_file('slug41')
+        f42 = self._add_notes_file('slug42')
+        log_text = self._run_git(
+            'log', '--pretty=%x00%H %d', '--name-only', '--graph',
+            '--all', '--decorate',
+        )
+        self.addDetail('git log', text_content(log_text))
+        rev_list = self._run_git('rev-list', '--first-parent',
+                                 '^stable/4', 'master')
+        self.addDetail('rev-list', text_content(rev_list))
+        self.c.override(
+            branch='stable/4',
+        )
+        raw_results = scanner.get_notes_by_version(self.c)
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {
+                '4.0.0': [f4],
+                '4.0.0-2': [f41, f42],
+            },
+            results,
+        )
+
+    def test_branch_no_more_commits(self):
+        # We have branched from master, but not added any commits to
+        # our branch or to master.
+        f4 = self._add_notes_file('slug4')
+        self._run_git('tag', '-s', '-m', 'release', '4.0.0')
+        self._run_git('checkout', '-b', 'stable/4')
+        # Create a commit on the branch
+        log_text = self._run_git(
+            'log', '--pretty=%x00%H %d', '--name-only', '--graph',
+            '--all', '--decorate',
+        )
+        self.addDetail('git log', text_content(log_text))
+        rev_list = self._run_git('rev-list', '--first-parent',
+                                 '^stable/4', 'master')
+        self.addDetail('rev-list', text_content(rev_list))
+        self.c.override(
+            branch='stable/4',
+        )
+        raw_results = scanner.get_notes_by_version(self.c)
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {
+                '4.0.0': [f4],
             },
             results,
         )

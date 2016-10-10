@@ -1,0 +1,7 @@
+---
+features:
+  - Automatically stop scanning branches at the point where they
+    diverge from master. This avoids having release notes from older
+    versions, that appear on master before the branch, from showing up
+    in the versions from the branch. This logic is only applied to
+    branches created from master.
