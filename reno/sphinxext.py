@@ -63,6 +63,8 @@ class ReleaseNotesDirective(rst.Directive):
         if 'earliest-version' in self.options:
             opt_overrides['earliest_version'] = self.options.get(
                 'earliest-version')
+        if branch:
+            opt_overrides['branch'] = branch
         conf.override(**opt_overrides)
 
         notesdir = os.path.join(relnotessubdir, conf.notesdir)
@@ -78,6 +80,7 @@ class ReleaseNotesDirective(rst.Directive):
             ]
         else:
             versions = ldr.versions
+        info('got versions %s' % (versions,))
         text = formatter.format_report(
             ldr,
             versions,
