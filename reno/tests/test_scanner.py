@@ -122,13 +122,15 @@ class GPGKeyFixture(fixtures.Fixture):
 
 class Base(base.TestCase):
 
+    logger = logging.getLogger('test')
+
     def _run_git(self, *args):
-        logging.debug('$ git %s', ' '.join(args))
+        self.logger.debug('$ git %s', ' '.join(args))
         output = utils.check_output(
             ['git'] + list(args),
             cwd=self.reporoot,
         )
-        logging.debug(output)
+        self.logger.debug(output)
         return output
 
     def _git_setup(self):
@@ -176,7 +178,7 @@ class Base(base.TestCase):
 
     def setUp(self):
         super(Base, self).setUp()
-        self.logger = self.useFixture(
+        self.fake_logger = self.useFixture(
             fixtures.FakeLogger(
                 format='%(levelname)8s %(name)s %(message)s',
                 level=logging.DEBUG,
@@ -474,11 +476,16 @@ class BasicTest(Base):
         f1 = self._add_notes_file('slug1')
         f2 = f1.replace('slug1', 'slug2')
         self._run_git('mv', f1, f2)
+        self._run_git('status')
         self._git_commit('rename note file')
         self._run_git('rm', f2)
         self._git_commit('remove note file')
         f3 = self._add_notes_file('slug3')
         self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        log_results = self._run_git('log', '--topo-order',
+                                    '--pretty=%H %d',
+                                    '--name-only')
+        self.addDetail('git log', text_content(log_results))
         raw_results = scanner.get_notes_by_version(self.c)
         results = {
             k: [f for (f, n) in v]
