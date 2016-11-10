@@ -47,7 +47,7 @@ class TestCreate(base.TestCase):
 
     def test_create_from_template(self):
         filename = create._pick_note_file_name(self.tmpdir, 'theslug')
-        create._make_note_file(filename)
+        create._make_note_file(filename, 'i-am-a-template')
         with open(filename, 'r') as f:
             body = f.read()
-        self.assertEqual(create._TEMPLATE, body)
+        self.assertEqual('i-am-a-template', body)

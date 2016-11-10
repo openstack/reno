@@ -156,3 +156,8 @@ class TestConfigProperties(base.TestCase):
         self.assertEqual('releasenotes/notes', self.c.notespath)
         self.c.override(notesdir='thenotes')
         self.assertEqual('releasenotes/thenotes', self.c.notespath)
+
+    def test_template(self):
+        self.assertEqual(config._TEMPLATE, self.c.template)
+        self.c.override(template='i-am-a-template')
+        self.assertEqual('i-am-a-template', self.c.template)

@@ -35,7 +35,8 @@ being installed globally. For example
 
 By default the new note is created under ``./releasenotes/notes``. Use
 the ``--rel-notes-dir`` to change the parent directory (the ``notes``
-subdirectory is always appended).
+subdirectory is always appended). It's also possible to set a custom
+template to create notes (see `Configuring Reno`_ ).
 
 Editing a Release Note
 ======================
@@ -171,6 +172,9 @@ So you might write a config file (if you use these often) like:
     earliest_version: 12.0.0
     collapse_pre_releases: false
     stop_at_branch_base: true
+    template: |
+              <template-used-to-create-new-notes>
+              ...
 
 These will be parsed first and then the CLI options will be applied after
 the config files.

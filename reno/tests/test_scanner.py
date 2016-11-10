@@ -158,7 +158,7 @@ class Base(base.TestCase):
             basename = '%s-%016x.yaml' % (slug, n)
         filename = os.path.join(self.reporoot, 'releasenotes', 'notes',
                                 basename)
-        create._make_note_file(filename)
+        create._make_note_file(filename, 'i-am-also-a-template')
         self._git_commit('add %s' % basename)
         return os.path.join('releasenotes', 'notes', basename)
 

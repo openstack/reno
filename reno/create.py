@@ -17,75 +17,6 @@ import os
 from reno import utils
 
 
-_TEMPLATE = """\
----
-prelude: >
-    Replace this text with content to appear at the top of the section for this
-    release. All of the prelude content is merged together and then rendered
-    separately from the items listed in other parts of the file, so the text
-    needs to be worded so that both the prelude and the other items make sense
-    when read independently. This may mean repeating some details. Not every
-    release note requires a prelude. Usually only notes describing major
-    features or adding release theme details should have a prelude.
-features:
-  - |
-    List new features here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-issues:
-  - |
-    List known issues here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-upgrade:
-  - |
-    List upgrade notes here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-deprecations:
-  - |
-    List deprecations notes here, or remove this section.  All of the list
-    items in this section are combined when the release notes are rendered, so
-    the text needs to be worded so that it does not depend on any information
-    only available in another section, such as the prelude. This may mean
-    repeating some details.
-critical:
-  - |
-    Add critical notes here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-security:
-  - |
-    Add security notes here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-fixes:
-  - |
-    Add normal bug fixes here, or remove this section.  All of the list items
-    in this section are combined when the release notes are rendered, so the
-    text needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-other:
-  - |
-    Add other notes here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-"""
-
-
 def _pick_note_file_name(notesdir, slug):
     "Pick a unique name in notesdir."
     for i in range(50):
@@ -100,12 +31,12 @@ def _pick_note_file_name(notesdir, slug):
         )
 
 
-def _make_note_file(filename):
+def _make_note_file(filename, template):
     notesdir = os.path.dirname(filename)
     if not os.path.exists(notesdir):
         os.makedirs(notesdir)
     with open(filename, 'w') as f:
-        f.write(_TEMPLATE)
+        f.write(template)
 
 
 def create_cmd(args, conf):
@@ -118,6 +49,6 @@ def create_cmd(args, conf):
     # concern.
     slug = args.slug.replace(' ', '-')
     filename = _pick_note_file_name(conf.notespath, slug)
-    _make_note_file(filename)
+    _make_note_file(filename, conf.template)
     print('Created new notes file in %s' % filename)
     return
