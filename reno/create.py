@@ -13,6 +13,7 @@
 from __future__ import print_function
 
 import os
+import subprocess
 
 from reno import utils
 
@@ -39,6 +40,13 @@ def _make_note_file(filename, template):
         f.write(template)
 
 
+def _edit_file(filename):
+    if 'EDITOR' not in os.environ:
+        return False
+    subprocess.call([os.environ['EDITOR'], filename])
+    return True
+
+
 def create_cmd(args, conf):
     "Create a new release note file from the template."
     # NOTE(dhellmann): There is a short race window where we might try
@@ -50,5 +58,8 @@ def create_cmd(args, conf):
     slug = args.slug.replace(' ', '-')
     filename = _pick_note_file_name(conf.notespath, slug)
     _make_note_file(filename, conf.template)
+    if args.edit and not _edit_file(filename):
+        print('Was unable to edit the new note. EDITOR environment variable '
+              'is missing!')
     print('Created new notes file in %s' % filename)
     return

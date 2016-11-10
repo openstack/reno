@@ -51,3 +51,15 @@ class TestCreate(base.TestCase):
         with open(filename, 'r') as f:
             body = f.read()
         self.assertEqual('i-am-a-template', body)
+
+    def test_edit(self):
+        self.useFixture(fixtures.EnvironmentVariable('EDITOR', 'myeditor'))
+        with mock.patch('subprocess.call') as call_mock:
+            self.assertTrue(create._edit_file('somepath'))
+            call_mock.assert_called_once_with(['myeditor', 'somepath'])
+
+    def test_edit_without_editor_env_var(self):
+        self.useFixture(fixtures.EnvironmentVariable('EDITOR'))
+        with mock.patch('subprocess.call') as call_mock:
+            self.assertFalse(create._edit_file('somepath'))
+            call_mock.assert_not_called()

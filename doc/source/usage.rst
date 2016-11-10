@@ -32,6 +32,14 @@ being installed globally. For example
 
         releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
 
+The ``--edit`` option enables to edit the note just after its creation.
+
+::
+
+    $ reno new slug-goes-here --edit
+    ... Open your editor (defined with EDITOR environment variable) ...
+    Created new notes file in releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
+
 
 By default the new note is created under ``./releasenotes/notes``. Use
 the ``--rel-notes-dir`` to change the parent directory (the ``notes``

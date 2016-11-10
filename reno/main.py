@@ -94,6 +94,11 @@ def main(argv=sys.argv[1:]):
         help='create a new note',
     )
     do_new.add_argument(
+        '--edit',
+        action='store_true',
+        help='Edit note after its creation (require EDITOR env variable)',
+    )
+    do_new.add_argument(
         'slug',
         help='descriptive title of note (keep it short)',
     )
