@@ -15,7 +15,7 @@ import os.path
 from docutils import nodes
 from docutils.parsers import rst
 from docutils.parsers.rst import directives
-from docutils.statemachine import ViewList
+from docutils import statemachine
 from sphinx.util.nodes import nested_parse_with_titles
 
 from reno import config
@@ -89,7 +89,7 @@ class ReleaseNotesDirective(rst.Directive):
             title=title,
         )
         source_name = '<' + __name__ + '>'
-        result = ViewList()
+        result = statemachine.ViewList()
         for line in text.splitlines():
             result.append(line, source_name)
 
