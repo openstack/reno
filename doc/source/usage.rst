@@ -50,7 +50,7 @@ Editing a Release Note
 ======================
 
 The note file is a YAML file with several sections. All of the text is
-interpreted as having reStructuredText formatting.
+interpreted as having `reStructuredText`_ formatting.
 
 prelude
 
@@ -126,7 +126,7 @@ entirely.
 Formatting
 ----------
 
-Release notes may include embedded reStructuredText, including simple
+Release notes may include embedded `reStructuredText`_, including simple
 inline markup like emphasis and pre-formatted text as well as complex
 body structures such as nested lists and tables. To use these
 formatting features, the note must be escaped from the YAML parser.
@@ -142,6 +142,8 @@ the value with ``|``. For example:
    :literal:
 
 See :doc:`examples` for the rendered version of the note.
+
+.. _reStructuredText: http://www.sphinx-doc.org/en/stable/rest.html
 
 Generating a Report
 ===================
