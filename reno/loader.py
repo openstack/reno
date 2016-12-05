@@ -52,7 +52,7 @@ class Loader(object):
         self._earliest_version = conf.earliest_version
 
         self._cache = None
-        self._scanner = scanner.Scanner(self._config)
+        self._scanner = None
         self._scanner_output = None
         self._cache_filename = get_cache_filename(self._reporoot,
                                                   self._notespath)
@@ -76,6 +76,7 @@ class Loader(object):
                     for n in self._cache['notes']
                 }
         else:
+            self._scanner = scanner.Scanner(self._config)
             self._scanner_output = self._scanner.get_notes_by_version()
 
     @property
