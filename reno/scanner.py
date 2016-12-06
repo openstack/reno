@@ -103,9 +103,7 @@ class Scanner(object):
             tagged_sha = tag_obj.object[1]
             self._shas_to_tags.setdefault(tagged_sha, []).append(tag)
 
-    def _get_tags_on_branch(self, branch):
-        "Return a list of tag names on the given branch."
-        results = []
+    def _get_walker_for_branch(self, branch):
         if branch:
             branch_ref = b'refs/heads/' + branch.encode('utf-8')
             if not refs.check_ref_format(branch_ref):
@@ -115,39 +113,33 @@ class Scanner(object):
             branch_head = self._repo.refs[branch_ref]
         else:
             branch_head = self._repo.refs[b'HEAD']
-        w = self._repo.get_walker(branch_head)
-        for c in w:
+        return self._repo.get_walker(branch_head)
+
+    def _get_tags_on_branch(self, branch, with_count=False):
+        "Return a list of tag names on the given branch."
+        results = []
+        count = 0
+        for c in self._get_walker_for_branch(branch):
             # shas_to_tags has encoded versions of the shas
             # but the commit object gives us a decoded version
             sha = c.commit.sha().hexdigest().encode('ascii')
             if sha in self._shas_to_tags:
-                results.extend(self._shas_to_tags[sha])
+                if with_count and count and not results:
+                    val = '{}-{}'.format(self._shas_to_tags[sha][0], count)
+                    results.append(val)
+                else:
+                    results.extend(self._shas_to_tags[sha])
+            else:
+                count += 1
         return results
 
     def _get_current_version(self, branch=None):
-        """Return the current version of the repository.
-
-        If the repo appears to contain a python project, use setup.py to
-        get the version so pbr (if used) can do its thing. Otherwise, use
-        git describe.
-
-        """
-        cmd = ['git', 'describe', '--tags']
-        if branch is not None:
-            cmd.append(branch)
-        try:
-            result = utils.check_output(cmd, cwd=self.reporoot).strip()
-            if '-' in result:
-                # Descriptions that come after a commit look like
-                # 2.0.0-1-abcde, and we want to remove the SHA value from
-                # the end since we only care about the version number
-                # itself, but we need to recognize that the change is
-                # unreleased so keep the -1 part.
-                result, dash, ignore = result.rpartition('-')
-        except subprocess.CalledProcessError:
-            # This probably means there are no tags.
-            result = '0.0.0'
-        return result
+        "Return the current version of the repository, like git describe."
+        tags = self._get_tags_on_branch(branch, with_count=True)
+        if not tags:
+            # Never tagged.
+            return '0.0.0'
+        return tags[0]
 
     def _get_branch_base(self, branch):
         "Return the tag at base of the branch."
