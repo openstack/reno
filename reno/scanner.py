@@ -81,12 +81,49 @@ PRE_RELEASE_RE = re.compile('''
 ''', flags=re.VERBOSE | re.UNICODE)
 
 
+class RenoRepo(repo.Repo):
+
+    def _get_file_from_tree(self, filename, tree):
+        "Given a tree object, traverse it to find the file."
+        try:
+            if os.sep in filename:
+                # The tree entry will only have a single level of the
+                # directory name, so if we have a / in our filename we
+                # know we're going to have to keep traversing the
+                # tree.
+                prefix, _, trailing = filename.partition(os.sep)
+                mode, subtree_sha = tree[prefix.encode('utf-8')]
+                subtree = self[subtree_sha]
+                return self._get_file_from_tree(trailing, subtree)
+            else:
+                # The tree entry will point to the blob with the
+                # contents of the file.
+                mode, file_blob_sha = tree[filename.encode('utf-8')]
+                file_blob = self[file_blob_sha]
+                return file_blob.data
+        except KeyError:
+            # Some part of the filename wasn't found, so the file is
+            # not present. Return the sentinel value.
+            return None
+
+    def get_file_at_commit(self, filename, sha):
+        "Return the contents of the file if it exists at the commit, or None."
+        # Get the tree associated with the commit identified by the
+        # input SHA, then look through the items in the tree to find
+        # the one with the path matching the filename. Take the
+        # associated SHA from the tree and get the file contents from
+        # the repository.
+        commit = self[sha.encode('ascii')]
+        tree = self[commit.tree]
+        return self._get_file_from_tree(filename, tree)
+
+
 class Scanner(object):
 
     def __init__(self, conf):
         self.conf = conf
         self.reporoot = self.conf.reporoot
-        self._repo = repo.Repo(self.reporoot)
+        self._repo = RenoRepo(self.reporoot)
         self._load_tags()
 
     def _load_tags(self):
@@ -200,13 +237,7 @@ class Scanner(object):
 
     def get_file_at_commit(self, filename, sha):
         "Return the contents of the file if it exists at the commit, or None."
-        try:
-            return utils.check_output(
-                ['git', 'show', '%s:%s' % (sha, filename)],
-                cwd=self.reporoot,
-            )
-        except subprocess.CalledProcessError:
-            return None
+        return self._repo.get_file_at_commit(filename, sha)
 
     def _file_exists_at_commit(self, filename, sha):
         "Return true if the file exists at the given commit."
