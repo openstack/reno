@@ -17,7 +17,6 @@ import fnmatch
 import logging
 import os.path
 import re
-import subprocess
 import sys
 
 from dulwich import refs
@@ -195,55 +194,21 @@ class Scanner(object):
         # git rev-list $(git rev-list --first-parent \
         #   ^origin/stable/newton master | tail -n1)^^!
         #
-        # Determine the list of commits accessible from the branch we are
-        # supposed to be scanning, but not on master.
-        cmd = [
-            'git',
-            'rev-list',
-            '--first-parent',
-            branch,  # on the branch
-            '^master',  # not on master
-        ]
-        try:
-            LOG.debug(' '.join(cmd))
-            parents = utils.check_output(cmd, cwd=self.reporoot).strip()
-            if not parents:
-                # There are no commits on the branch, yet, so we can use
-                # our current-version logic.
-                return self._get_current_version(branch)
-        except subprocess.CalledProcessError as e:
-            LOG.warning('failed to retrieve branch base: %s [%s]',
-                        e, e.output.strip())
-            return None
-        parent = parents.splitlines()[-1]
-        LOG.debug('parent = %r', parent)
-        # Now get the previous commit, which should be the one we tagged
-        # to create the branch.
-        cmd = [
-            'git',
-            'rev-list',
-            '{}^^!'.format(parent),
-        ]
-        try:
-            sha = utils.check_output(cmd, cwd=self.reporoot).strip()
-            LOG.debug('sha = %r', sha)
-        except subprocess.CalledProcessError as e:
-            LOG.warning('failed to retrieve branch base: %s [%s]',
-                        e, e.output.strip())
-            return None
-        # Now get the tag for that commit.
-        cmd = [
-            'git',
-            'describe',
-            '--abbrev=0',
-            sha,
-        ]
-        try:
-            return utils.check_output(cmd, cwd=self.reporoot).strip()
-        except subprocess.CalledProcessError as e:
-            LOG.warning('failed to retrieve branch base: %s [%s]',
-                        e, e.output.strip())
-            return None
+        # Build the set of all commits that appear on the master
+        # branch, then scan the commits that appear on the specified
+        # branch until we find something that is on both.
+        master_commits = set(
+            c.commit.sha().hexdigest()
+            for c in self._get_walker_for_branch('master')
+        )
+        for c in self._get_walker_for_branch(branch):
+            if c.commit.sha().hexdigest() in master_commits:
+                # We got to this commit via the branch, but it is also
+                # on master, so this is the base.
+                tags = self._repo.get_tags_on_commit(
+                    c.commit.sha().hexdigest().encode('ascii'))
+                return tags[0]
+        return None
 
     def get_file_at_commit(self, filename, sha):
         "Return the contents of the file if it exists at the commit, or None."
