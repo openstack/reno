@@ -1189,7 +1189,7 @@ class TagsTest(Base):
         self._add_notes_file('slug3')
         self._run_git('tag', '-s', '-m', 'first tag', '3.0.0')
 
-    def test_tags_without_count(self):
+    def test_master(self):
         self.scanner = scanner.Scanner(self.c)
         results = self.scanner._get_tags_on_branch(None)
         self.assertEqual(
@@ -1197,20 +1197,16 @@ class TagsTest(Base):
             results,
         )
 
-    def test_tags_with_count_tagged_head(self):
-        self.scanner = scanner.Scanner(self.c)
-        results = self.scanner._get_tags_on_branch(None, with_count=True)
-        self.assertEqual(
-            ['3.0.0', '2.0.0', '1.0.0'],
-            results,
-        )
-
-    def test_tags_with_count_head_after_tag(self):
+    def test_not_master(self):
+        self._run_git('checkout', '2.0.0')
+        self._run_git('checkout', '-b', 'not-master')
         self._add_notes_file('slug4')
+        self._run_git('tag', '-s', '-m', 'not on master', '2.0.1')
+        self._run_git('checkout', 'master')
         self.scanner = scanner.Scanner(self.c)
-        results = self.scanner._get_tags_on_branch(None, with_count=True)
+        results = self.scanner._get_tags_on_branch('not-master')
         self.assertEqual(
-            ['3.0.0-1', '2.0.0', '1.0.0'],
+            ['2.0.1', '2.0.0', '1.0.0'],
             results,
         )
 
