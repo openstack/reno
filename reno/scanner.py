@@ -101,10 +101,14 @@ class RenoRepo(repo.Repo):
             self._shas_to_tags.setdefault(tagged_sha, []).append(tag)
 
     def get_tags_on_commit(self, sha):
-        "Return the tag(s) on a commit."
+        "Return the tag(s) on a commit, in application order."
         if self._all_tags is None:
             self._load_tags()
-        return self._shas_to_tags.get(sha, [])
+        tags_on_commit = self._shas_to_tags.get(sha, [])
+        tags_on_commit.sort(
+            key=lambda x: self[self._all_tags[x]].tag_time
+        )
+        return tags_on_commit
 
     def _get_file_from_tree(self, filename, tree):
         "Given a tree object, traverse it to find the file."
@@ -190,7 +194,7 @@ class Scanner(object):
                 if count:
                     val = '{}-{}'.format(tags[-1], count)
                 else:
-                    val = tags[0]
+                    val = tags[-1]
                 return val
             if commit.parents:
                 # Only traverse the first parent of each node.
@@ -220,7 +224,7 @@ class Scanner(object):
                 # on master, so this is the base.
                 tags = self._repo.get_tags_on_commit(
                     c.commit.sha().hexdigest().encode('ascii'))
-                return tags[0]
+                return tags[-1]
         return None
 
     def get_file_at_commit(self, filename, sha):
