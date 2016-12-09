@@ -20,7 +20,6 @@ import os.path
 import re
 import subprocess
 import time
-import unittest
 
 from dulwich import diff_tree
 from dulwich import objects
@@ -56,8 +55,6 @@ summary = Test Package
 packages =
     testpkg
 """
-
-GIT_VERSION = utils.check_output(['git', '--version']).strip()
 
 
 class GPGKeyFixture(fixtures.Fixture):
@@ -149,6 +146,8 @@ class Base(base.TestCase):
     def _git_commit(self, message='commit message'):
         self._run_git('add', '.')
         self._run_git('commit', '-m', message)
+        self._run_git('show', '--pretty=format:%H')
+        time.sleep(0.1)  # force a delay between commits
 
     def _add_other_file(self, name):
         with open(os.path.join(self.reporoot, name), 'w') as f:
@@ -492,10 +491,7 @@ class BasicTest(Base):
             results,
         )
 
-    @unittest.skipIf(GIT_VERSION == 'git version 2.9.2',
-                     'Skipping for git version 2.9.2')
     def test_rename_then_delete_file(self):
-        print(GIT_VERSION)
         self._make_python_package()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         f1 = self._add_notes_file('slug1')
@@ -734,7 +730,9 @@ class MergeCommitTest(Base):
         n2 = self._add_notes_file()
         self._run_git('checkout', 'master')
         self._add_other_file('ignore-1.txt')
+        # Merge the branch into master.
         self._run_git('merge', '--no-ff', 'test_merge_commit')
+        time.sleep(0.1)  # force a delay between commits
         self._add_other_file('ignore-2.txt')
         self._run_git('tag', '-s', '-m', 'second tag', '2.0.0')
         self.scanner = scanner.Scanner(self.c)
@@ -763,7 +761,10 @@ class MergeCommitTest(Base):
         n2 = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         self._add_other_file('ignore-1.txt')
+        # Merge the branch into master.
         self._run_git('merge', '--no-ff', 'test_merge_commit')
+        time.sleep(0.1)  # force a delay between commits
+        self._run_git('show')
         self._add_other_file('ignore-2.txt')
         self._run_git('tag', '-s', '-m', 'second tag', '2.0.0')
         self.scanner = scanner.Scanner(self.c)
@@ -796,6 +797,7 @@ class MergeCommitTest(Base):
         self._add_other_file('ignore-1.txt')
         self._run_git('tag', '-s', '-m', 'second tag', '1.1.0')
         self._run_git('merge', '--no-ff', 'test_merge_commit')
+        time.sleep(0.1)  # force a delay between commits
         self._add_other_file('ignore-2.txt')
         self._run_git('tag', '-s', '-m', 'third tag', '2.0.0')
         self._add_other_file('ignore-3.txt')
@@ -833,6 +835,7 @@ class MergeCommitTest(Base):
         n3 = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'second tag', '1.1.0')
         self._run_git('merge', '--no-ff', 'test_merge_commit')
+        time.sleep(0.1)  # force a delay between commits
         self._add_other_file('ignore-2.txt')
         self._run_git('tag', '-s', '-m', 'third tag', '2.0.0')
         self._add_other_file('ignore-3.txt')
