@@ -423,7 +423,7 @@ class Scanner(object):
         collapse_pre_releases = self.conf.collapse_pre_releases
         stop_at_branch_base = self.conf.stop_at_branch_base
 
-        LOG.debug('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
+        LOG.info('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
 
         # If the user has not told us where to stop, try to work it out
         # for ourselves. If branch is set and is not "master", then we
@@ -441,7 +441,7 @@ class Scanner(object):
                     earliest_version = '.'.join(
                         earliest_version.split('.')[:-1]
                     )
-        LOG.debug('using earliest_version = %r', earliest_version)
+        LOG.info('earliest version on the branch is %s', earliest_version)
 
         # Determine all of the tags known on the branch, in their date
         # order. We scan the commit history in topological order to ensure
@@ -526,9 +526,9 @@ class Scanner(object):
                     if uniqueid not in last_name_by_id:
                         path, sha = change[-2:]
                         last_name_by_id[uniqueid] = (path, sha)
-                        LOG.debug(
-                            '%s: updating last_name_by_id with %r',
-                            uniqueid, (path, sha))
+                        LOG.info(
+                            '%s: update to %s in commit %s',
+                            uniqueid, path, sha)
                     else:
                         LOG.debug(
                             '%s: add for file we have already seen',
@@ -546,9 +546,9 @@ class Scanner(object):
                     # the history data.
                     if uniqueid not in last_name_by_id:
                         uniqueids_deleted.add(uniqueid)
-                        LOG.debug(
-                            '%s: remembering deleted note',
-                            uniqueid,
+                        LOG.info(
+                            '%s: note deleted in %s',
+                            uniqueid, sha,
                         )
                     else:
                         LOG.debug(
@@ -563,9 +563,9 @@ class Scanner(object):
                     if uniqueid not in last_name_by_id:
                         path, sha = change[-2:]
                         last_name_by_id[uniqueid] = (path, sha)
-                        LOG.debug(
-                            '%s: updating last_name_by_id with %r',
-                            uniqueid, (path, sha))
+                        LOG.info(
+                            '%s: update to %s in commit %s',
+                            uniqueid, path, sha)
                     else:
                         LOG.debug(
                             '%s: renamed file already known with the new name',
@@ -579,9 +579,9 @@ class Scanner(object):
                     if uniqueid not in last_name_by_id:
                         path, sha = change[-2:]
                         last_name_by_id[uniqueid] = (path, sha)
-                        LOG.debug(
-                            '%s: updating last_name_by_id with %r',
-                            uniqueid, (path, sha))
+                        LOG.info(
+                            '%s: update to %s in commit %s',
+                            uniqueid, path, sha)
                     else:
                         LOG.debug(
                             '%s: modified file already known',

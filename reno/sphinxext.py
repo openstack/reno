@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
 import os.path
 
 from docutils import nodes
@@ -101,3 +102,8 @@ class ReleaseNotesDirective(rst.Directive):
 
 def setup(app):
     app.add_directive('release-notes', ReleaseNotesDirective)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(name)s] %(message)s',
+    )
