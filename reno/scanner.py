@@ -20,7 +20,7 @@ import re
 import sys
 
 from dulwich import diff_tree
-from dulwich import refs
+from dulwich import objects
 from dulwich import repo
 
 LOG = logging.getLogger(__name__)
@@ -160,21 +160,35 @@ class RenoRepo(repo.Repo):
         }
         self._shas_to_tags = {}
         for tag, tag_sha in self._all_tags.items():
-            # The tag has its own SHA, but the tag refers to the commit and
-            # that's the SHA we'll see when we scan commits on a branch.
             tag_obj = self[tag_sha]
-            tagged_sha = tag_obj.object[1]
-            self._shas_to_tags.setdefault(tagged_sha, []).append(tag)
+            if isinstance(tag_obj, objects.Tag):
+                # A signed tag has its own SHA, but the tag refers to
+                # the commit and that's the SHA we'll see when we scan
+                # commits on a branch.
+                tagged_sha = tag_obj.object[1]
+                date = tag_obj.tag_time
+            elif isinstance(tag_obj, objects.Commit):
+                # Unsigned tags refer directly to commits. This seems
+                # to especially happen when the tag definition moves
+                # to the packed-refs list instead of being represented
+                # by its own file.
+                tagged_sha = tag_obj.id
+                date = tag_obj.commit_time
+            else:
+                raise ValueError(
+                    ('Unrecognized tag object {!r} with '
+                     'tag {} and SHA {!r}: {}').format(
+                        tag_obj, tag, tag_sha, type(tag_obj))
+                )
+            self._shas_to_tags.setdefault(tagged_sha, []).append((tag, date))
 
     def get_tags_on_commit(self, sha):
         "Return the tag(s) on a commit, in application order."
         if self._all_tags is None:
             self._load_tags()
-        tags_on_commit = self._shas_to_tags.get(sha, [])
-        tags_on_commit.sort(
-            key=lambda x: self[self._all_tags[x]].tag_time
-        )
-        return tags_on_commit
+        tags_and_dates = self._shas_to_tags.get(sha, [])
+        tags_and_dates.sort(key=lambda x: x[1])
+        return [t[0] for t in tags_and_dates]
 
     def _get_file_from_tree(self, filename, tree):
         "Given a tree object, traverse it to find the file."
@@ -221,10 +235,6 @@ class Scanner(object):
     def _get_branch_head(self, branch):
         if branch:
             branch_ref = b'refs/heads/' + branch.encode('utf-8')
-            if not refs.check_ref_format(branch_ref):
-                raise ValueError(
-                    '{!r} does not look like a valid branch reference'.format(
-                        branch_ref))
             return self._repo.refs[branch_ref]
         return self._repo.refs[b'HEAD']
 
