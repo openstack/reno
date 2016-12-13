@@ -20,7 +20,8 @@ from reno import scanner
 
 
 def build_cache_db(conf, versions_to_include):
-    notes = scanner.get_notes_by_version(conf)
+    s = scanner.Scanner(conf)
+    notes = s.get_notes_by_version()
 
     # Default to including all versions returned by the scanner.
     if not versions_to_include:
@@ -31,11 +32,7 @@ def build_cache_db(conf, versions_to_include):
     file_contents = {}
     for version in versions_to_include:
         for filename, sha in notes[version]:
-            body = scanner.get_file_at_commit(
-                conf.reporoot,
-                filename,
-                sha,
-            )
+            body = s.get_file_at_commit(filename, sha)
             # We want to save the contents of the file, which is YAML,
             # inside another YAML file. That looks terribly ugly with
             # all of the escapes needed to format it properly as

@@ -197,6 +197,7 @@ class Base(base.TestCase):
         self.temp_dir = self.useFixture(fixtures.TempDir()).path
         self.reporoot = os.path.join(self.temp_dir, 'reporoot')
         self.c = config.Config(self.reporoot)
+        self.scanner = scanner.Scanner(self.c)
         self._git_setup()
         self._counter = itertools.count(1)
         self.get_note_num = lambda: next(self._counter)
@@ -206,7 +207,7 @@ class BasicTest(Base):
 
     def test_non_python_no_tags(self):
         filename = self._add_notes_file()
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -219,7 +220,7 @@ class BasicTest(Base):
     def test_python_no_tags(self):
         self._make_python_package()
         filename = self._add_notes_file()
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -233,7 +234,7 @@ class BasicTest(Base):
         filename = self._add_notes_file()
         self._add_other_file('not-a-release-note.txt')
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -246,7 +247,7 @@ class BasicTest(Base):
     def test_note_commit_tagged(self):
         filename = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -260,7 +261,7 @@ class BasicTest(Base):
         self._make_python_package()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         filename = self._add_notes_file()
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -275,7 +276,7 @@ class BasicTest(Base):
         self._add_other_file('ignore-1.txt')
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         self._add_other_file('ignore-2.txt')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -290,7 +291,7 @@ class BasicTest(Base):
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         f1 = self._add_notes_file()
         f2 = self._add_notes_file()
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -305,7 +306,7 @@ class BasicTest(Base):
         f1 = self._add_notes_file(commit=False)
         f2 = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -321,7 +322,7 @@ class BasicTest(Base):
         f1 = self._add_notes_file()
         self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
         f2 = self._add_notes_file()
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -341,7 +342,7 @@ class BasicTest(Base):
         f2 = f1.replace('slug1', 'slug2')
         self._run_git('mv', f1, f2)
         self._git_commit('rename note file')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -360,7 +361,7 @@ class BasicTest(Base):
         f2 = f1.replace('slug1', 'slug0')
         self._run_git('mv', f1, f2)
         self._git_commit('rename note file')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -379,7 +380,7 @@ class BasicTest(Base):
         with open(os.path.join(self.reporoot, f1), 'w') as f:
             f.write('---\npreamble: new contents for file')
         self._git_commit('edit note file')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -398,7 +399,7 @@ class BasicTest(Base):
         f2 = f1.replace('slug1', 'slug2')
         self._run_git('mv', f1, f2)
         self._git_commit('rename note file')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -420,7 +421,7 @@ class BasicTest(Base):
                         'slug1-0000000000000001')
         self._run_git('mv', f1, f2)
         self._git_commit('rename note file')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -442,7 +443,7 @@ class BasicTest(Base):
         self.c.override(
             earliest_version='2.0.0',
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -462,7 +463,7 @@ class BasicTest(Base):
         self._run_git('rm', f1)
         self._git_commit('remove note file')
         self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -492,7 +493,7 @@ class BasicTest(Base):
                                     '--pretty=%H %d',
                                     '--name-only')
         self.addDetail('git log', text_content(log_results))
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -511,7 +512,7 @@ class PreReleaseTest(Base):
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0a1')
         f1 = self._add_notes_file('slug1')
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0a2')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -527,7 +528,7 @@ class PreReleaseTest(Base):
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0b1')
         f1 = self._add_notes_file('slug1')
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0b2')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -543,7 +544,7 @@ class PreReleaseTest(Base):
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0rc1')
         f1 = self._add_notes_file('slug1')
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0.0rc2')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -568,7 +569,7 @@ class PreReleaseTest(Base):
         self.c.override(
             collapse_pre_releases=True,
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -590,7 +591,7 @@ class PreReleaseTest(Base):
         self.c.override(
             collapse_pre_releases=True,
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -615,7 +616,7 @@ class PreReleaseTest(Base):
         self.c.override(
             collapse_pre_releases=True,
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -643,7 +644,7 @@ class MergeCommitTest(Base):
         self._run_git('merge', '--no-ff', 'test_merge_commit')
         self._add_other_file('ignore-2.txt')
         self._run_git('tag', '-s', '-m', 'second tag', '2.0.0')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -671,7 +672,7 @@ class MergeCommitTest(Base):
         self._run_git('merge', '--no-ff', 'test_merge_commit')
         self._add_other_file('ignore-2.txt')
         self._run_git('tag', '-s', '-m', 'second tag', '2.0.0')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -703,7 +704,7 @@ class MergeCommitTest(Base):
         self._add_other_file('ignore-2.txt')
         self._run_git('tag', '-s', '-m', 'third tag', '2.0.0')
         self._add_other_file('ignore-3.txt')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -739,7 +740,7 @@ class MergeCommitTest(Base):
         self._add_other_file('ignore-2.txt')
         self._run_git('tag', '-s', '-m', 'third tag', '2.0.0')
         self._add_other_file('ignore-3.txt')
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -789,7 +790,7 @@ class BranchTest(Base):
         f21 = self._add_notes_file('slug21')
         log_text = self._run_git('log')
         self.addDetail('git log', text_content(log_text))
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -814,7 +815,7 @@ class BranchTest(Base):
         self.c.override(
             branch='stable/2',
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -841,7 +842,7 @@ class BranchTest(Base):
         self.c.override(
             stop_at_branch_base=False,
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -877,7 +878,7 @@ class BranchTest(Base):
             branch='stable/4',
             collapse_pre_releases=False,
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -913,7 +914,7 @@ class BranchTest(Base):
             branch='stable/4',
             collapse_pre_releases=True,
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -946,7 +947,7 @@ class BranchTest(Base):
         self.c.override(
             branch='stable/4',
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -979,7 +980,7 @@ class BranchTest(Base):
         self.c.override(
             branch='stable/4',
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -1010,7 +1011,7 @@ class BranchTest(Base):
         self.c.override(
             branch='stable/4',
         )
-        raw_results = scanner.get_notes_by_version(self.c)
+        raw_results = self.scanner.get_notes_by_version()
         results = {
             k: [f for (f, n) in v]
             for (k, v) in raw_results.items()
@@ -1183,3 +1184,33 @@ class GetTagsParseTest(base.TestCase):
             actual = scanner._get_version_tags_on_branch('reporoot',
                                                          branch=None)
         self.assertEqual(self.EXPECTED, actual)
+
+
+class VersionTest(Base):
+
+    def setUp(self):
+        super(VersionTest, self).setUp()
+        self._make_python_package()
+        self.f1 = self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self.f2 = self._add_notes_file('slug2')
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        self._add_notes_file('slug3')
+        self._run_git('tag', '-s', '-m', 'first tag', '3.0.0')
+
+    def test_tagged_head(self):
+        self.scanner = scanner.Scanner(self.c)
+        results = self.scanner._get_current_version(None)
+        self.assertEqual(
+            '3.0.0',
+            results,
+        )
+
+    def test_head_after_tag(self):
+        self._add_notes_file('slug4')
+        self.scanner = scanner.Scanner(self.c)
+        results = self.scanner._get_current_version(None)
+        self.assertEqual(
+            '3.0.0-1',
+            results,
+        )

@@ -45,19 +45,19 @@ class TestCache(base.TestCase):
         """)
     }
 
-    def _get_note_body(self, reporoot, filename, sha):
+    def _get_note_body(self, filename, sha):
         return self.note_bodies.get(filename, '')
 
     def setUp(self):
         super(TestCache, self).setUp()
         self.useFixture(
-            mockpatch.Patch('reno.scanner.get_file_at_commit',
+            mockpatch.Patch('reno.scanner.Scanner.get_file_at_commit',
                             new=self._get_note_body)
         )
         self.c = config.Config('.')
 
     def test_build_cache_db(self):
-        with mock.patch('reno.scanner.get_notes_by_version') as gnbv:
+        with mock.patch('reno.scanner.Scanner.get_notes_by_version') as gnbv:
             gnbv.return_value = self.scanner_output
             db = cache.build_cache_db(
                 self.c,

@@ -52,6 +52,7 @@ class Loader(object):
         self._earliest_version = conf.earliest_version
 
         self._cache = None
+        self._scanner = scanner.Scanner(self._config)
         self._scanner_output = None
         self._cache_filename = get_cache_filename(self._reporoot,
                                                   self._notespath)
@@ -75,7 +76,7 @@ class Loader(object):
                     for n in self._cache['notes']
                 }
         else:
-            self._scanner_output = scanner.get_notes_by_version(self._config)
+            self._scanner_output = self._scanner.get_notes_by_version()
 
     @property
     def versions(self):
@@ -96,7 +97,7 @@ class Loader(object):
         if self._cache:
             content = self._cache['file-contents'][filename]
         else:
-            body = scanner.get_file_at_commit(self._reporoot, filename, sha)
+            body = self._scanner.get_file_at_commit(filename, sha)
             content = yaml.safe_load(body)
 
         for section_name, section_content in content.items():
