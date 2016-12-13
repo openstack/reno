@@ -20,6 +20,7 @@ import os.path
 import re
 import subprocess
 import textwrap
+import unittest
 
 import fixtures
 import mock
@@ -53,6 +54,8 @@ summary = Test Package
 packages =
     testpkg
 """
+
+GIT_VERSION = utils.check_output(['git', '--version']).strip()
 
 
 class GPGKeyFixture(fixtures.Fixture):
@@ -470,7 +473,10 @@ class BasicTest(Base):
             results,
         )
 
+    @unittest.skipIf(GIT_VERSION == 'git version 2.9.2',
+                     'Skipping for git version 2.9.2')
     def test_rename_then_delete_file(self):
+        print(GIT_VERSION)
         self._make_python_package()
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         f1 = self._add_notes_file('slug1')
