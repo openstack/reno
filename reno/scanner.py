@@ -42,7 +42,7 @@ def _get_unique_id(filename):
     return uniqueid
 
 
-def _note_file(notesdir, name):
+def _note_file(name):
     """Return bool indicating if the filename looks like a note file.
 
     This is used to filter the files in changes based on the notes
@@ -53,19 +53,72 @@ def _note_file(notesdir, name):
     """
     if not name:
         return False
-    if fnmatch.fnmatch(name, notesdir + '/*.yaml'):
+    if fnmatch.fnmatch(name, '*.yaml'):
         return True
-    elif fnmatch.fnmatch(name, notesdir + '/*'):
+    else:
         LOG.warning('found and ignored extra file %s', name)
     return False
 
 
-def _aggregate_changes(walk_entry, notesdir):
-    """Collapse a WalkEntry based on our notion of uniqueness for file uids.
+def _changes_in_subdir(repo, walk_entry, subdir):
+    """Iterator producing changes of interest to reno.
 
-    Each WalkEntry contains a list of TreeChange instances which
-    describe changes between the old and new repository trees. The
-    change has a type, and new and old paths and shas.
+    The default changes() method of a WalkEntry computes all of the
+    changes in the entire repo at that point. We only care about
+    changes in a subdirectory, so this reimplements
+    WalkeEntry.changes() with that filter in place.
+
+    The alternative, passing paths to the TreeWalker, does not work
+    because we need all of the commits in sequence so we can tell when
+    the tag changes. We have to look at every commit to see if it
+    either has a tag, a note file, or both.
+
+    NOTE(dhellmann): The TreeChange entries returned as a result of
+    the manipulation done by this function have the subdir prefix
+    stripped.
+
+    """
+    commit = walk_entry.commit
+    store = repo.object_store
+
+    parents = walk_entry._get_parents(commit)
+
+    if not parents:
+        changes_func = diff_tree.tree_changes
+        parent_subtree = None
+    elif len(parents) == 1:
+        changes_func = diff_tree.tree_changes
+        parent_tree = repo[repo[parents[0]].tree]
+        parent_subtree = repo._get_subtree(parent_tree, subdir)
+        if parent_subtree:
+            parent_subtree = parent_subtree.sha().hexdigest().encode('ascii')
+    else:
+        changes_func = diff_tree.tree_changes_for_merge
+        parent_subtree = [
+            repo._get_subtree(repo[repo[p].tree], subdir)
+            for p in parents
+        ]
+        parent_subtree = [
+            p.sha().hexdigest().encode('ascii')
+            for p in parent_subtree
+            if p
+        ]
+    subdir_tree = repo._get_subtree(repo[commit.tree], subdir)
+    if subdir_tree:
+        commit_subtree = subdir_tree.sha().hexdigest().encode('ascii')
+    else:
+        commit_subtree = None
+    if parent_subtree == commit_subtree:
+        return []
+    return changes_func(store, parent_subtree, commit_subtree)
+
+
+def _aggregate_changes(walk_entry, changes, notesdir):
+    """Collapse a series of changes based on uniqueness for file uids.
+
+    The list of TreeChange instances describe changes between the old
+    and new repository trees. The change has a type, and new and old
+    paths and shas.
 
     Simple add, delete, and change operations are handled directly.
 
@@ -85,10 +138,10 @@ def _aggregate_changes(walk_entry, notesdir):
     them easier.
 
     """
-    by_uid = collections.defaultdict(list)
     sha = walk_entry.commit.id
     LOG.debug('entry for commit %s', sha)
-    for ec in walk_entry.changes():
+    by_uid = collections.defaultdict(list)
+    for ec in changes:
         LOG.debug('change %r', ec)
         if not isinstance(ec, list):
             ec = [ec]
@@ -97,21 +150,21 @@ def _aggregate_changes(walk_entry, notesdir):
         for c in ec:
             if c.type == diff_tree.CHANGE_ADD:
                 path = c.new.path.decode('utf-8') if c.new.path else None
-                if _note_file(notesdir, path):
+                if _note_file(path):
                     uid = _get_unique_id(path)
                     by_uid[uid].append((c.type, path, sha))
                 else:
                     LOG.debug('ignoring')
             elif c.type == diff_tree.CHANGE_DELETE:
                 path = c.old.path.decode('utf-8') if c.old.path else None
-                if _note_file(notesdir, path):
+                if _note_file(path):
                     uid = _get_unique_id(path)
                     by_uid[uid].append((c.type, path))
                 else:
                     LOG.debug('ignoring')
             elif c.type == diff_tree.CHANGE_MODIFY:
                 path = c.new.path.decode('utf-8') if c.new.path else None
-                if _note_file(notesdir, path):
+                if _note_file(path):
                     uid = _get_unique_id(path)
                     by_uid[uid].append((c.type, path, sha))
                 else:
@@ -189,6 +242,29 @@ class RenoRepo(repo.Repo):
         tags_and_dates = self._shas_to_tags.get(sha, [])
         tags_and_dates.sort(key=lambda x: x[1])
         return [t[0] for t in tags_and_dates]
+
+    def _get_subtree(self, tree, path):
+        "Given a tree SHA and a path, return the SHA of the subtree."
+        try:
+            if os.sep in path:
+                # The tree entry will only have a single level of the
+                # directory name, so if we have a / in our filename we
+                # know we're going to have to keep traversing the
+                # tree.
+                prefix, _, trailing = path.partition(os.sep)
+                mode, subtree_sha = tree[prefix.encode('utf-8')]
+                subtree = self[subtree_sha]
+                return self._get_subtree(subtree, trailing)
+            else:
+                # The tree entry will point to the SHA of the contents
+                # of the subtree.
+                mode, sha = tree[path.encode('utf-8')]
+                result = self[sha]
+                return result
+        except KeyError:
+            # Some part of the path wasn't found, so the subtree is
+            # not present. Return the sentinel value.
+            return None
 
     def _get_file_from_tree(self, filename, tree):
         "Given a tree object, traverse it to find the file."
@@ -517,7 +593,8 @@ class Scanner(object):
                 versions.append(current_version)
 
             # Look for changes to notes files in this commit.
-            for change in _aggregate_changes(entry, notesdir):
+            changes = _changes_in_subdir(self._repo, entry, notesdir)
+            for change in _aggregate_changes(entry, changes, notesdir):
                 uniqueid = change[0]
 
                 # Update the "earliest" version where a UID appears
@@ -546,7 +623,9 @@ class Scanner(object):
                     # changed.
                     if uniqueid not in last_name_by_id:
                         path, sha = change[-2:]
-                        last_name_by_id[uniqueid] = (path, sha)
+                        fullpath = os.path.join(notesdir, path)
+                        last_name_by_id[uniqueid] = (fullpath,
+                                                     sha.decode('ascii'))
                         LOG.info(
                             '%s: update to %s in commit %s',
                             uniqueid, path, sha)
@@ -583,7 +662,9 @@ class Scanner(object):
                     # there already.
                     if uniqueid not in last_name_by_id:
                         path, sha = change[-2:]
-                        last_name_by_id[uniqueid] = (path, sha)
+                        fullpath = os.path.join(notesdir, path)
+                        last_name_by_id[uniqueid] = (fullpath,
+                                                     sha.decode('ascii'))
                         LOG.info(
                             '%s: update to %s in commit %s',
                             uniqueid, path, sha)
@@ -599,7 +680,9 @@ class Scanner(object):
                     # information if it is not there already.
                     if uniqueid not in last_name_by_id:
                         path, sha = change[-2:]
-                        last_name_by_id[uniqueid] = (path, sha)
+                        fullpath = os.path.join(notesdir, path)
+                        last_name_by_id[uniqueid] = (fullpath,
+                                                     sha.decode('ascii'))
                         LOG.info(
                             '%s: update to %s in commit %s',
                             uniqueid, path, sha)

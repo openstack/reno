@@ -1315,7 +1315,7 @@ class AggregateChangesTest(Base):
         n = self.get_note_num()
         name = 'prefix/add-%016x' % n  # no .yaml extension
         entry.commit.id = 'commit-id'
-        entry.changes.return_value = [
+        changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_ADD,
                 old=objects.TreeEntry(path=None, mode=None, sha=None),
@@ -1326,7 +1326,7 @@ class AggregateChangesTest(Base):
                 )
             )
         ]
-        results = scanner._aggregate_changes(entry, 'prefix')
+        results = scanner._aggregate_changes(entry, changes, 'prefix')
         self.assertEqual(
             [],
             results,
@@ -1337,7 +1337,7 @@ class AggregateChangesTest(Base):
         n = self.get_note_num()
         name = 'prefix/add-%016x.yaml' % n
         entry.commit.id = 'commit-id'
-        entry.changes.return_value = [
+        changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_ADD,
                 old=objects.TreeEntry(path=None, mode=None, sha=None),
@@ -1348,7 +1348,7 @@ class AggregateChangesTest(Base):
                 )
             )
         ]
-        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
         self.assertEqual(
             [('%016x' % n, 'add', name, 'commit-id')],
             results,
@@ -1359,7 +1359,7 @@ class AggregateChangesTest(Base):
         n = self.get_note_num()
         name = 'prefix/delete-%016x.yaml' % n
         entry.commit.id = 'commit-id'
-        entry.changes.return_value = [
+        changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_DELETE,
                 old=objects.TreeEntry(
@@ -1370,7 +1370,7 @@ class AggregateChangesTest(Base):
                 new=objects.TreeEntry(path=None, mode=None, sha=None)
             )
         ]
-        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
         self.assertEqual(
             [('%016x' % n, 'delete', name)],
             results,
@@ -1381,7 +1381,7 @@ class AggregateChangesTest(Base):
         n = self.get_note_num()
         name = 'prefix/change-%016x.yaml' % n
         entry.commit.id = 'commit-id'
-        entry.changes.return_value = [
+        changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_MODIFY,
                 old=objects.TreeEntry(
@@ -1396,7 +1396,7 @@ class AggregateChangesTest(Base):
                 ),
             )
         ]
-        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
         self.assertEqual(
             [('%016x' % n, 'modify', name, 'commit-id')],
             results,
@@ -1408,7 +1408,7 @@ class AggregateChangesTest(Base):
         new_name = 'prefix/new-%016x.yaml' % n
         old_name = 'prefix/old-%016x.yaml' % n
         entry.commit.id = 'commit-id'
-        entry.changes.return_value = [
+        changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_ADD,
                 old=objects.TreeEntry(path=None, mode=None, sha=None),
@@ -1428,7 +1428,7 @@ class AggregateChangesTest(Base):
                 new=objects.TreeEntry(path=None, mode=None, sha=None)
             )
         ]
-        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
         self.assertEqual(
             [('%016x' % n, 'rename', old_name, new_name, 'commit-id')],
             results,
@@ -1440,7 +1440,7 @@ class AggregateChangesTest(Base):
         new_name = 'prefix/new-%016x.yaml' % n
         old_name = 'prefix/old-%016x.yaml' % n
         entry.commit.id = 'commit-id'
-        entry.changes.return_value = [
+        changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_DELETE,
                 old=objects.TreeEntry(
@@ -1460,7 +1460,7 @@ class AggregateChangesTest(Base):
                 )
             ),
         ]
-        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
         self.assertEqual(
             [('%016x' % n, 'rename', old_name, new_name, 'commit-id')],
             results,
@@ -1478,7 +1478,7 @@ class AggregateChangesTest(Base):
         # comply with the rest of the configuration for the scanner.
         old_name = 'prefix/old-%016x.yaml' % n
         entry.commit.id = 'commit-id'
-        entry.changes.return_value = [[
+        changes = [[
             diff_tree.TreeChange(
                 type='modify',
                 old=diff_tree.TreeEntry(
@@ -1506,7 +1506,7 @@ class AggregateChangesTest(Base):
                 ),
             ),
         ]]
-        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
         self.assertEqual(
             [('%016x' % n, 'modify', old_name, 'commit-id'),
              ('%016x' % n, 'modify', old_name, 'commit-id')],
