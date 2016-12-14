@@ -22,7 +22,10 @@ import subprocess
 import time
 import unittest
 
+from dulwich import diff_tree
+from dulwich import objects
 import fixtures
+import mock
 from testtools.content import text_content
 
 from reno import config
@@ -1252,5 +1255,211 @@ class VersionTest(Base):
         results = self.scanner._get_current_version(None)
         self.assertEqual(
             '4.0.0',
+            results,
+        )
+
+
+class AggregateChangesTest(Base):
+
+    def test_ignore(self):
+        entry = mock.Mock()
+        n = self.get_note_num()
+        name = 'prefix/add-%016x' % n  # no .yaml extension
+        entry.commit.id = 'commit-id'
+        entry.changes.return_value = [
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_ADD,
+                old=objects.TreeEntry(path=None, mode=None, sha=None),
+                new=objects.TreeEntry(
+                    path=name.encode('utf-8'),
+                    mode='0222',
+                    sha='not-a-hash',
+                )
+            )
+        ]
+        results = scanner._aggregate_changes(entry, 'prefix')
+        self.assertEqual(
+            [],
+            results,
+        )
+
+    def test_add(self):
+        entry = mock.Mock()
+        n = self.get_note_num()
+        name = 'prefix/add-%016x.yaml' % n
+        entry.commit.id = 'commit-id'
+        entry.changes.return_value = [
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_ADD,
+                old=objects.TreeEntry(path=None, mode=None, sha=None),
+                new=objects.TreeEntry(
+                    path=name.encode('utf-8'),
+                    mode='0222',
+                    sha='not-a-hash',
+                )
+            )
+        ]
+        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        self.assertEqual(
+            [('%016x' % n, 'add', name, 'commit-id')],
+            results,
+        )
+
+    def test_delete(self):
+        entry = mock.Mock()
+        n = self.get_note_num()
+        name = 'prefix/delete-%016x.yaml' % n
+        entry.commit.id = 'commit-id'
+        entry.changes.return_value = [
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_DELETE,
+                old=objects.TreeEntry(
+                    path=name.encode('utf-8'),
+                    mode='0222',
+                    sha='not-a-hash',
+                ),
+                new=objects.TreeEntry(path=None, mode=None, sha=None)
+            )
+        ]
+        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        self.assertEqual(
+            [('%016x' % n, 'delete', name)],
+            results,
+        )
+
+    def test_change(self):
+        entry = mock.Mock()
+        n = self.get_note_num()
+        name = 'prefix/change-%016x.yaml' % n
+        entry.commit.id = 'commit-id'
+        entry.changes.return_value = [
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_MODIFY,
+                old=objects.TreeEntry(
+                    path=name.encode('utf-8'),
+                    mode='0222',
+                    sha='old-sha',
+                ),
+                new=objects.TreeEntry(
+                    path=name.encode('utf-8'),
+                    mode='0222',
+                    sha='new-sha',
+                ),
+            )
+        ]
+        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        self.assertEqual(
+            [('%016x' % n, 'modify', name, 'commit-id')],
+            results,
+        )
+
+    def test_add_then_delete(self):
+        entry = mock.Mock()
+        n = self.get_note_num()
+        new_name = 'prefix/new-%016x.yaml' % n
+        old_name = 'prefix/old-%016x.yaml' % n
+        entry.commit.id = 'commit-id'
+        entry.changes.return_value = [
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_ADD,
+                old=objects.TreeEntry(path=None, mode=None, sha=None),
+                new=objects.TreeEntry(
+                    path=new_name.encode('utf-8'),
+                    mode='0222',
+                    sha='new-hash',
+                )
+            ),
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_DELETE,
+                old=objects.TreeEntry(
+                    path=old_name.encode('utf-8'),
+                    mode='0222',
+                    sha='old-hash',
+                ),
+                new=objects.TreeEntry(path=None, mode=None, sha=None)
+            )
+        ]
+        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        self.assertEqual(
+            [('%016x' % n, 'rename', old_name, new_name, 'commit-id')],
+            results,
+        )
+
+    def test_delete_then_add(self):
+        entry = mock.Mock()
+        n = self.get_note_num()
+        new_name = 'prefix/new-%016x.yaml' % n
+        old_name = 'prefix/old-%016x.yaml' % n
+        entry.commit.id = 'commit-id'
+        entry.changes.return_value = [
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_DELETE,
+                old=objects.TreeEntry(
+                    path=old_name.encode('utf-8'),
+                    mode='0222',
+                    sha='old-hash',
+                ),
+                new=objects.TreeEntry(path=None, mode=None, sha=None)
+            ),
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_ADD,
+                old=objects.TreeEntry(path=None, mode=None, sha=None),
+                new=objects.TreeEntry(
+                    path=new_name.encode('utf-8'),
+                    mode='0222',
+                    sha='new-hash',
+                )
+            ),
+        ]
+        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        self.assertEqual(
+            [('%016x' % n, 'rename', old_name, new_name, 'commit-id')],
+            results,
+        )
+
+    def test_tree_changes(self):
+        # Under some conditions when dulwich sees merge commits,
+        # changes() returns a list with nested lists. See commit
+        # cc11da6dcfb1dbaa015e9804b6a23f7872380c1b in this repo for an
+        # example.
+        entry = mock.Mock()
+        n = self.get_note_num()
+        # The files modified by the commit are actually
+        # reno/scanner.py, but the fake names are used in this test to
+        # comply with the rest of the configuration for the scanner.
+        old_name = 'prefix/old-%016x.yaml' % n
+        entry.commit.id = 'commit-id'
+        entry.changes.return_value = [[
+            diff_tree.TreeChange(
+                type='modify',
+                old=diff_tree.TreeEntry(
+                    path=old_name.encode('utf-8'),
+                    mode=33188,
+                    sha=b'8247dfdd116fd0e3cc4ba32328e4a3eafd227de6',
+                ),
+                new=diff_tree.TreeEntry(
+                    path=old_name.encode('utf-8'),
+                    mode=33188,
+                    sha=b'611f3663f54afb1f018a6a8680b6488da50ac340',
+                ),
+            ),
+            diff_tree.TreeChange(
+                type='modify',
+                old=diff_tree.TreeEntry(
+                    path=old_name.encode('utf-8'),
+                    mode=33188,
+                    sha=b'ecb7788066eefa9dc8f110b56360efe7b1140b84',
+                ),
+                new=diff_tree.TreeEntry(
+                    path=old_name.encode('utf-8'),
+                    mode=33188,
+                    sha=b'611f3663f54afb1f018a6a8680b6488da50ac340',
+                ),
+            ),
+        ]]
+        results = list(scanner._aggregate_changes(entry, 'prefix'))
+        self.assertEqual(
+            [('%016x' % n, 'modify', old_name, 'commit-id'),
+             ('%016x' % n, 'modify', old_name, 'commit-id')],
             results,
         )

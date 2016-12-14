@@ -19,6 +19,7 @@ import os.path
 import re
 import sys
 
+from dulwich import diff_tree
 from dulwich import refs
 from dulwich import repo
 
@@ -78,6 +79,110 @@ TAG_RE = re.compile('''
 PRE_RELEASE_RE = re.compile('''
     \.(\d+(?:[ab]|rc)+\d*)$
 ''', flags=re.VERBOSE | re.UNICODE)
+
+
+def _note_file(notesdir, name):
+    """Return bool indicating if the filename looks like a note file.
+
+    This is used to filter the files in changes based on the notes
+    directory we were given. We cannot do this in the walker directly
+    because it means we end up skipping some of the tags if the
+    commits being tagged don't include any release note files.
+
+    """
+    if not name:
+        return False
+    if fnmatch.fnmatch(name, notesdir + '/*.yaml'):
+        return True
+    elif fnmatch.fnmatch(name, notesdir + '/*'):
+        LOG.warning('found and ignored extra file %s', name)
+    return False
+
+
+def _aggregate_changes(walk_entry, notesdir):
+    """Collapse a WalkEntry based on our notion of uniqueness for file uids.
+
+    Each WalkEntry contains a list of TreeChange instances which
+    describe changes between the old and new repository trees. The
+    change has a type, and new and old paths and shas.
+
+    Simple add, delete, and change operations are handled directly.
+
+    There is a rename type, but detection of renamed files is
+    incomplete so we handle that ourselves based on the UID value
+    built into the filenames (under the assumption that if someone
+    changes that part of the filename they want it treated as a
+    different file for some reason).  If we see both an add and a
+    delete for a given UID treat that as a rename.
+
+    The SHA values returned are for the commit, rather than the blob
+    values in the TreeChange objects.
+
+    The path values in the change entries are encoded, so we decode
+    them to compare them against the notesdir and file pattern in
+    _note_file() and then return the decoded values to make consuming
+    them easier.
+
+    """
+    by_uid = collections.defaultdict(list)
+    sha = walk_entry.commit.id
+    LOG.debug('entry for commit %s', sha)
+    for ec in walk_entry.changes():
+        LOG.debug('change %r', ec)
+        if not isinstance(ec, list):
+            ec = [ec]
+        else:
+            ec = ec
+        for c in ec:
+            if c.type == diff_tree.CHANGE_ADD:
+                path = c.new.path.decode('utf-8') if c.new.path else None
+                if _note_file(notesdir, path):
+                    uid = _get_unique_id(path)
+                    by_uid[uid].append((c.type, path, sha))
+                else:
+                    LOG.debug('ignoring')
+            elif c.type == diff_tree.CHANGE_DELETE:
+                path = c.old.path.decode('utf-8') if c.old.path else None
+                if _note_file(notesdir, path):
+                    uid = _get_unique_id(path)
+                    by_uid[uid].append((c.type, path))
+                else:
+                    LOG.debug('ignoring')
+            elif c.type == diff_tree.CHANGE_MODIFY:
+                path = c.new.path.decode('utf-8') if c.new.path else None
+                if _note_file(notesdir, path):
+                    uid = _get_unique_id(path)
+                    by_uid[uid].append((c.type, path, sha))
+                else:
+                    LOG.debug('ignoring')
+            else:
+                raise ValueError('unhandled change type: {!r}'.format(c))
+
+    results = []
+    for uid, changes in sorted(by_uid.items()):
+        if len(changes) == 1:
+            results.append((uid,) + changes[0])
+        else:
+            types = set(c[0] for c in changes)
+            if types == set([diff_tree.CHANGE_ADD, diff_tree.CHANGE_DELETE]):
+                # A rename, combine the data from the add and delete entries.
+                added = [
+                    c for c in changes if c[0] == diff_tree.CHANGE_ADD
+                ][0]
+                deled = [
+                    c for c in changes if c[0] == diff_tree.CHANGE_DELETE
+                ][0]
+                results.append(
+                    (uid, diff_tree.CHANGE_RENAME, deled[1]) + added[1:]
+                )
+            elif types == set([diff_tree.CHANGE_MODIFY]):
+                # Merge commit with modifications to the same files in
+                # different commits.
+                for c in changes:
+                    results.append((uid, diff_tree.CHANGE_MODIFY, c[1], sha))
+            else:
+                raise ValueError('Unrecognized changes: {!r}'.format(changes))
+    return results
 
 
 class RenoRepo(repo.Repo):
