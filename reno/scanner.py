@@ -120,6 +120,24 @@ PRE_RELEASE_RE = re.compile('''
 ''', flags=re.VERBOSE | re.UNICODE)
 
 
+def _branch_or_eol_tag(reporoot, branch):
+    "If a stable branch is deleted, convert the name to the eol tag."
+    branch_results = utils.check_output(
+        ['git', 'branch', '--list', '-a'],
+        cwd=reporoot,
+    )
+    branches = []
+    for line in branch_results.splitlines():
+        # Clean up whitespace and the * marking the "current" branch.
+        line = line.strip().lstrip('*').strip()
+        if line.startswith('remotes/'):
+            line = line[8:]
+        branches.append(line)
+    if branch in branches:
+        return branch
+    return branch.rpartition('/')[-1] + '-eol'
+
+
 def _get_version_tags_on_branch(reporoot, branch):
     """Return tags from the branch, in date order.
 
@@ -138,7 +156,7 @@ def _get_version_tags_on_branch(reporoot, branch):
         '--pretty="%d"',
     ]
     if branch:
-        tag_cmd.append(branch)
+        tag_cmd.append(_branch_or_eol_tag(reporoot, branch))
     LOG.debug('running %s' % ' '.join(tag_cmd))
     tag_results = utils.check_output(tag_cmd, cwd=reporoot)
     LOG.debug(tag_results)
@@ -209,7 +227,7 @@ def get_notes_by_version(reporoot, notesdir, branch=None,
         '--name-only'  # only include the names of the files in the patch
     ]
     if branch is not None:
-        log_cmd.append(branch)
+        log_cmd.append(_branch_or_eol_tag(reporoot, branch))
     LOG.debug('running %s' % ' '.join(log_cmd))
     history_results = utils.check_output(log_cmd, cwd=reporoot)
     history = history_results.split('\x00')
