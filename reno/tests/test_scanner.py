@@ -1076,6 +1076,23 @@ class TagsTest(Base):
             results,
         )
 
+    def test_tags_with_count_tagged_head(self):
+        self.scanner = scanner.Scanner(self.c)
+        results = self.scanner._get_tags_on_branch(None, with_count=True)
+        self.assertEqual(
+            ['3.0.0', '2.0.0', '1.0.0'],
+            results,
+        )
+
+    def test_tags_with_count_head_after_tag(self):
+        self._add_notes_file('slug4')
+        self.scanner = scanner.Scanner(self.c)
+        results = self.scanner._get_tags_on_branch(None, with_count=True)
+        self.assertEqual(
+            ['3.0.0-1', '2.0.0', '1.0.0'],
+            results,
+        )
+
 
 class VersionTest(Base):
 
