@@ -865,6 +865,58 @@ class UniqueIdTest(Base):
         self.assertEqual('0000000000000001', uid)
 
 
+class BranchBaseTest(Base):
+
+    def setUp(self):
+        super(BranchBaseTest, self).setUp()
+        self._make_python_package()
+        self._add_notes_file('slug1')
+        self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self._add_notes_file('slug2')
+        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        self._add_notes_file('slug3')
+        self._run_git('tag', '-s', '-m', 'first tag', '3.0.0')
+        self._run_git('checkout', '2.0.0')
+        self._run_git('branch', 'not-master')
+        self._run_git('checkout', 'master')
+        self.scanner = scanner.Scanner(self.c)
+
+    def test_current_branch_no_extra_commits(self):
+        # checkout the branch and then ask for its base
+        self._run_git('checkout', 'not-master')
+        self.assertEqual(
+            '2.0.0',
+            self.scanner._get_branch_base('not-master'),
+        )
+
+    def test_current_branch_extra_commit(self):
+        # checkout the branch and then ask for its base
+        self._run_git('checkout', 'not-master')
+        self._add_notes_file('slug4')
+        self.assertEqual(
+            '2.0.0',
+            self.scanner._get_branch_base('not-master'),
+        )
+
+    def test_alternate_branch_no_extra_commits(self):
+        # checkout master and then ask for the alternate branch base
+        self._run_git('checkout', 'master')
+        self.assertEqual(
+            '2.0.0',
+            self.scanner._get_branch_base('not-master'),
+        )
+
+    def test_alternate_branch_extra_commit(self):
+        # checkout master and then ask for the alternate branch base
+        self._run_git('checkout', 'not-master')
+        self._add_notes_file('slug4')
+        self._run_git('checkout', 'master')
+        self.assertEqual(
+            '2.0.0',
+            self.scanner._get_branch_base('not-master'),
+        )
+
+
 class BranchTest(Base):
 
     def setUp(self):
