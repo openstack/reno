@@ -151,7 +151,8 @@ class Base(base.TestCase):
             f.write('adding %s\n' % name)
         self._git_commit('add %s' % name)
 
-    def _add_notes_file(self, slug='slug', commit=True, legacy=False):
+    def _add_notes_file(self, slug='slug', commit=True, legacy=False,
+                        contents='i-am-also-a-template'):
         n = self.get_note_num()
         if legacy:
             basename = '%016x-%s.yaml' % (n, slug)
@@ -159,7 +160,7 @@ class Base(base.TestCase):
             basename = '%s-%016x.yaml' % (slug, n)
         filename = os.path.join(self.reporoot, 'releasenotes', 'notes',
                                 basename)
-        create._make_note_file(filename, 'i-am-also-a-template')
+        create._make_note_file(filename, contents)
         self._git_commit('add %s' % basename)
         return os.path.join('releasenotes', 'notes', basename)
 
@@ -516,6 +517,74 @@ class BasicTest(Base):
             {'2.0.0': [f3],
              },
             results,
+        )
+
+
+class FileContentsTest(Base):
+
+    def test_basic_file(self):
+        # Prove that we can get a file we have committed.
+        f1 = self._add_notes_file(contents='well-known-contents')
+        r = scanner.RenoRepo(self.reporoot)
+        contents = r.get_file_at_commit(f1, 'HEAD')
+        self.assertEqual(
+            b'well-known-contents',
+            contents,
+        )
+
+    def test_no_such_file(self):
+        # Returns None when the file does not exist at all.
+        # (we have to commit something, otherwise there is no HEAD)
+        self._add_notes_file(contents='well-known-contents')
+        r = scanner.RenoRepo(self.reporoot)
+        contents = r.get_file_at_commit('no-such-dir/no-such-file', 'HEAD')
+        self.assertEqual(
+            None,
+            contents,
+        )
+
+    def test_edit_file_and_commit(self):
+        # Prove that we can edit a file and see the changes.
+        f1 = self._add_notes_file(contents='initial-contents')
+        with open(os.path.join(self.reporoot, f1), 'w') as f:
+            f.write('new contents for file')
+        self._git_commit('edit note file')
+        r = scanner.RenoRepo(self.reporoot)
+        contents = r.get_file_at_commit(f1, 'HEAD')
+        self.assertEqual(
+            b'new contents for file',
+            contents,
+        )
+
+    def test_earlier_version_of_edited_file(self):
+        # Prove that we are not always just returning the most current
+        # version of a file.
+        f1 = self._add_notes_file(contents='initial-contents')
+        with open(os.path.join(self.reporoot, f1), 'w') as f:
+            f.write('new contents for file')
+        self._git_commit('edit note file')
+        self.scanner = scanner.Scanner(self.c)
+        r = scanner.RenoRepo(self.reporoot)
+        head = r.head()
+        parent = r.get_parents(head)[0]
+        parent = parent.decode('ascii')
+        contents = r.get_file_at_commit(f1, parent)
+        self.assertEqual(
+            b'initial-contents',
+            contents,
+        )
+
+    def test_edit_file_without_commit(self):
+        # Prove we are not picking up the contents from the local
+        # filesystem outside of the git history.
+        f1 = self._add_notes_file(contents='initial-contents')
+        with open(os.path.join(self.reporoot, f1), 'w') as f:
+            f.write('new contents for file')
+        r = scanner.RenoRepo(self.reporoot)
+        contents = r.get_file_at_commit(f1, 'HEAD')
+        self.assertEqual(
+            b'initial-contents',
+            contents,
         )
 
 
