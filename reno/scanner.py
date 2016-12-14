@@ -104,7 +104,7 @@ class RenoRepo(repo.Repo):
         "Return the tag(s) on a commit."
         if self._all_tags is None:
             self._load_tags()
-        return self._shas_to_tags.get(sha)
+        return self._shas_to_tags.get(sha, [])
 
     def _get_file_from_tree(self, filename, tree):
         "Given a tree object, traverse it to find the file."
@@ -148,44 +148,57 @@ class Scanner(object):
         self.reporoot = self.conf.reporoot
         self._repo = RenoRepo(self.reporoot)
 
-    def _get_walker_for_branch(self, branch):
+    def _get_branch_head(self, branch):
         if branch:
             branch_ref = b'refs/heads/' + branch.encode('utf-8')
             if not refs.check_ref_format(branch_ref):
                 raise ValueError(
                     '{!r} does not look like a valid branch reference'.format(
                         branch_ref))
-            branch_head = self._repo.refs[branch_ref]
-        else:
-            branch_head = self._repo.refs[b'HEAD']
+            return self._repo.refs[branch_ref]
+        return self._repo.refs[b'HEAD']
+
+    def _get_walker_for_branch(self, branch):
+        branch_head = self._get_branch_head(branch)
         return self._repo.get_walker(branch_head)
 
-    def _get_tags_on_branch(self, branch, with_count=False):
+    def _get_tags_on_branch(self, branch):
         "Return a list of tag names on the given branch."
         results = []
-        count = 0
         for c in self._get_walker_for_branch(branch):
             # shas_to_tags has encoded versions of the shas
             # but the commit object gives us a decoded version
             sha = c.commit.sha().hexdigest().encode('ascii')
             tags = self._repo.get_tags_on_commit(sha)
-            if tags:
-                if with_count and count and not results:
-                    val = '{}-{}'.format(tags[0], count)
-                    results.append(val)
-                else:
-                    results.extend(tags)
-            else:
-                count += 1
+            results.extend(tags)
         return results
 
     def _get_current_version(self, branch=None):
         "Return the current version of the repository, like git describe."
-        tags = self._get_tags_on_branch(branch, with_count=True)
-        if not tags:
-            # Never tagged.
-            return '0.0.0'
-        return tags[0]
+        # This is similar to _get_tags_on_branch() except that it
+        # counts up to where the tag appears and it returns when it
+        # finds the first tagged commit (there is no need to scan the
+        # rest of the branch).
+        commit = self._repo[self._get_branch_head(branch)]
+        count = 0
+        while commit:
+            # shas_to_tags has encoded versions of the shas
+            # but the commit object gives us a decoded version
+            sha = commit.sha().hexdigest().encode('ascii')
+            tags = self._repo.get_tags_on_commit(sha)
+            if tags:
+                if count:
+                    val = '{}-{}'.format(tags[-1], count)
+                else:
+                    val = tags[0]
+                return val
+            if commit.parents:
+                # Only traverse the first parent of each node.
+                commit = self._repo[commit.parents[0]]
+                count += 1
+            else:
+                commit = None
+        return '0.0.0'
 
     def _get_branch_base(self, branch):
         "Return the tag at base of the branch."
