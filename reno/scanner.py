@@ -307,21 +307,32 @@ class Scanner(object):
         self.reporoot = self.conf.reporoot
         self._repo = RenoRepo(self.reporoot)
 
-    def _get_branch_head(self, branch):
-        if branch:
+    def _get_ref(self, name):
+        if name:
             candidates = [
-                b'refs/heads/' + branch.encode('utf-8'),
-                b'refs/remotes/' + branch.encode('utf-8'),
+                'refs/heads/' + name,
+                'refs/remotes/' + name,
+                'refs/tags/' + name,
+                # If a stable branch was removed, look for its EOL tag.
+                'refs/tags/' + (name.rpartition('/')[-1] + '-eol'),
             ]
-            for branch_ref in candidates:
-                if branch_ref in self._repo.refs:
-                    return self._repo.refs[branch_ref]
+            for ref in candidates:
+                key = ref.encode('utf-8')
+                if key in self._repo.refs:
+                    sha = self._repo.refs[key]
+                    o = self._repo[sha]
+                    if isinstance(o, objects.Tag):
+                        # Branches point directly to commits, but
+                        # signed tags point to the signature and we
+                        # need to dereference it to get to the commit.
+                        sha = o.object[1]
+                    return sha
             # If we end up here we didn't find any of the candidates.
-            raise ValueError('Unknown branch {!r}'.format(branch))
+            raise ValueError('Unknown reference {!r}'.format(name))
         return self._repo.refs[b'HEAD']
 
     def _get_walker_for_branch(self, branch):
-        branch_head = self._get_branch_head(branch)
+        branch_head = self._get_ref(branch)
         return self._repo.get_walker(branch_head)
 
     def _get_tags_on_branch(self, branch):
@@ -341,7 +352,7 @@ class Scanner(object):
         # counts up to where the tag appears and it returns when it
         # finds the first tagged commit (there is no need to scan the
         # rest of the branch).
-        commit = self._repo[self._get_branch_head(branch)]
+        commit = self._repo[self._get_ref(branch)]
         count = 0
         while commit:
             # shas_to_tags has encoded versions of the shas
@@ -403,7 +414,7 @@ class Scanner(object):
         # *   a7f573d original commit on master
 
         """
-        head = self._get_branch_head(branch)
+        head = self._get_ref(branch)
 
         # Map SHA values to Entry objects, because we will be traversing
         # commits not entries.

@@ -1198,7 +1198,7 @@ class BranchTest(Base):
         self.repo.git('checkout', '-b', 'stable/2')
         self.repo.git('checkout', 'master')
         scanner1 = scanner.Scanner(self.c)
-        head1 = scanner1._get_branch_head('stable/2')
+        head1 = scanner1._get_ref('stable/2')
         self.assertIsNotNone(head1)
         print('head1', head1)
         # Create a second repository by cloning the first.
@@ -1225,7 +1225,7 @@ class BranchTest(Base):
         ))
         c2 = config.Config(reporoot2)
         scanner2 = scanner.Scanner(c2)
-        head2 = scanner2._get_branch_head('origin/stable/2')
+        head2 = scanner2._get_ref('origin/stable/2')
         self.assertIsNotNone(head2)
         self.assertEqual(head1, head2)
 
@@ -1249,6 +1249,12 @@ class TagsTest(Base):
             ['3.0.0', '2.0.0', '1.0.0'],
             results,
         )
+
+    def test_get_ref(self):
+        self.scanner = scanner.Scanner(self.c)
+        ref = self.scanner._get_ref('3.0.0')
+        expected = self.scanner._repo.head()
+        self.assertEqual(expected, ref)
 
     def test_not_master(self):
         self.repo.git('checkout', '2.0.0')
