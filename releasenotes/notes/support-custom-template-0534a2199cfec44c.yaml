@@ -1,6 +1,4 @@
 ---
-prelude: >
-    Support to set a custom template used to create new notes
 features:
   - |
     Reno now supports to set through ``template`` attribute in

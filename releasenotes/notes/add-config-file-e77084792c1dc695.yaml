@@ -1,6 +1,4 @@
 ---
-prelude: >
-    Reno now supports having a configuration file!
 features:
   - |
     Reno now supports having a ``config.yaml`` file in your release notes

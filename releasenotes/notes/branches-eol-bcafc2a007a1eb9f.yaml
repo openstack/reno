@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Explicitly allow reno to scan starting from a tag by specifying the
+    tag where a branch name would otherwise be used.
+  - |
+    Add logic to allow reno to detect a branch that has been marked as
+    end-of-life using the OpenStack community's process of tagging the
+    HEAD of a stable/foo branch foo-eol before deleting the
+    branch. This means that references to "stable/foo" are translated
+    to "foo-eol" when the branch does not exist, and that Sphinx
+    directives do not need to be manually updated.
