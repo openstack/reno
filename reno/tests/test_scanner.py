@@ -19,6 +19,7 @@ import logging
 import os.path
 import re
 import subprocess
+import time
 import unittest
 
 import fixtures
@@ -1219,9 +1220,9 @@ class VersionTest(Base):
         self.f1 = self._add_notes_file('slug1')
         self._run_git('tag', '-s', '-m', 'first tag', '1.0.0')
         self.f2 = self._add_notes_file('slug2')
-        self._run_git('tag', '-s', '-m', 'first tag', '2.0.0')
+        self._run_git('tag', '-s', '-m', 'second tag', '2.0.0')
         self._add_notes_file('slug3')
-        self._run_git('tag', '-s', '-m', 'first tag', '3.0.0')
+        self._run_git('tag', '-s', '-m', 'third tag', '3.0.0')
 
     def test_tagged_head(self):
         self.scanner = scanner.Scanner(self.c)
@@ -1237,5 +1238,19 @@ class VersionTest(Base):
         results = self.scanner._get_current_version(None)
         self.assertEqual(
             '3.0.0-1',
+            results,
+        )
+
+    def test_multiple_tags(self):
+        # The timestamp resolution appears to be 1 second, so sleep to
+        # ensure distinct timestamps for the 2 tags. In practice it is
+        # unlikely that anything could apply 2 signed tags within a
+        # single second (certainly not a person).
+        time.sleep(1)
+        self._run_git('tag', '-s', '-m', 'fourth tag', '4.0.0')
+        self.scanner = scanner.Scanner(self.c)
+        results = self.scanner._get_current_version(None)
+        self.assertEqual(
+            '4.0.0',
             results,
         )
