@@ -83,6 +83,30 @@ PRE_RELEASE_RE = re.compile('''
 
 class RenoRepo(repo.Repo):
 
+    # Populated by _load_tags().
+    _all_tags = None
+    _shas_to_tags = None
+
+    def _load_tags(self):
+        self._all_tags = {
+            k.partition(b'/tags/')[-1].decode('utf-8'): v
+            for k, v in self.get_refs().items()
+            if k.startswith(b'refs/tags/')
+        }
+        self._shas_to_tags = {}
+        for tag, tag_sha in self._all_tags.items():
+            # The tag has its own SHA, but the tag refers to the commit and
+            # that's the SHA we'll see when we scan commits on a branch.
+            tag_obj = self[tag_sha]
+            tagged_sha = tag_obj.object[1]
+            self._shas_to_tags.setdefault(tagged_sha, []).append(tag)
+
+    def get_tags_on_commit(self, sha):
+        "Return the tag(s) on a commit."
+        if self._all_tags is None:
+            self._load_tags()
+        return self._shas_to_tags.get(sha)
+
     def _get_file_from_tree(self, filename, tree):
         "Given a tree object, traverse it to find the file."
         try:
@@ -124,21 +148,6 @@ class Scanner(object):
         self.conf = conf
         self.reporoot = self.conf.reporoot
         self._repo = RenoRepo(self.reporoot)
-        self._load_tags()
-
-    def _load_tags(self):
-        self._all_tags = {
-            k.partition(b'/tags/')[-1].decode('utf-8'): v
-            for k, v in self._repo.get_refs().items()
-            if k.startswith(b'refs/tags/')
-        }
-        self._shas_to_tags = {}
-        for tag, tag_sha in self._all_tags.items():
-            # The tag has its own SHA, but the tag refers to the commit and
-            # that's the SHA we'll see when we scan commits on a branch.
-            tag_obj = self._repo[tag_sha]
-            tagged_sha = tag_obj.object[1]
-            self._shas_to_tags.setdefault(tagged_sha, []).append(tag)
 
     def _get_walker_for_branch(self, branch):
         if branch:
@@ -160,12 +169,13 @@ class Scanner(object):
             # shas_to_tags has encoded versions of the shas
             # but the commit object gives us a decoded version
             sha = c.commit.sha().hexdigest().encode('ascii')
-            if sha in self._shas_to_tags:
+            tags = self._repo.get_tags_on_commit(sha)
+            if tags:
                 if with_count and count and not results:
-                    val = '{}-{}'.format(self._shas_to_tags[sha][0], count)
+                    val = '{}-{}'.format(tags[0], count)
                     results.append(val)
                 else:
-                    results.extend(self._shas_to_tags[sha])
+                    results.extend(tags)
             else:
                 count += 1
         return results
