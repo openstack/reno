@@ -1314,6 +1314,26 @@ class TagsTest(Base):
             results,
         )
 
+    def test_tagged_tag_annotated(self):
+        time.sleep(1)
+        self.repo.git('tag', '-s', '-m', 'fourth tag', '4.0.0', '3.0.0')
+        self.scanner = scanner.Scanner(self.c)
+        results = self.scanner._get_tags_on_branch(None)
+        self.assertEqual(
+            ['3.0.0', '4.0.0', '2.0.0', '1.0.0'],
+            results,
+        )
+
+    def test_tagged_tag_lightweight(self):
+        time.sleep(1)
+        self.repo.git('tag', '-m', 'fourth tag', '4.0.0', '3.0.0')
+        self.scanner = scanner.Scanner(self.c)
+        results = self.scanner._get_tags_on_branch(None)
+        self.assertEqual(
+            ['3.0.0', '4.0.0', '2.0.0', '1.0.0'],
+            results,
+        )
+
 
 class VersionTest(Base):
 

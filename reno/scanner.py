@@ -204,6 +204,41 @@ class RenoRepo(repo.Repo):
     _all_tags = None
     _shas_to_tags = None
 
+    def _get_commit_from_tag(self, tag, tag_sha):
+        """Return the commit referenced by the tag and when it was tagged."""
+        tag_obj = self[tag_sha]
+
+        if isinstance(tag_obj, objects.Tag):
+            # A signed tag has its own SHA, but the tag refers to
+            # the commit and that's the SHA we'll see when we scan
+            # commits on a branch.
+            git_obj = tag_obj
+            while True:
+                # Tags can point to other tags, in such cases follow the chain
+                # of tags until there are no more.
+                child_obj = self[git_obj.object[1]]
+                if isinstance(child_obj, objects.Tag):
+                    git_obj = child_obj
+                else:
+                    break
+
+            tagged_sha = git_obj.object[1]
+            date = tag_obj.tag_time
+        elif isinstance(tag_obj, objects.Commit):
+            # Unsigned tags refer directly to commits. This seems
+            # to especially happen when the tag definition moves
+            # to the packed-refs list instead of being represented
+            # by its own file.
+            tagged_sha = tag_obj.id
+            date = tag_obj.commit_time
+        else:
+            raise ValueError(
+                ('Unrecognized tag object {!r} with '
+                 'tag {} and SHA {!r}: {}').format(
+                    tag_obj, tag, tag_sha, type(tag_obj))
+            )
+        return tagged_sha, date
+
     def _load_tags(self):
         self._all_tags = {
             k.partition(b'/tags/')[-1].decode('utf-8'): v
@@ -212,26 +247,7 @@ class RenoRepo(repo.Repo):
         }
         self._shas_to_tags = {}
         for tag, tag_sha in self._all_tags.items():
-            tag_obj = self[tag_sha]
-            if isinstance(tag_obj, objects.Tag):
-                # A signed tag has its own SHA, but the tag refers to
-                # the commit and that's the SHA we'll see when we scan
-                # commits on a branch.
-                tagged_sha = tag_obj.object[1]
-                date = tag_obj.tag_time
-            elif isinstance(tag_obj, objects.Commit):
-                # Unsigned tags refer directly to commits. This seems
-                # to especially happen when the tag definition moves
-                # to the packed-refs list instead of being represented
-                # by its own file.
-                tagged_sha = tag_obj.id
-                date = tag_obj.commit_time
-            else:
-                raise ValueError(
-                    ('Unrecognized tag object {!r} with '
-                     'tag {} and SHA {!r}: {}').format(
-                        tag_obj, tag, tag_sha, type(tag_obj))
-                )
+            tagged_sha, date = self._get_commit_from_tag(tag, tag_sha)
             self._shas_to_tags.setdefault(tagged_sha, []).append((tag, date))
 
     def get_tags_on_commit(self, sha):
