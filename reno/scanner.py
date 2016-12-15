@@ -139,15 +139,14 @@ def _aggregate_changes(walk_entry, changes, notesdir):
 
     """
     sha = walk_entry.commit.id
-    LOG.debug('entry for commit %s', sha)
     by_uid = collections.defaultdict(list)
     for ec in changes:
-        LOG.debug('change %r', ec)
         if not isinstance(ec, list):
             ec = [ec]
         else:
             ec = ec
         for c in ec:
+            LOG.debug('change %r', c)
             if c.type == diff_tree.CHANGE_ADD:
                 path = c.new.path.decode('utf-8') if c.new.path else None
                 if _note_file(path):
@@ -507,7 +506,8 @@ class Scanner(object):
         stop_at_branch_base = self.conf.stop_at_branch_base
 
         LOG.info('scanning %s/%s (branch=%s)',
-                 reporoot.rstrip('/'), notesdir.lstrip('/'), branch)
+                 reporoot.rstrip('/'), notesdir.lstrip('/'),
+                 branch or '*current*')
 
         # Determine all of the tags known on the branch, in their date
         # order. We scan the commit history in topological order to ensure
@@ -560,9 +560,7 @@ class Scanner(object):
         current_version = self._get_current_version(branch)
         LOG.debug('current repository version: %s' % current_version)
         if current_version not in versions_by_date:
-            LOG.debug('adding %s to versions by date' % current_version)
             versions_by_date.insert(0, current_version)
-            LOG.debug('versions by date %r' % (versions_by_date,))
 
         # Remember the most current filename for each id, to allow for
         # renames.
@@ -576,6 +574,8 @@ class Scanner(object):
             sha = entry.commit.id
             tags_on_commit = self._repo.get_tags_on_commit(sha)
 
+            LOG.debug('%06d %s %s', counter, sha, tags_on_commit)
+
             # If there are no tags in this block, assume the most recently
             # seen version.
             tags = tags_on_commit
@@ -583,9 +583,8 @@ class Scanner(object):
                 tags = [current_version]
             else:
                 current_version = tags_on_commit[-1]
-                LOG.debug('%s has tags %s', sha, tags_on_commit)
-                LOG.info('%s %5d updating current version to %s',
-                         sha, counter, current_version)
+                LOG.info('%06d %s updating current version to %s',
+                         counter, sha, current_version)
 
             # Remember each version we have seen.
             if current_version not in versions:
@@ -601,8 +600,8 @@ class Scanner(object):
                 # every time we see it, because we are scanning the
                 # history in reverse order so "early" items come
                 # later.
-                LOG.debug('%s: setting earliest reference to %s' %
-                          (uniqueid, current_version))
+                LOG.debug('%s: setting earliest reference to %s',
+                          uniqueid, current_version)
                 earliest_seen[uniqueid] = current_version
 
                 c_type = change[1]
@@ -628,11 +627,13 @@ class Scanner(object):
                                                      sha.decode('ascii'))
                         LOG.info(
                             '%s: update to %s in commit %s',
-                            uniqueid, path, sha)
+                            uniqueid, path, sha,
+                        )
                     else:
                         LOG.debug(
                             '%s: add for file we have already seen',
-                            uniqueid)
+                            uniqueid,
+                        )
 
                 elif c_type == diff_tree.CHANGE_DELETE:
                     # This file is being deleted without a rename. If
@@ -653,7 +654,8 @@ class Scanner(object):
                     else:
                         LOG.debug(
                             '%s: delete for file re-added after the delete',
-                            uniqueid)
+                            uniqueid,
+                        )
 
                 elif c_type == diff_tree.CHANGE_RENAME:
                     # The file is being renamed. We may have seen it
@@ -667,11 +669,13 @@ class Scanner(object):
                                                      sha.decode('ascii'))
                         LOG.info(
                             '%s: update to %s in commit %s',
-                            uniqueid, path, sha)
+                            uniqueid, path, sha,
+                        )
                     else:
                         LOG.debug(
                             '%s: renamed file already known with the new name',
-                            uniqueid)
+                            uniqueid,
+                        )
 
                 elif c_type == diff_tree.CHANGE_MODIFY:
                     # An existing file is being modified. We may have
@@ -685,11 +689,13 @@ class Scanner(object):
                                                      sha.decode('ascii'))
                         LOG.info(
                             '%s: update to %s in commit %s',
-                            uniqueid, path, sha)
+                            uniqueid, path, sha,
+                        )
                     else:
                         LOG.debug(
                             '%s: modified file already known',
-                            uniqueid)
+                            uniqueid,
+                        )
 
                 else:
                     raise ValueError(
@@ -699,11 +705,6 @@ class Scanner(object):
             if branch_base_tag and branch_base_tag in tags:
                 LOG.info('reached end of branch after %d commits', counter)
                 break
-
-        LOG.debug('before inversion')
-        LOG.debug('versions: %r', versions)
-        LOG.debug('last_name_by_id: %r', last_name_by_id)
-        LOG.debug('earliest_seen: %r', earliest_seen)
 
         # Invert earliest_seen to make a list of notes files for each
         # version.
@@ -719,7 +720,7 @@ class Scanner(object):
             except KeyError:
                 # Unable to find the file again, skip it to avoid breaking
                 # the build.
-                msg = ('[reno] unable to find file associated '
+                msg = ('unable to find release notes file associated '
                        'with unique id %r, skipping') % uniqueid
                 LOG.debug(msg)
                 print(msg, file=sys.stderr)
@@ -775,6 +776,8 @@ class Scanner(object):
             if earliest_version and ov == earliest_version:
                 break
 
-        LOG.debug('[reno] found %d versions and %d files',
-                  len(trimmed.keys()), sum(len(ov) for ov in trimmed.values()))
+        LOG.debug(
+            'found %d versions and %d files',
+            len(trimmed.keys()), sum(len(ov) for ov in trimmed.values()),
+        )
         return trimmed
