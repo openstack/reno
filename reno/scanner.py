@@ -245,48 +245,15 @@ class RenoRepo(repo.Repo):
     def _get_subtree(self, tree, path):
         "Given a tree SHA and a path, return the SHA of the subtree."
         try:
-            if os.sep in path:
-                # The tree entry will only have a single level of the
-                # directory name, so if we have a / in our filename we
-                # know we're going to have to keep traversing the
-                # tree.
-                prefix, _, trailing = path.partition(os.sep)
-                mode, subtree_sha = tree[prefix.encode('utf-8')]
-                subtree = self[subtree_sha]
-                return self._get_subtree(subtree, trailing)
-            else:
-                # The tree entry will point to the SHA of the contents
-                # of the subtree.
-                mode, sha = tree[path.encode('utf-8')]
-                result = self[sha]
-                return result
+            mode, tree_sha = tree.lookup_path(self.get_object,
+                                              path.encode('utf-8'))
         except KeyError:
             # Some part of the path wasn't found, so the subtree is
             # not present. Return the sentinel value.
             return None
-
-    def _get_file_from_tree(self, filename, tree):
-        "Given a tree object, traverse it to find the file."
-        try:
-            if os.sep in filename:
-                # The tree entry will only have a single level of the
-                # directory name, so if we have a / in our filename we
-                # know we're going to have to keep traversing the
-                # tree.
-                prefix, _, trailing = filename.partition(os.sep)
-                mode, subtree_sha = tree[prefix.encode('utf-8')]
-                subtree = self[subtree_sha]
-                return self._get_file_from_tree(trailing, subtree)
-            else:
-                # The tree entry will point to the blob with the
-                # contents of the file.
-                mode, file_blob_sha = tree[filename.encode('utf-8')]
-                file_blob = self[file_blob_sha]
-                return file_blob.data
-        except KeyError:
-            # Some part of the filename wasn't found, so the file is
-            # not present. Return the sentinel value.
-            return None
+        else:
+            tree = self[tree_sha]
+            return tree
 
     def get_file_at_commit(self, filename, sha):
         "Return the contents of the file if it exists at the commit, or None."
@@ -297,7 +264,16 @@ class RenoRepo(repo.Repo):
         # the repository.
         commit = self[sha.encode('ascii')]
         tree = self[commit.tree]
-        return self._get_file_from_tree(filename, tree)
+        try:
+            mode, blob_sha = tree.lookup_path(self.get_object,
+                                              filename.encode('utf-8'))
+        except KeyError:
+            # Some part of the filename wasn't found, so the file is
+            # not present. Return the sentinel value.
+            return None
+        else:
+            blob = self[blob_sha]
+            return blob.data
 
 
 class Scanner(object):
