@@ -430,7 +430,23 @@ class Scanner(object):
         collapse_pre_releases = self.conf.collapse_pre_releases
         stop_at_branch_base = self.conf.stop_at_branch_base
 
-        LOG.info('scanning %s/%s (branch=%s)' % (reporoot, notesdir, branch))
+        LOG.info('scanning %s/%s (branch=%s)',
+                 reporoot.rstrip('/'), notesdir.lstrip('/'), branch)
+
+        # Determine all of the tags known on the branch, in their date
+        # order. We scan the commit history in topological order to ensure
+        # we have the commits in the right version, so we might encounter
+        # the tags in a different order during that phase.
+        versions_by_date = self._get_tags_on_branch(branch)
+        LOG.debug('versions by date %r' % (versions_by_date,))
+        if earliest_version and earliest_version not in versions_by_date:
+            raise ValueError(
+                'earliest-version set to unknown revision {!r}'.format(
+                    earliest_version))
+
+        # If the user has told us where to stop, use that as the
+        # default.
+        branch_base_tag = earliest_version
 
         # If the user has not told us where to stop, try to work it out
         # for ourselves. If branch is set and is not "master", then we
@@ -439,6 +455,7 @@ class Scanner(object):
                 (not earliest_version) and branch and (branch != 'master')):
             LOG.debug('determining earliest_version from branch')
             earliest_version = self._get_branch_base(branch)
+            branch_base_tag = earliest_version
             if earliest_version and collapse_pre_releases:
                 if PRE_RELEASE_RE.search(earliest_version):
                     # The earliest version won't actually be the pre-release
@@ -448,14 +465,13 @@ class Scanner(object):
                     earliest_version = '.'.join(
                         earliest_version.split('.')[:-1]
                     )
-        LOG.info('earliest version on the branch is %s', earliest_version)
+        if earliest_version:
+            LOG.info('earliest version to include is %s', earliest_version)
+        else:
+            LOG.info('including entire branch history')
+        if branch_base_tag:
+            LOG.info('stopping scan at %s', branch_base_tag)
 
-        # Determine all of the tags known on the branch, in their date
-        # order. We scan the commit history in topological order to ensure
-        # we have the commits in the right version, so we might encounter
-        # the tags in a different order during that phase.
-        versions_by_date = self._get_tags_on_branch(branch)
-        LOG.debug('versions by date %r' % (versions_by_date,))
         versions = []
         earliest_seen = collections.OrderedDict()
 
@@ -479,11 +495,10 @@ class Scanner(object):
         # Remember uniqueids that have had files deleted.
         uniqueids_deleted = set()
 
-        for entry in self._topo_traversal(branch):
+        for counter, entry in enumerate(self._topo_traversal(branch), 1):
 
             sha = entry.commit.id
             tags_on_commit = self._repo.get_tags_on_commit(sha)
-            LOG.debug('%s encountered', sha)
 
             # If there are no tags in this block, assume the most recently
             # seen version.
@@ -492,9 +507,9 @@ class Scanner(object):
                 tags = [current_version]
             else:
                 current_version = tags_on_commit[-1]
-                LOG.debug('%s has tags %s, '
-                          'updating current version to %s' %
-                          (sha, tags_on_commit, current_version))
+                LOG.debug('%s has tags %s', sha, tags_on_commit)
+                LOG.info('%s %5d updating current version to %s',
+                         sha, counter, current_version)
 
             # Remember each version we have seen.
             if current_version not in versions:
@@ -504,7 +519,6 @@ class Scanner(object):
             # Look for changes to notes files in this commit.
             for change in _aggregate_changes(entry, notesdir):
                 uniqueid = change[0]
-                LOG.debug('%s: found change: %s', uniqueid, change[1:])
 
                 # Update the "earliest" version where a UID appears
                 # every time we see it, because we are scanning the
@@ -598,6 +612,10 @@ class Scanner(object):
                     raise ValueError(
                         'unknown change instructions {!r}'.format(change)
                     )
+
+            if branch_base_tag and branch_base_tag in tags:
+                LOG.info('reached end of branch after %d commits', counter)
+                break
 
         LOG.debug('before inversion')
         LOG.debug('versions: %r', versions)
