@@ -1217,6 +1217,16 @@ class TagsTest(Base):
             results,
         )
 
+    def test_unsigned(self):
+        self._add_notes_file('slug4')
+        self._run_git('tag', '-m', 'first tag', '4.0.0')
+        self.scanner = scanner.Scanner(self.c)
+        results = self.scanner._get_tags_on_branch(None)
+        self.assertEqual(
+            ['4.0.0', '3.0.0', '2.0.0', '1.0.0'],
+            results,
+        )
+
 
 class VersionTest(Base):
 
