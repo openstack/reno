@@ -23,9 +23,12 @@ from dulwich import diff_tree
 from dulwich import refs
 from dulwich import repo
 
-from reno import utils
-
 LOG = logging.getLogger(__name__)
+
+# What does a pre-release version number look like?
+PRE_RELEASE_RE = re.compile('''
+    \.(\d+(?:[ab]|rc)+\d*)$
+''', flags=re.VERBOSE | re.UNICODE)
 
 
 def _get_unique_id(filename):
@@ -37,48 +40,6 @@ def _get_unique_id(filename):
         # of the name.
         uniqueid = root[:16]
     return uniqueid
-
-
-# The git log output from _get_tags_on_branch() looks like this sample
-# from the openstack/nova repository for git 1.9.1:
-#
-# git log --simplify-by-decoration --pretty="%d"
-# (HEAD, origin/master, origin/HEAD, gerrit/master, master)
-# (apu/master)
-# (tag: 13.0.0.0b1)
-# (tag: 12.0.0.0rc3, tag: 12.0.0)
-#
-# And this for git 1.7.1 (RHEL):
-#
-# $ git log --simplify-by-decoration --pretty="%d"
-# (HEAD, origin/master, origin/HEAD, master)
-# (tag: 13.0.0.0b1)
-# (tag: 12.0.0.0rc3, tag: 12.0.0)
-# (tag: 12.0.0.0rc2)
-# (tag: 2015.1.0rc3, tag: 2015.1.0)
-# ...
-# (tag: folsom-2)
-# (tag: folsom-1)
-# (essex-1)
-# (diablo-2)
-# (diablo-1)
-# (2011.2)
-#
-# The difference in the tags with "tag:" and without appears to be
-# caused by some being annotated and others not.
-#
-# So we might have multiple tags on a given commit, and we might have
-# lines that have no tags or are completely blank, and we might have
-# "tag:" or not. This pattern is used to find the tag entries on each
-# line, ignoring tags that don't look like version numbers.
-TAG_RE = re.compile('''
-    (?:[(]|tag:\s)  # look for tag: prefix and drop
-    ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and pre-releases
-    [,)]  # possible trailing comma or closing paren
-''', flags=re.VERBOSE | re.UNICODE)
-PRE_RELEASE_RE = re.compile('''
-    \.(\d+(?:[ab]|rc)+\d*)$
-''', flags=re.VERBOSE | re.UNICODE)
 
 
 def _note_file(notesdir, name):
@@ -332,6 +293,99 @@ class Scanner(object):
                 return tags[-1]
         return None
 
+    def _topo_traversal(self, branch):
+        """Generator that yields the branch entries in topological order.
+
+        The topo ordering in dulwich does not match the git command line
+        output, so we have our own that follows the branch being merged
+        into the mainline before following the mainline. This ensures that
+        tags on the mainline appear in the right place relative to the
+        merge points, regardless of the commit date on the entry.
+
+        # *   d1239b6 (HEAD -> master) Merge branch 'new-branch'
+        # |\
+        # | * 9478612 (new-branch) one commit on branch
+        # * | 303e21d second commit on master
+        # * | 0ba5186 first commit on master
+        # |/
+        # *   a7f573d original commit on master
+
+        """
+        head = self._get_branch_head(branch)
+
+        # Map SHA values to Entry objects, because we will be traversing
+        # commits not entries.
+        all = {}
+
+        children = {}
+
+        # Populate all and children structures by traversing the
+        # entire graph once. It doesn't matter what order we do this
+        # the first time, since we're just recording the relationships
+        # of the nodes.
+        for e in self._repo.get_walker(head):
+            all[e.commit.id] = e
+            for p in e.commit.parents:
+                children.setdefault(p, set()).add(e.commit.id)
+
+        # Track what we have already emitted.
+        emitted = set()
+
+        # Use a deque as a stack with the nodes left to process. This
+        # lets us avoid recursion, since we have no idea how deep some
+        # branches might be.
+        todo = collections.deque()
+        todo.appendleft(head)
+
+        while todo:
+            sha = todo.popleft()
+            entry = all[sha]
+
+            # If a node has multiple children, it is the start point
+            # for a branch that was merged back into the rest of the
+            # tree. We will have already processed the merge commit
+            # and are traversing either the branch that was merged in
+            # or the base into which it was merged. We want to stop
+            # traversing the branch that was merged in at the point
+            # where the branch was created, because we are trying to
+            # linearize the history. At that point, we go back to the
+            # merge node and take the other parent node, which should
+            # lead us back to the origin of the branch through the
+            # mainline.
+            unprocessed_children = [
+                c
+                for c in children.get(sha, set())
+                if c not in emitted
+            ]
+
+            if not unprocessed_children:
+                # All children have been processed. Remember that we have
+                # processed this node and then emit the entry.
+                emitted.add(sha)
+                yield entry
+
+                # Now put the parents on the stack from left to right
+                # so they are processed right to left. If the node is
+                # already on the stack, leave it to be processed in
+                # the original order where it was added.
+                #
+                # NOTE(dhellmann): It's not clear if this is the right
+                # solution, or if we should re-stack and then ignore
+                # duplicate emissions at the top of this
+                # loop. Checking if the item is already on the todo
+                # stack isn't very expensive, since we don't expect it
+                # to grow very large, but it's not clear the output
+                # will be produced in the right order.
+                for p in entry.commit.parents:
+                    if p not in todo:
+                        todo.appendleft(p)
+
+            else:
+                # Has unprocessed children.  Do not emit, and do not
+                # restack, since when we get to the other child they will
+                # stack it.
+                pass
+
     def get_file_at_commit(self, filename, sha):
         "Return the contents of the file if it exists at the commit, or None."
         return self._repo.get_file_at_commit(filename, sha)
@@ -399,114 +453,139 @@ class Scanner(object):
         if current_version not in versions_by_date:
             LOG.debug('adding %s to versions by date' % current_version)
             versions_by_date.insert(0, current_version)
+            LOG.debug('versions by date %r' % (versions_by_date,))
 
         # Remember the most current filename for each id, to allow for
         # renames.
         last_name_by_id = {}
 
         # Remember uniqueids that have had files deleted.
-        uniqueids_deleted = collections.defaultdict(set)
+        uniqueids_deleted = set()
 
-        # FIXME(dhellmann): This might need to be more line-oriented for
-        # longer histories.
-        log_cmd = [
-            'git', 'log',
-            '--topo-order',  # force traversal order rather than date order
-            '--pretty=%x00%H %d',  # output contents in parsable format
-            '--name-only'  # only include the names of the files in the patch
-        ]
-        if branch is not None:
-            log_cmd.append(branch)
-        LOG.debug('running %s' % ' '.join(log_cmd))
-        history_results = utils.check_output(log_cmd, cwd=reporoot)
-        history = history_results.split('\x00')
-        current_version = current_version
-        for h in history:
-            h = h.strip()
-            if not h:
-                continue
-            # print(h)
+        for entry in self._topo_traversal(branch):
 
-            hlines = h.splitlines()
-
-            # The first line of the block will include the SHA and may
-            # include tags, the other lines are filenames.
-            sha = hlines[0].split(' ')[0]
-            tags = TAG_RE.findall(hlines[0])
-            # Filter the files based on the notes directory we were
-            # given. We cannot do this in the git log command directly
-            # because it means we end up skipping some of the tags if the
-            # commits being tagged don't include any release note
-            # files. Even if this list ends up empty, we continue doing
-            # the other processing so that we record all of the known
-            # versions.
-            filenames = []
-            for f in hlines[2:]:
-                if fnmatch.fnmatch(f, notesdir + '/*.yaml'):
-                    filenames.append(f)
-                elif fnmatch.fnmatch(f, notesdir + '/*'):
-                    LOG.warning('found and ignored extra file %s', f)
+            sha = entry.commit.id
+            tags_on_commit = self._repo.get_tags_on_commit(sha)
+            LOG.debug('%s encountered', sha)
 
             # If there are no tags in this block, assume the most recently
             # seen version.
+            tags = tags_on_commit
             if not tags:
                 tags = [current_version]
             else:
-                current_version = tags[0]
-                LOG.debug('%s has tags %s (%r), '
+                current_version = tags_on_commit[-1]
+                LOG.debug('%s has tags %s, '
                           'updating current version to %s' %
-                          (sha, tags, hlines[0], current_version))
+                          (sha, tags_on_commit, current_version))
 
             # Remember each version we have seen.
             if current_version not in versions:
                 LOG.debug('%s is a new version' % current_version)
                 versions.append(current_version)
 
-            LOG.debug('%s contains files %s' % (sha, filenames))
+            # Look for changes to notes files in this commit.
+            for change in _aggregate_changes(entry, notesdir):
+                uniqueid = change[0]
+                LOG.debug('%s: found change: %s', uniqueid, change[1:])
 
-            # Remember the files seen, using their UUID suffix as a unique id.
-            for f in filenames:
-                # Updated as older tags are found, handling edits to release
-                # notes.
-                uniqueid = _get_unique_id(f)
-                LOG.debug('%s: found file %s',
-                          uniqueid, f)
+                # Update the "earliest" version where a UID appears
+                # every time we see it, because we are scanning the
+                # history in reverse order so "early" items come
+                # later.
                 LOG.debug('%s: setting earliest reference to %s' %
-                          (uniqueid, tags[0]))
-                earliest_seen[uniqueid] = tags[0]
-                if uniqueid in last_name_by_id:
-                    # We already have a filename for this id from a
-                    # new commit, so use that one in case the name has
-                    # changed.
-                    LOG.debug('%s: was seen before in %s',
-                              uniqueid, last_name_by_id[uniqueid])
+                          (uniqueid, current_version))
+                earliest_seen[uniqueid] = current_version
+
+                c_type = change[1]
+
+                # If we have recorded that a UID was deleted, that
+                # means that was the last change made to the file and
+                # we can ignore it.
+                if uniqueid in uniqueids_deleted:
+                    LOG.debug(
+                        '%s: has already been deleted, ignoring this change',
+                        uniqueid,
+                    )
                     continue
-                elif self._file_exists_at_commit(f, sha):
-                    LOG.debug('%s: looking for %s in deleted files %s',
-                              uniqueid, f, uniqueids_deleted[uniqueid])
-                    if f in uniqueids_deleted[uniqueid]:
-                        # The file exists in the commit, but was deleted
-                        # later in the history.
-                        LOG.debug('%s: skipping deleted file %s',
-                                  uniqueid, f)
+
+                if c_type == diff_tree.CHANGE_ADD:
+                    # A note is being added in this commit. If we have
+                    # not seen it before, it was added here and never
+                    # changed.
+                    if uniqueid not in last_name_by_id:
+                        path, sha = change[-2:]
+                        last_name_by_id[uniqueid] = (path, sha)
+                        LOG.debug(
+                            '%s: updating last_name_by_id with %r',
+                            uniqueid, (path, sha))
                     else:
-                        # Remember this filename as the most recent version of
-                        # the unique id we have seen, in case the name
-                        # changed from an older commit.
-                        last_name_by_id[uniqueid] = (f, sha)
-                        LOG.debug('%s: remembering %s as filename',
-                                  uniqueid, f)
+                        LOG.debug(
+                            '%s: add for file we have already seen',
+                            uniqueid)
+
+                elif c_type == diff_tree.CHANGE_DELETE:
+                    # This file is being deleted without a rename. If
+                    # we have already seen the UID before, that means
+                    # that after the file was deleted another file
+                    # with the same UID was added back. In that case
+                    # we do not want to treat it as deleted.
+                    #
+                    # Never store deleted files in last_name_by_id so
+                    # we can safely use all of those entries to build
+                    # the history data.
+                    if uniqueid not in last_name_by_id:
+                        uniqueids_deleted.add(uniqueid)
+                        LOG.debug(
+                            '%s: remembering deleted note',
+                            uniqueid,
+                        )
+                    else:
+                        LOG.debug(
+                            '%s: delete for file re-added after the delete',
+                            uniqueid)
+
+                elif c_type == diff_tree.CHANGE_RENAME:
+                    # The file is being renamed. We may have seen it
+                    # before, if there were subsequent modifications,
+                    # so only store the name information if it is not
+                    # there already.
+                    if uniqueid not in last_name_by_id:
+                        path, sha = change[-2:]
+                        last_name_by_id[uniqueid] = (path, sha)
+                        LOG.debug(
+                            '%s: updating last_name_by_id with %r',
+                            uniqueid, (path, sha))
+                    else:
+                        LOG.debug(
+                            '%s: renamed file already known with the new name',
+                            uniqueid)
+
+                elif c_type == diff_tree.CHANGE_MODIFY:
+                    # An existing file is being modified. We may have
+                    # seen it before, if there were subsequent
+                    # modifications, so only store the name
+                    # information if it is not there already.
+                    if uniqueid not in last_name_by_id:
+                        path, sha = change[-2:]
+                        last_name_by_id[uniqueid] = (path, sha)
+                        LOG.debug(
+                            '%s: updating last_name_by_id with %r',
+                            uniqueid, (path, sha))
+                    else:
+                        LOG.debug(
+                            '%s: modified file already known',
+                            uniqueid)
+
                 else:
-                    # Track files that have been deleted. The rename logic
-                    # above checks for repeated references to files that
-                    # are deleted later, and the inversion logic below
-                    # checks for any remaining values and skips those
-                    # entries.
-                    LOG.debug('%s: saw a file that no longer exists',
-                              uniqueid)
-                    uniqueids_deleted[uniqueid].add(f)
-                    LOG.debug('%s: deleted files %s',
-                              uniqueid, uniqueids_deleted[uniqueid])
+                    raise ValueError(
+                        'unknown change instructions {!r}'.format(change)
+                    )
+
+        LOG.debug('before inversion')
+        LOG.debug('versions: %r', versions)
+        LOG.debug('last_name_by_id: %r', last_name_by_id)
+        LOG.debug('earliest_seen: %r', earliest_seen)
 
         # Invert earliest_seen to make a list of notes files for each
         # version.
@@ -518,9 +597,6 @@ class Scanner(object):
         for uniqueid, version in earliest_seen.items():
             try:
                 base, sha = last_name_by_id[uniqueid]
-                if base in uniqueids_deleted.get(uniqueid, set()):
-                    LOG.debug('skipping deleted note %s' % uniqueid)
-                    continue
                 files_and_tags[version].append((base, sha))
             except KeyError:
                 # Unable to find the file again, skip it to avoid breaking
