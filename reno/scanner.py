@@ -27,11 +27,6 @@ from dulwich import repo
 
 LOG = logging.getLogger(__name__)
 
-# What does a pre-release version number look like?
-PRE_RELEASE_RE = re.compile('''
-    \.(\d+(?:[ab]|rc)+\d*)$
-''', flags=re.VERBOSE | re.UNICODE)
-
 
 def _parse_version(v):
     parts = v.split('.') + ['0', '0', '0']
@@ -467,6 +462,14 @@ class Scanner(object):
         self.conf = conf
         self.reporoot = self.conf.reporoot
         self._repo = RenoRepo(self.reporoot)
+        self.release_tag_re = re.compile(
+            self.conf.release_tag_re,
+            flags=re.VERBOSE | re.UNICODE,
+        )
+        self.pre_release_tag_re = re.compile(
+            self.conf.pre_release_tag_re,
+            flags=re.VERBOSE | re.UNICODE,
+        )
 
     def _get_ref(self, name):
         if name:
@@ -496,6 +499,10 @@ class Scanner(object):
         branch_head = self._get_ref(branch)
         return self._repo.get_walker(branch_head)
 
+    def _get_valid_tags_on_commit(self, sha):
+        return [tag for tag in self._repo.get_tags_on_commit(sha)
+                if self.release_tag_re.match(tag)]
+
     def _get_tags_on_branch(self, branch):
         "Return a list of tag names on the given branch."
         results = []
@@ -503,7 +510,7 @@ class Scanner(object):
             # shas_to_tags has encoded versions of the shas
             # but the commit object gives us a decoded version
             sha = c.commit.sha().hexdigest().encode('ascii')
-            tags = self._repo.get_tags_on_commit(sha)
+            tags = self._get_valid_tags_on_commit(sha)
             results.extend(tags)
         return results
 
@@ -519,7 +526,7 @@ class Scanner(object):
             # shas_to_tags has encoded versions of the shas
             # but the commit object gives us a decoded version
             sha = commit.sha().hexdigest().encode('ascii')
-            tags = self._repo.get_tags_on_commit(sha)
+            tags = self._get_valid_tags_on_commit(sha)
             if tags:
                 if count:
                     val = '{}-{}'.format(tags[-1], count)
@@ -533,6 +540,27 @@ class Scanner(object):
             else:
                 commit = None
         return '0.0.0'
+
+    def _strip_pre_release(self, tag):
+        """Return tag with pre-release identifier removed if present."""
+        pre_release_match = self.pre_release_tag_re.search(tag)
+        if pre_release_match:
+            try:
+                start = pre_release_match.start('pre_release')
+                end = pre_release_match.end('pre_release')
+            except IndexError:
+                raise ValueError(
+                    ("The pre-release tag regular expression, {!r}, is missing"
+                     " a group named 'pre_release'.").format(
+                        self.pre_release_tag_re.pattern
+                    )
+                )
+            else:
+                stripped_tag = tag[:start] + tag[end:]
+        else:
+            stripped_tag = tag
+
+        return stripped_tag
 
     def _get_branch_base(self, branch):
         "Return the tag at base of the branch."
@@ -552,7 +580,7 @@ class Scanner(object):
             if c.commit.sha().hexdigest() in master_commits:
                 # We got to this commit via the branch, but it is also
                 # on master, so this is the base.
-                tags = self._repo.get_tags_on_commit(
+                tags = self._get_valid_tags_on_commit(
                     c.commit.sha().hexdigest().encode('ascii'))
                 if tags:
                     return tags[-1]
@@ -756,13 +784,13 @@ class Scanner(object):
                 earliest_version, versions_by_date,
                 collapse_pre_releases)
             if earliest_version and collapse_pre_releases:
-                if PRE_RELEASE_RE.search(earliest_version):
+                if self.pre_release_tag_re.search(earliest_version):
                     # The earliest version won't actually be the pre-release
                     # that might have been tagged when the branch was created,
                     # but the final version. Strip the pre-release portion of
                     # the version number.
-                    earliest_version = '.'.join(
-                        earliest_version.split('.')[:-1]
+                    earliest_version = self._strip_pre_release(
+                        earliest_version
                     )
         if earliest_version:
             LOG.info('earliest version to include is %s', earliest_version)
@@ -826,7 +854,7 @@ class Scanner(object):
         for counter, entry in enumerate(self._topo_traversal(branch), 1):
 
             sha = entry.commit.id
-            tags_on_commit = self._repo.get_tags_on_commit(sha)
+            tags_on_commit = self._get_valid_tags_on_commit(sha)
 
             LOG.debug('%06d %s %s', counter, sha, tags_on_commit)
 
@@ -911,13 +939,12 @@ class Scanner(object):
                     # We don't need to collapse this one because there are
                     # no notes attached to it.
                     continue
-                pre_release_match = PRE_RELEASE_RE.search(ov)
+                pre_release_match = self.pre_release_tag_re.search(ov)
                 LOG.debug('checking %r', ov)
                 if pre_release_match:
                     # Remove the trailing pre-release part of the version
                     # from the string.
-                    pre_rel_str = pre_release_match.groups()[0]
-                    canonical_ver = ov[:-len(pre_rel_str)].rstrip('.')
+                    canonical_ver = self._strip_pre_release(ov)
                     if canonical_ver not in versions_by_date:
                         # This canonical version was never tagged, so we
                         # do not want to collapse the pre-releases. Reset

@@ -1,0 +1,15 @@
+---
+features:
+  - |
+    Add the ability to specify regular expressions to a define a
+    customised versioning scheme for release tags and pre-release tags.
+
+    By default this change supports the current versioning scheme used by
+    OpenStack.
+
+    To customise, update the config.yaml file with the appropriate values.
+    For example, for tags with versions like 'v1.0.0' and pre-release
+    versions like 'v1.0.0rc1' the following could be added to config.yaml:
+
+    release_tag_re: 'v\d\.\d\.\d(rc\d+)?'
+    pre_release_tag_re: '(?P<pre_release>rc\d+$)'

@@ -115,7 +115,26 @@ class Config(object):
         'earliest_version': None,
 
         # The template used by reno new to create a note.
-        'template': _TEMPLATE
+        'template': _TEMPLATE,
+
+        # The RE pattern used to match the repo tags representing a valid
+        # release version. The pattern is compiled with the verbose and unicode
+        # flags enabled.
+        'release_tag_re': '''
+            ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
+                               # pre-releases
+        ''',
+
+        # The RE pattern used to check if a valid release version tag is also a
+        # valid pre-release version. The pattern is compiled with the verbose
+        # and unicode flags enabled. The pattern must define a group called
+        # 'pre_release' that matches the pre-release part of the tag and any
+        # separator, e.g for pre-release version '12.0.0.0rc1' the default RE
+        # pattern will identify '.0rc1' as the value of the group
+        # 'pre_release'.
+        'pre_release_tag_re': '''
+            (?P<pre_release>\.\d+(?:[ab]|rc)+\d*)$
+        ''',
     }
 
     @classmethod
