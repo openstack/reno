@@ -1230,6 +1230,41 @@ class BranchTest(Base):
         self.assertEqual(head1, head2)
 
 
+class GetRefTest(Base):
+
+    def setUp(self):
+        super(GetRefTest, self).setUp()
+        self._make_python_package()
+        self.f1 = self._add_notes_file('slug1')
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        self.repo.git('branch', 'stable/foo')
+        self.repo.git('tag', 'bar-eol')
+
+    def test_signed_tag(self):
+        self.scanner = scanner.Scanner(self.c)
+        ref = self.scanner._get_ref('1.0.0')
+        expected = self.scanner._repo.head()
+        self.assertEqual(expected, ref)
+
+    def test_unsigned_tag(self):
+        self.scanner = scanner.Scanner(self.c)
+        ref = self.scanner._get_ref('bar-eol')
+        expected = self.scanner._repo.head()
+        self.assertEqual(expected, ref)
+
+    def test_eol_tag_from_branch(self):
+        self.scanner = scanner.Scanner(self.c)
+        ref = self.scanner._get_ref('stable/bar')
+        expected = self.scanner._repo.head()
+        self.assertEqual(expected, ref)
+
+    def test_head(self):
+        self.scanner = scanner.Scanner(self.c)
+        ref = self.scanner._get_ref(None)
+        expected = self.scanner._repo.head()
+        self.assertEqual(expected, ref)
+
+
 class TagsTest(Base):
 
     def setUp(self):
