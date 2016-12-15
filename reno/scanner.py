@@ -234,8 +234,15 @@ class Scanner(object):
 
     def _get_branch_head(self, branch):
         if branch:
-            branch_ref = b'refs/heads/' + branch.encode('utf-8')
-            return self._repo.refs[branch_ref]
+            candidates = [
+                b'refs/heads/' + branch.encode('utf-8'),
+                b'refs/remotes/' + branch.encode('utf-8'),
+            ]
+            for branch_ref in candidates:
+                if branch_ref in self._repo.refs:
+                    return self._repo.refs[branch_ref]
+            # If we end up here we didn't find any of the candidates.
+            raise ValueError('Unknown branch {!r}'.format(branch))
         return self._repo.refs[b'HEAD']
 
     def _get_walker_for_branch(self, branch):
