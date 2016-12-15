@@ -1,0 +1,5 @@
+---
+prelude: >
+  This release includes a significant rewrite of the internal logic of
+  reno to access git data through the dulwich library instead of the
+  git command line porcelain.
