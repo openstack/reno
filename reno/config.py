@@ -9,6 +9,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import errno
 import logging
 import os.path
 
@@ -152,8 +153,12 @@ class Config(object):
             with open(self._filename, 'r') as fd:
                 self._contents = yaml.safe_load(fd)
         except IOError as err:
-            LOG.info('did not load config file %s: %s',
-                     self._filename, err)
+            if err.errno == errno.ENOENT:
+                LOG.info('no configuration file in %s',
+                         self._filename)
+            else:
+                LOG.warning('did not load config file %s: %s',
+                            self._filename, err)
         else:
             self.override(**self._contents)
 
