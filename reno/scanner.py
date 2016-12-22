@@ -209,6 +209,146 @@ def _aggregate_changes(walk_entry, changes, notesdir):
     return results
 
 
+class _ChangeTracker(object):
+
+    def __init__(self):
+        # Track the versions we have seen and the earliest version for
+        # which we have seen a given note's unique id.
+        self.versions = []
+        self.earliest_seen = collections.OrderedDict()
+        # Remember the most current filename for each id, to allow for
+        # renames.
+        self.last_name_by_id = {}
+        # Remember uniqueids that have had files deleted.
+        self.uniqueids_deleted = set()
+
+    def _common(self, uniqueid, version):
+        if version not in self.versions:
+            self.versions.append(version)
+        # Update the "earliest" version where a UID appears
+        # every time we see it, because we are scanning the
+        # history in reverse order so "early" items come
+        # later.
+        LOG.debug('%s: setting earliest reference to %s',
+                  uniqueid, version)
+        self.earliest_seen[uniqueid] = version
+
+    def add(self, filename, sha, version):
+        uniqueid = _get_unique_id(filename)
+        self._common(uniqueid, version)
+        LOG.info('%s: adding %s from %s',
+                 uniqueid, filename, version)
+
+        # If we have recorded that a UID was deleted, that
+        # means that was the last change made to the file and
+        # we can ignore it.
+        if uniqueid in self.uniqueids_deleted:
+            LOG.debug(
+                '%s: has already been deleted, ignoring this change',
+                uniqueid,
+            )
+            return
+
+        # A note is being added in this commit. If we have
+        # not seen it before, it was added here and never
+        # changed.
+        if uniqueid not in self.last_name_by_id:
+            self.last_name_by_id[uniqueid] = (filename, sha)
+            LOG.info(
+                '%s: new %s in commit %s',
+                uniqueid, filename, sha,
+            )
+        else:
+            LOG.debug(
+                '%s: add for file we have already seen',
+                uniqueid,
+            )
+
+    def rename(self, filename, sha, version):
+        uniqueid = _get_unique_id(filename)
+        self._common(uniqueid, version)
+
+        # If we have recorded that a UID was deleted, that
+        # means that was the last change made to the file and
+        # we can ignore it.
+        if uniqueid in self.uniqueids_deleted:
+            LOG.debug(
+                '%s: has already been deleted, ignoring this change',
+                uniqueid,
+            )
+            return
+
+        # The file is being renamed. We may have seen it
+        # before, if there were subsequent modifications,
+        # so only store the name information if it is not
+        # there already.
+        if uniqueid not in self.last_name_by_id:
+            self.last_name_by_id[uniqueid] = (filename, sha)
+            LOG.info(
+                '%s: update to %s in commit %s',
+                uniqueid, filename, sha,
+            )
+        else:
+            LOG.debug(
+                '%s: renamed file already known with the new name',
+                uniqueid,
+            )
+
+    def modify(self, filename, sha, version):
+        uniqueid = _get_unique_id(filename)
+        self._common(uniqueid, version)
+
+        # If we have recorded that a UID was deleted, that
+        # means that was the last change made to the file and
+        # we can ignore it.
+        if uniqueid in self.uniqueids_deleted:
+            LOG.debug(
+                '%s: has already been deleted, ignoring this change',
+                uniqueid,
+            )
+            return
+
+        # An existing file is being modified. We may have
+        # seen it before, if there were subsequent
+        # modifications, so only store the name
+        # information if it is not there already.
+        if uniqueid not in self.last_name_by_id:
+            self.last_name_by_id[uniqueid] = (filename, sha)
+            LOG.info(
+                '%s: update to %s in commit %s',
+                uniqueid, filename, sha,
+            )
+        else:
+            LOG.debug(
+                '%s: modified file already known',
+                uniqueid,
+            )
+
+    def delete(self, filename, sha, version):
+        uniqueid = _get_unique_id(filename)
+        self._common(uniqueid, version)
+        # This file is being deleted without a rename. If
+        # we have already seen the UID before, that means
+        # that after the file was deleted another file
+        # with the same UID was added back. In that case
+        # we do not want to treat it as deleted.
+        #
+        # Never store deleted files in last_name_by_id so
+        # we can safely use all of those entries to build
+        # the history data.
+        if uniqueid not in self.last_name_by_id:
+            self.uniqueids_deleted.add(uniqueid)
+            LOG.info(
+                '%s: note deleted in %s',
+                uniqueid, sha,
+            )
+        else:
+            LOG.debug(
+                '%s: delete for file re-added after the delete',
+                uniqueid,
+            )
+
+
 class RenoRepo(repo.Repo):
 
     # Populated by _load_tags().
@@ -613,9 +753,6 @@ class Scanner(object):
         if scan_stop_tag:
             LOG.info('stopping scan at %s', scan_stop_tag)
 
-        versions = []
-        earliest_seen = collections.OrderedDict()
-
         # Determine the current version, which might be an unreleased or
         # dev version if there are unreleased commits at the head of the
         # branch in question. Since the version may not already be known,
@@ -627,13 +764,9 @@ class Scanner(object):
         if current_version not in versions_by_date:
             versions_by_date.insert(0, current_version)
 
-        # Remember the most current filename for each id, to allow for
-        # renames.
-        last_name_by_id = {}
-
-        # Remember uniqueids that have had files deleted.
-        uniqueids_deleted = set()
-
+        # Track the versions we have seen and the earliest version for
+        # which we have seen a given note's unique id.
+        tracker = _ChangeTracker()
         for counter, entry in enumerate(self._topo_traversal(branch), 1):
 
             sha = entry.commit.id
@@ -651,116 +784,35 @@ class Scanner(object):
                 LOG.info('%06d %s updating current version to %s',
                          counter, sha, current_version)
 
-            # Remember each version we have seen.
-            if current_version not in versions:
-                LOG.debug('%s is a new version' % current_version)
-                versions.append(current_version)
-
-            # Look for changes to notes files in this commit.
+            # Look for changes to notes files in this commit. The
+            # change has only the basename of the path file, so we
+            # need to prefix that with the notesdir before giving it
+            # to the tracker.
             changes = _changes_in_subdir(self._repo, entry, notesdir)
             for change in _aggregate_changes(entry, changes, notesdir):
                 uniqueid = change[0]
 
-                # Update the "earliest" version where a UID appears
-                # every time we see it, because we are scanning the
-                # history in reverse order so "early" items come
-                # later.
-                LOG.debug('%s: setting earliest reference to %s',
-                          uniqueid, current_version)
-                earliest_seen[uniqueid] = current_version
-
                 c_type = change[1]
 
-                # If we have recorded that a UID was deleted, that
-                # means that was the last change made to the file and
-                # we can ignore it.
-                if uniqueid in uniqueids_deleted:
-                    LOG.debug(
-                        '%s: has already been deleted, ignoring this change',
-                        uniqueid,
-                    )
-                    continue
-
                 if c_type == diff_tree.CHANGE_ADD:
-                    # A note is being added in this commit. If we have
-                    # not seen it before, it was added here and never
-                    # changed.
-                    if uniqueid not in last_name_by_id:
-                        path, sha = change[-2:]
-                        fullpath = os.path.join(notesdir, path)
-                        last_name_by_id[uniqueid] = (fullpath,
-                                                     sha.decode('ascii'))
-                        LOG.info(
-                            '%s: update to %s in commit %s',
-                            uniqueid, path, sha,
-                        )
-                    else:
-                        LOG.debug(
-                            '%s: add for file we have already seen',
-                            uniqueid,
-                        )
+                    path, blob_sha = change[-2:]
+                    fullpath = os.path.join(notesdir, path)
+                    tracker.add(fullpath, sha, current_version)
 
                 elif c_type == diff_tree.CHANGE_DELETE:
-                    # This file is being deleted without a rename. If
-                    # we have already seen the UID before, that means
-                    # that after the file was deleted another file
-                    # with the same UID was added back. In that case
-                    # we do not want to treat it as deleted.
-                    #
-                    # Never store deleted files in last_name_by_id so
-                    # we can safely use all of those entries to build
-                    # the history data.
-                    if uniqueid not in last_name_by_id:
-                        uniqueids_deleted.add(uniqueid)
-                        LOG.info(
-                            '%s: note deleted in %s',
-                            uniqueid, sha,
-                        )
-                    else:
-                        LOG.debug(
-                            '%s: delete for file re-added after the delete',
-                            uniqueid,
-                        )
+                    path = change[-1]
+                    fullpath = os.path.join(notesdir, path)
+                    tracker.delete(fullpath, sha, current_version)
 
                 elif c_type == diff_tree.CHANGE_RENAME:
-                    # The file is being renamed. We may have seen it
-                    # before, if there were subsequent modifications,
-                    # so only store the name information if it is not
-                    # there already.
-                    if uniqueid not in last_name_by_id:
-                        path, sha = change[-2:]
-                        fullpath = os.path.join(notesdir, path)
-                        last_name_by_id[uniqueid] = (fullpath,
-                                                     sha.decode('ascii'))
-                        LOG.info(
-                            '%s: update to %s in commit %s',
-                            uniqueid, path, sha,
-                        )
-                    else:
-                        LOG.debug(
-                            '%s: renamed file already known with the new name',
-                            uniqueid,
-                        )
+                    path, blob_sha = change[-2:]
+                    fullpath = os.path.join(notesdir, path)
+                    tracker.rename(fullpath, sha, current_version)
 
                 elif c_type == diff_tree.CHANGE_MODIFY:
-                    # An existing file is being modified. We may have
-                    # seen it before, if there were subsequent
-                    # modifications, so only store the name
-                    # information if it is not there already.
-                    if uniqueid not in last_name_by_id:
-                        path, sha = change[-2:]
-                        fullpath = os.path.join(notesdir, path)
-                        last_name_by_id[uniqueid] = (fullpath,
-                                                     sha.decode('ascii'))
-                        LOG.info(
-                            '%s: update to %s in commit %s',
-                            uniqueid, path, sha,
-                        )
-                    else:
-                        LOG.debug(
-                            '%s: modified file already known',
-                            uniqueid,
-                        )
+                    path, blob_sha = change[-2:]
+                    fullpath = os.path.join(notesdir, path)
+                    tracker.modify(fullpath, sha, current_version)
 
                 else:
                     raise ValueError(
@@ -777,13 +829,13 @@ class Scanner(object):
         # Invert earliest_seen to make a list of notes files for each
         # version.
         files_and_tags = collections.OrderedDict()
-        for v in versions:
+        for v in tracker.versions:
             files_and_tags[v] = []
         # Produce a list of the actual files present in the repository. If
         # a note is removed, this step should let us ignore it.
-        for uniqueid, version in earliest_seen.items():
+        for uniqueid, version in tracker.earliest_seen.items():
             try:
-                base, sha = last_name_by_id[uniqueid]
+                base, sha = tracker.last_name_by_id[uniqueid]
                 files_and_tags[version].append((base, sha))
             except KeyError:
                 # Unable to find the file again, skip it to avoid breaking
