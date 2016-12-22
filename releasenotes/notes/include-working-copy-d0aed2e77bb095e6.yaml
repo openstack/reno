@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Include the local working copy when scanning the history of the
+    current branch. Notes files must at least be staged to indicate
+    that they will eventually be part of the history, but subsequent
+    changes to the file do not need to also be staged to be seen.

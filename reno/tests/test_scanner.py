@@ -20,6 +20,7 @@ import os.path
 import re
 import subprocess
 import time
+import unittest
 
 from dulwich import diff_tree
 from dulwich import objects
@@ -529,6 +530,82 @@ class BasicTest(Base):
             results,
         )
 
+    def test_staged_file(self):
+        # Prove that we can get a file we have staged.
+        # Start with a standard commit and tag
+        self._make_python_package()
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        # Now stage a release note
+        n = self.get_note_num()
+        basename = 'staged-note-%016x.yaml' % n
+        filename = os.path.join(self.reporoot, 'releasenotes', 'notes',
+                                basename)
+        create._make_note_file(filename, 'staged note')
+        self.repo.git('add', filename)
+        status_results = self.repo.git('status')
+        self.addDetail('git status', text_content(status_results))
+        # Now run the scanner
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        self.assertEqual(
+            {'*working-copy*': [
+                (os.path.join('releasenotes', 'notes', basename),
+                 None)],
+             },
+            raw_results,
+        )
+
+    @unittest.skip('dulwich does not know how to identify new files')
+    def test_added_tagged_not_staged(self):
+        # Prove that we can get a file we have created but not staged.
+        # Start with a standard commit and tag
+        self._make_python_package()
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        # Now create a note without staging it
+        n = self.get_note_num()
+        basename = 'staged-note-%016x.yaml' % n
+        filename = os.path.join(self.reporoot, 'releasenotes', 'notes',
+                                basename)
+        create._make_note_file(filename, 'staged note')
+        status_results = self.repo.git('status')
+        self.addDetail('git status', text_content(status_results))
+        # Now run the scanner
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        # Take the staged version of the file, but associate it with
+        # tagged version 1.0.0 because the file was added before that
+        # version.
+        self.assertEqual(
+            {'1.0.0': [(os.path.join('releasenotes', 'notes', basename),
+                        None)],
+             },
+            raw_results,
+        )
+
+    def test_modified_tagged_not_staged(self):
+        # Prove that we can get a file we have changed but not staged.
+        # Start with a standard commit and tag
+        self._make_python_package()
+        f1 = self._add_notes_file('slug1')
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        # Now modify the note
+        fullpath = os.path.join(self.repo.reporoot, f1)
+        with open(fullpath, 'w') as f:
+            f.write('modified first note')
+        status_results = self.repo.git('status')
+        self.addDetail('git status', text_content(status_results))
+        # Now run the scanner
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        # Take the staged version of the file, but associate it with
+        # tagged version 1.0.0 because the file was added before that
+        # version.
+        self.assertEqual(
+            {'1.0.0': [(f1, None)],
+             },
+            raw_results,
+        )
+
 
 class FileContentsTest(Base):
 
@@ -594,6 +671,19 @@ class FileContentsTest(Base):
         contents = r.get_file_at_commit(f1, 'HEAD')
         self.assertEqual(
             b'initial-contents',
+            contents,
+        )
+
+    def test_staged_file(self):
+        # Prove we are not picking up the contents from the local
+        # filesystem outside of the git history.
+        f1 = self._add_notes_file(contents='initial-contents')
+        with open(os.path.join(self.reporoot, f1), 'w') as f:
+            f.write('new contents for file')
+        r = scanner.RenoRepo(self.reporoot)
+        contents = r.get_file_at_commit(f1, None)
+        self.assertEqual(
+            'new contents for file',
             contents,
         )
 
