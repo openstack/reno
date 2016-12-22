@@ -933,6 +933,15 @@ class BranchBaseTest(Base):
             self.scanner._get_branch_base('not-master'),
         )
 
+    def test_no_tag_at_base(self):
+        # remove the tag at the branch point
+        self.repo.git('tag', '-d', '2.0.0')
+        self._add_notes_file('slug4')
+        self.repo.git('checkout', 'master')
+        self.assertIsNone(
+            self.scanner._get_branch_base('not-master')
+        )
+
 
 class BranchTest(Base):
 

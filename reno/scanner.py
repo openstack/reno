@@ -385,7 +385,15 @@ class Scanner(object):
                 # on master, so this is the base.
                 tags = self._repo.get_tags_on_commit(
                     c.commit.sha().hexdigest().encode('ascii'))
-                return tags[-1]
+                if tags:
+                    return tags[-1]
+                else:
+                    # Naughty, naughty, branching without tagging.
+                    LOG.error(
+                        ('There is no tag on commit %s at the base of %s. '
+                         'Branch scan short-cutting is disabled.'),
+                        c.commit.sha().hexdigest(), branch)
+                    return None
         return None
 
     def _topo_traversal(self, branch):
