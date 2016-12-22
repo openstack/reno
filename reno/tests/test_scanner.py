@@ -1102,6 +1102,44 @@ class BranchTest(Base):
             results,
         )
 
+    def test_pre_release_note_before_branch(self):
+        f4 = self._add_notes_file('slug4')
+        self.repo.git('tag', '-s', '-m', 'beta', '4.0.0.0b1')
+        self.repo.add_file('not-a-release-note.txt')
+        self.repo.git('tag', '-s', '-m', 'pre-release', '4.0.0.0rc1')
+        # Add a commit on master after the tag
+        self._add_notes_file('slug5')
+        # Move back to the tag and create the branch
+        self.repo.git('checkout', '4.0.0.0rc1')
+        self.repo.git('checkout', '-b', 'stable/4')
+        # Create a commit on the branch
+        f41 = self._add_notes_file('slug41')
+        self.repo.git('tag', '-s', '-m', 'release', '4.0.0')
+        log_text = self.repo.git(
+            'log', '--pretty=%x00%H %d', '--name-only', '--graph',
+            '--all', '--decorate',
+        )
+        self.addDetail('git log', text_content(log_text))
+        rev_list = self.repo.git('rev-list', '--first-parent',
+                                 '^stable/4', 'master')
+        self.addDetail('rev-list', text_content(rev_list))
+        self.c.override(
+            branch='stable/4',
+            collapse_pre_releases=True,
+        )
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {
+                '4.0.0': [f4, f41],
+            },
+            results,
+        )
+
     def test_full_release_branch(self):
         f4 = self._add_notes_file('slug4')
         self.repo.git('tag', '-s', '-m', 'release', '4.0.0')
@@ -1237,6 +1275,77 @@ class BranchTest(Base):
         head2 = scanner2._get_ref('origin/stable/2')
         self.assertIsNotNone(head2)
         self.assertEqual(head1, head2)
+
+
+class ScanStopPointTest(Base):
+
+    def setUp(self):
+        super(ScanStopPointTest, self).setUp()
+        self.scanner = scanner.Scanner(self.c)
+
+    def test_invalid_earliest_version(self):
+        self.assertIsNone(
+            self.scanner._find_scan_stop_point(
+                'not.a.numeric.version', [], True),
+        )
+
+    def test_unknown_version(self):
+        self.assertIsNone(
+            self.scanner._find_scan_stop_point(
+                '1.0.0', [], True),
+        )
+
+    def test_only_version(self):
+        self.assertIsNone(
+            self.scanner._find_scan_stop_point(
+                '1.0.0', ['1.0.0'], True),
+        )
+
+    def test_beta_collapse(self):
+        self.assertEqual(
+            '1.0.0',
+            self.scanner._find_scan_stop_point(
+                '2.0.0.0b1', ['2.0.0', '2.0.0.0rc1', '2.0.0.0b1', '1.0.0'],
+                True),
+        )
+
+    def test_rc_collapse(self):
+        self.assertEqual(
+            '1.0.0',
+            self.scanner._find_scan_stop_point(
+                '2.0.0.0rc1', ['2.0.0', '2.0.0.0rc1', '2.0.0.0b1', '1.0.0'],
+                True),
+        )
+
+    def test_rc_no_collapse(self):
+        self.assertEqual(
+            '2.0.0.0b1',
+            self.scanner._find_scan_stop_point(
+                '2.0.0.0rc1', ['2.0.0', '2.0.0.0rc1', '2.0.0.0b1', '1.0.0'],
+                False),
+        )
+
+    def test_nova_newton(self):
+        self.assertEqual(
+            '13.0.0.0rc3',
+            self.scanner._find_scan_stop_point(
+                '14.0.0',
+                [u'14.0.3', u'14.0.2', u'14.0.1', u'14.0.0.0rc2',
+                 u'14.0.0', u'14.0.0.0rc1', u'14.0.0.0b3', u'14.0.0.0b2',
+                 u'14.0.0.0b1', u'13.0.0.0rc3', u'13.0.0', u'13.0.0.0rc2',
+                 u'13.0.0.0rc1', u'13.0.0.0b3', u'13.0.0.0b2', u'13.0.0.0b1',
+                 u'12.0.0.0rc3', u'12.0.0', u'12.0.0.0rc2', u'12.0.0.0rc1',
+                 u'12.0.0.0b3', u'12.0.0.0b2', u'12.0.0.0b1', u'12.0.0a0',
+                 u'2015.1.0rc3', u'2015.1.0', u'2015.1.0rc2', u'2015.1.0rc1',
+                 u'2015.1.0b3', u'2015.1.0b2', u'2015.1.0b1', u'2014.2.rc2',
+                 u'2014.2', u'2014.2.rc1', u'2014.2.b3', u'2014.2.b2',
+                 u'2014.2.b1', u'2014.1.rc1', u'2014.1.b3', u'2014.1.b2',
+                 u'2014.1.b1', u'2013.2.rc1', u'2013.2.b3', u'2013.1.rc1',
+                 u'folsom-2', u'folsom-1', u'essex-1', u'diablo-2',
+                 u'diablo-1', u'2011.2', u'2011.2rc1', u'2011.2gamma1',
+                 u'2011.1rc1', u'0.9.0'],
+                True),
+        )
 
 
 class GetRefTest(Base):

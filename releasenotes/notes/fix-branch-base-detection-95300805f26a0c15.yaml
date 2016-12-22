@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix a problem with the way reno automatically detects the initial
+    version in a branch that prevented it from including all of the
+    notes associated with a release, especially if the branch was
+    created at a pre-release version number. Bug #1652092

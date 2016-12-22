@@ -31,6 +31,17 @@ PRE_RELEASE_RE = re.compile('''
 ''', flags=re.VERBOSE | re.UNICODE)
 
 
+def _parse_version(v):
+    parts = v.split('.') + ['0', '0', '0']
+    result = []
+    for p in parts[:3]:
+        try:
+            result.append(int(p))
+        except ValueError:
+            result.append(p)
+    return result
+
+
 def _get_unique_id(filename):
     base = os.path.basename(filename)
     root, ext = os.path.splitext(base)
@@ -497,6 +508,43 @@ class Scanner(object):
         "Return true if the file exists at the given commit."
         return bool(self.get_file_at_commit(filename, sha))
 
+    @staticmethod
+    def _find_scan_stop_point(earliest_version, versions_by_date,
+                              collapse_pre_releases):
+        """Return the version to use to stop the scan.
+
+        Use the list of versions_by_date to get the tag with a
+        different version created *before* the branch to ensure that
+        we include notes that go with that version that *is* in the
+        branch.
+
+        :param earliest_version: Version string of the earliest
+            version to be included in the output.
+        :param versions_by_date: List of version strings in reverse
+            chronological order.
+        :param collapse_pre_releases: Boolean indicating whether we are
+            collapsing pre-releases or not. If false, the next tag
+            is used, regardless of its version.
+
+        """
+        earliest_parts = _parse_version(earliest_version)
+        try:
+            idx = versions_by_date.index(earliest_version) + 1
+        except ValueError:
+            # The version we were given is not present, use a full
+            # scan.
+            return None
+        if not collapse_pre_releases:
+            # We just take the next tag.
+            return versions_by_date[idx]
+        # We need to look for a different version.
+        for candidate in versions_by_date[idx:]:
+            parts = _parse_version(candidate)
+            if parts != earliest_parts:
+                # The candidate is a different version, use it.
+                return candidate
+        return None
+
     def get_notes_by_version(self):
         """Return an OrderedDict mapping versions to lists of notes files.
 
@@ -533,16 +581,23 @@ class Scanner(object):
 
         # If the user has told us where to stop, use that as the
         # default.
-        branch_base_tag = earliest_version
+        if earliest_version:
+            scan_stop_tag = self._find_scan_stop_point(
+                earliest_version, versions_by_date, collapse_pre_releases)
+        else:
+            scan_stop_tag = None
 
-        # If the user has not told us where to stop, try to work it out
-        # for ourselves. If branch is set and is not "master", then we
-        # want to stop at the base of the branch.
+        # If the user has not told us where to stop, try to work it
+        # out for ourselves. If branch is set and is not "master",
+        # then we want to stop at the version before the tag at the
+        # base of the branch, which involves a bit of searching.
         if (stop_at_branch_base and
                 (not earliest_version) and branch and (branch != 'master')):
             LOG.debug('determining earliest_version from branch')
             earliest_version = self._get_branch_base(branch)
-            branch_base_tag = earliest_version
+            scan_stop_tag = self._find_scan_stop_point(
+                earliest_version, versions_by_date,
+                collapse_pre_releases)
             if earliest_version and collapse_pre_releases:
                 if PRE_RELEASE_RE.search(earliest_version):
                     # The earliest version won't actually be the pre-release
@@ -556,8 +611,8 @@ class Scanner(object):
             LOG.info('earliest version to include is %s', earliest_version)
         else:
             LOG.info('including entire branch history')
-        if branch_base_tag:
-            LOG.info('stopping scan at %s', branch_base_tag)
+        if scan_stop_tag:
+            LOG.info('stopping scan at %s', scan_stop_tag)
 
         versions = []
         earliest_seen = collections.OrderedDict()
@@ -713,8 +768,11 @@ class Scanner(object):
                         'unknown change instructions {!r}'.format(change)
                     )
 
-            if branch_base_tag and branch_base_tag in tags:
-                LOG.info('reached end of branch after %d commits', counter)
+            if scan_stop_tag and scan_stop_tag in tags:
+                LOG.info(
+                    ('reached end of branch after %d commits at %s '
+                     'with tags %s'),
+                    counter, sha, tags)
                 break
 
         # Invert earliest_seen to make a list of notes files for each
