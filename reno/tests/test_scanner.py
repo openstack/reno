@@ -1289,6 +1289,12 @@ class ScanStopPointTest(Base):
                 'not.a.numeric.version', [], True),
         )
 
+    def test_none(self):
+        self.assertIsNone(
+            self.scanner._find_scan_stop_point(
+                None, [], True),
+        )
+
     def test_unknown_version(self):
         self.assertIsNone(
             self.scanner._find_scan_stop_point(

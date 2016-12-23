@@ -527,6 +527,8 @@ class Scanner(object):
             is used, regardless of its version.
 
         """
+        if not earliest_version:
+            return None
         earliest_parts = _parse_version(earliest_version)
         try:
             idx = versions_by_date.index(earliest_version) + 1
@@ -581,11 +583,8 @@ class Scanner(object):
 
         # If the user has told us where to stop, use that as the
         # default.
-        if earliest_version:
-            scan_stop_tag = self._find_scan_stop_point(
-                earliest_version, versions_by_date, collapse_pre_releases)
-        else:
-            scan_stop_tag = None
+        scan_stop_tag = self._find_scan_stop_point(
+            earliest_version, versions_by_date, collapse_pre_releases)
 
         # If the user has not told us where to stop, try to work it
         # out for ourselves. If branch is set and is not "master",
