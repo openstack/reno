@@ -20,7 +20,9 @@ import re
 import sys
 
 from dulwich import diff_tree
+from dulwich import index as d_index
 from dulwich import objects
+from dulwich import porcelain
 from dulwich import repo
 
 LOG = logging.getLogger(__name__)
@@ -423,7 +425,23 @@ class RenoRepo(repo.Repo):
             return tree
 
     def get_file_at_commit(self, filename, sha):
-        "Return the contents of the file if it exists at the commit, or None."
+        """Return the contents of the file.
+
+        If sha is None, return the working copy of the file. If the
+        file cannot be read from the working dir, return None.
+
+        If the sha is not None and the file exists at the commit,
+        return the data from the stored blob. If the file does not
+        exist at the commit, return None.
+
+        """
+        if sha is None:
+            # Get the copy from the working directory.
+            try:
+                with open(os.path.join(self.path, filename), 'r') as f:
+                    return f.read()
+            except IOError:
+                return None
         # Get the tree associated with the commit identified by the
         # input SHA, then look through the items in the tree to find
         # the one with the path matching the filename. Take the
@@ -763,10 +781,48 @@ class Scanner(object):
         LOG.debug('current repository version: %s' % current_version)
         if current_version not in versions_by_date:
             versions_by_date.insert(0, current_version)
+        versions_by_date.insert(0, '*working-copy*')
 
         # Track the versions we have seen and the earliest version for
         # which we have seen a given note's unique id.
         tracker = _ChangeTracker()
+
+        # Process the local index, if we are scanning the current
+        # branch.
+        if not branch:
+            prefix = notesdir.rstrip('/') + '/'
+            index = self._repo.open_index()
+
+            # Pretend anything known to the repo and changed but not
+            # staged is part of the fake version '*working-copy*'.
+            LOG.debug('scanning unstaged changes')
+            for fname in d_index.get_unstaged_changes(index, self.reporoot):
+                fname = fname.decode('utf-8')
+                LOG.debug('found unstaged file %s', fname)
+                if fname.startswith(prefix) and _note_file(fname):
+                    fullpath = os.path.join(self.reporoot, fname)
+                    if os.path.exists(fullpath):
+                        LOG.debug('found file %s', fullpath)
+                        tracker.add(fname, None, '*working-copy*')
+                    else:
+                        LOG.debug('deleted file %s', fullpath)
+                        tracker.delete(fname, None, '*working-copy*')
+
+            # Pretend anything in the index is part of the fake
+            # version "*working-copy*".
+            LOG.debug('scanning staged schanges')
+            changes = porcelain.get_tree_changes(self._repo)
+            for fname in changes['add']:
+                fname = fname.decode('utf-8')
+                tracker.add(fname, None, '*working-copy*')
+            for fname in changes['modify']:
+                fname = fname.decode('utf-8')
+                tracker.modify(fname, None, '*working-copy*')
+            for fname in changes['delete']:
+                fname = fname.decode('utf-8')
+                tracker.delete(fname, None, '*working-copy*')
+
+        # Process the git commit history.
         for counter, entry in enumerate(self._topo_traversal(branch), 1):
 
             sha = entry.commit.id
