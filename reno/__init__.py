@@ -12,8 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
+
 import pbr.version
 
 
 __version__ = pbr.version.VersionInfo(
     'reno').version_string()
+
+# Configure a null logger so that if reno is used as a library by an
+# application that does not configure logging there are no warnings.
+logging.getLogger(__name__).addHandler(logging.NullHandler())
