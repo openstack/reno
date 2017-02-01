@@ -698,14 +698,8 @@ class Scanner(object):
         "Return true if the file exists at the given commit."
         return bool(self.get_file_at_commit(filename, sha))
 
-    def _get_earlier_branch(self, branch):
-        "Return the name of the branch created before the given branch."
-        # FIXME(dhellmann): Assumes branches come in order based on
-        # name. That may not be true for projects that branch based on
-        # version numbers instead of names.
-        if branch.startswith('origin/'):
-            branch = branch[7:]
-        LOG.debug('looking for the branch before %s', branch)
+    def _get_series_branches(self):
+        "Get branches matching the branch_name_re config option."
         refs = self._repo.get_refs()
         LOG.debug('refs %s', list(refs.keys()))
         branch_names = set()
@@ -718,7 +712,17 @@ class Scanner(object):
                 name = r[11:]
             if name and self.branch_name_re.search(name):
                 branch_names.add(name)
-        branch_names = list(sorted(branch_names))
+        return list(sorted(branch_names))
+
+    def _get_earlier_branch(self, branch):
+        "Return the name of the branch created before the given branch."
+        # FIXME(dhellmann): Assumes branches come in order based on
+        # name. That may not be true for projects that branch based on
+        # version numbers instead of names.
+        if branch.startswith('origin/'):
+            branch = branch[7:]
+        LOG.debug('looking for the branch before %s', branch)
+        branch_names = self._get_series_branches()
         if branch not in branch_names:
             LOG.debug('Could not find branch %r among %s',
                       branch, branch_names)
@@ -801,9 +805,15 @@ class Scanner(object):
         collapse_pre_releases = self.conf.collapse_pre_releases
         stop_at_branch_base = self.conf.stop_at_branch_base
 
-        LOG.info('scanning %s/%s (branch=%s)',
+        LOG.info('scanning %s/%s (branch=%s earliest_version=%s)',
                  reporoot.rstrip('/'), notesdir.lstrip('/'),
-                 branch or '*current*')
+                 branch or '*current*', earliest_version)
+
+        # Determine the current version, which might be an unreleased or
+        # dev version if there are unreleased commits at the head of the
+        # branch in question.
+        current_version = self._get_current_version(branch)
+        LOG.debug('current repository version: %s' % current_version)
 
         # Determine all of the tags known on the branch, in their date
         # order. We scan the commit history in topological order to ensure
@@ -823,11 +833,21 @@ class Scanner(object):
             collapse_pre_releases, branch)
 
         # If the user has not told us where to stop, try to work it
-        # out for ourselves. If branch is set and is not "master",
-        # then we want to stop at the version before the tag at the
-        # base of the branch, which involves a bit of searching.
-        if (stop_at_branch_base and
-                (not earliest_version) and branch and (branch != 'master')):
+        # out for ourselves.
+        if not branch and not earliest_version and stop_at_branch_base:
+            # On the current branch, stop at the point where the most
+            # recent branch was created, if we can find one.
+            LOG.debug('working on current branch without earliest_version')
+            branches = self._get_series_branches()
+            if branches:
+                LOG.debug('looking at base of %s to stop scanning master',
+                          branches[-1])
+                scan_stop_tag = self._get_branch_base(branches[-1])
+                earliest_version = current_version
+        elif branch and stop_at_branch_base and not earliest_version:
+            # If branch is set and is not "master",
+            # then we want to stop at the version before the tag at the
+            # base of the branch, which involves a bit of searching.
             LOG.debug('determining earliest_version from branch')
             branch_base = self._get_branch_base(branch)
             scan_stop_tag = self._find_scan_stop_point(
@@ -854,14 +874,10 @@ class Scanner(object):
         if scan_stop_tag:
             LOG.info('stopping scan at %s', scan_stop_tag)
 
-        # Determine the current version, which might be an unreleased or
-        # dev version if there are unreleased commits at the head of the
-        # branch in question. Since the version may not already be known,
-        # make sure it is in the list of versions by date. And since it is
-        # the most recent version, go ahead and insert it at the front of
-        # the list.
-        current_version = self._get_current_version(branch)
-        LOG.debug('current repository version: %s' % current_version)
+        # Since the version may not already be known, make sure it is
+        # in the list of versions by date. And since it is the most
+        # recent version, go ahead and insert it at the front of the
+        # list.
         if current_version not in versions_by_date:
             versions_by_date.insert(0, current_version)
         versions_by_date.insert(0, '*working-copy*')
