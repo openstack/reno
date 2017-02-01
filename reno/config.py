@@ -135,6 +135,11 @@ class Config(object):
         'pre_release_tag_re': '''
             (?P<pre_release>\.\d+(?:[ab]|rc)+\d*)$
         ''',
+
+        # The pattern for names for branches that are relevant when
+        # scanning history to determine where to stop, to find the
+        # "base" of a branch. Other branches are ignored.
+        'branch_name_re': 'stable/.+',
     }
 
     @classmethod

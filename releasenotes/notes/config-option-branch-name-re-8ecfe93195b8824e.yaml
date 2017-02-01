@@ -1,0 +1,15 @@
+---
+features:
+  - |
+    Add a configuration option ``branch_name_re`` to hold a regular expression
+    for choosing "interesting" branches when trying to automatically detect
+    how far back the scanner should look. The default is 'stable/.+', which
+    works for the OpenStack practice of creating branches named after the
+    stable series of releases.
+fixes:
+  - |
+    Fixes the logic for determining how far back in history to look when
+    scanning a given branch. Reno now looks for the base of the "previous"
+    branch, as determined by looking at branches matching ``branch_name_re``
+    in lexical order. This may not work if branches are created using
+    version numbers as their names.

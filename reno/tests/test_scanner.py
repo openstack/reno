@@ -1367,80 +1367,149 @@ class BranchTest(Base):
         self.assertEqual(head1, head2)
 
 
-class ScanStopPointTest(Base):
+class ScanStopPointPrereleaseVersionsTest(Base):
 
     def setUp(self):
-        super(ScanStopPointTest, self).setUp()
+        super(ScanStopPointPrereleaseVersionsTest, self).setUp()
         self.scanner = scanner.Scanner(self.c)
+        self._make_python_package()
+        self._add_notes_file('slug1')
+        self.repo.git('tag', '-s', '-m', 'first series', '1.0.0.0rc1')
+        self.repo.git('checkout', '-b', 'stable/a')
+        self._add_notes_file('slug2')
+        self._add_notes_file('slug3')
+        self.repo.git('tag', '-s', '-m', 'second tag', '1.0.0')
+        self.repo.git('checkout', 'master')
+        self._add_notes_file('slug4')
+        self._add_notes_file('slug5')
+        self.repo.git('tag', '-s', '-m', 'second series', '2.0.0.0b3')
+        self._add_notes_file('slug6')
+        self._add_notes_file('slug7')
+        self.repo.git('tag', '-s', '-m', 'second tag', '2.0.0.0rc1')
+        self.repo.git('checkout', '-b', 'stable/b')
+        self._add_notes_file('slug8')
+        self._add_notes_file('slug9')
+        self.repo.git('tag', '-s', '-m', 'third tag', '2.0.0')
+        self.repo.git('checkout', 'master')
+
+    def test_beta_collapse(self):
+        self.assertEqual(
+            '1.0.0.0rc1',
+            self.scanner._find_scan_stop_point(
+                '2.0.0.0b3', ['2.0.0.0b3', '1.0.0.0rc1'],
+                True, 'master'),
+        )
+
+    def test_rc_collapse_master(self):
+        self.assertEqual(
+            '1.0.0.0rc1',
+            self.scanner._find_scan_stop_point(
+                '2.0.0.0rc1', ['2.0.0.0rc1', '2.0.0.0b3', '1.0.0.0rc1'],
+                True, 'master'),
+        )
+
+    def test_rc_collapse_branch(self):
+        self.assertEqual(
+            '1.0.0.0rc1',
+            self.scanner._find_scan_stop_point(
+                '2.0.0.0rc1', ['2.0.0.0rc1', '2.0.0.0b3', '1.0.0.0rc1'],
+                True, 'stable/b'),
+        )
+
+    def test_rc_no_collapse(self):
+        self.assertEqual(
+            '2.0.0.0b3',
+            self.scanner._find_scan_stop_point(
+                '2.0.0.0rc1', ['2.0.0.0rc1', '2.0.0.0b3', '1.0.0.0rc1'],
+                False, 'master'),
+        )
+
+    def test_stable_branch_with_collapse(self):
+        self.assertEqual(
+            '1.0.0.0rc1',
+            self.scanner._find_scan_stop_point(
+                '2.0.0', ['2.0.0', '2.0.0.0rc1', '2.0.0.0b3', '1.0.0.0rc1'],
+                True, 'stable/b'),
+        )
+
+    # def test_nova_newton(self):
+    #     self.assertEqual(
+    #         '13.0.0.0rc3',
+    #         self.scanner._find_scan_stop_point(
+    #             '14.0.0',
+    #             [u'14.0.3', u'14.0.2', u'14.0.1', u'14.0.0.0rc2',
+    #              u'14.0.0', u'14.0.0.0rc1', u'14.0.0.0b3', u'14.0.0.0b2',
+    #              u'14.0.0.0b1', u'13.0.0.0rc3', u'13.0.0', u'13.0.0.0rc2',
+    #              u'13.0.0.0rc1', u'13.0.0.0b3', u'13.0.0.0b2', u'13.0.0.0b1',
+    #              u'12.0.0.0rc3', u'12.0.0', u'12.0.0.0rc2', u'12.0.0.0rc1',
+    #              u'12.0.0.0b3', u'12.0.0.0b2', u'12.0.0.0b1', u'12.0.0a0',
+    #              u'2015.1.0rc3', u'2015.1.0', u'2015.1.0rc2', u'2015.1.0rc1',
+    #              u'2015.1.0b3', u'2015.1.0b2', u'2015.1.0b1', u'2014.2.rc2',
+    #              u'2014.2', u'2014.2.rc1', u'2014.2.b3', u'2014.2.b2',
+    #              u'2014.2.b1', u'2014.1.rc1', u'2014.1.b3', u'2014.1.b2',
+    #              u'2014.1.b1', u'2013.2.rc1', u'2013.2.b3', u'2013.1.rc1',
+    #              u'folsom-2', u'folsom-1', u'essex-1', u'diablo-2',
+    #              u'diablo-1', u'2011.2', u'2011.2rc1', u'2011.2gamma1',
+    #              u'2011.1rc1', u'0.9.0'],
+    #             True),
+    #     )
+
+
+class ScanStopPointRegularVersionsTest(Base):
+
+    def setUp(self):
+        super(ScanStopPointRegularVersionsTest, self).setUp()
+        self.scanner = scanner.Scanner(self.c)
+        self._make_python_package()
+        self._add_notes_file('slug1')
+        self.repo.git('tag', '-s', '-m', 'first series', '1.0.0')
+        self.repo.git('checkout', '-b', 'stable/a')
+        self._add_notes_file('slug2')
+        self._add_notes_file('slug3')
+        self.repo.git('tag', '-s', '-m', 'second tag', '1.0.1')
+        self.repo.git('checkout', 'master')
+        self._add_notes_file('slug4')
+        self._add_notes_file('slug5')
+        self.repo.git('tag', '-s', '-m', 'second series', '2.0.0')
+        self._add_notes_file('slug6')
+        self._add_notes_file('slug7')
+        self.repo.git('tag', '-s', '-m', 'second tag', '2.0.1')
+        self.repo.git('checkout', '-b', 'stable/b')
+        self._add_notes_file('slug8')
+        self._add_notes_file('slug9')
+        self.repo.git('tag', '-s', '-m', 'third tag', '2.0.2')
+        self.repo.git('checkout', 'master')
 
     def test_invalid_earliest_version(self):
         self.assertIsNone(
             self.scanner._find_scan_stop_point(
-                'not.a.numeric.version', [], True),
+                'not.a.numeric.version', [], True, 'stable/b'),
         )
 
     def test_none(self):
         self.assertIsNone(
             self.scanner._find_scan_stop_point(
-                None, [], True),
+                None, [], True, 'stable/b'),
         )
 
     def test_unknown_version(self):
         self.assertIsNone(
             self.scanner._find_scan_stop_point(
-                '1.0.0', [], True),
+                '2.0.2', [], True, 'stable/b'),
         )
 
     def test_only_version(self):
         self.assertIsNone(
             self.scanner._find_scan_stop_point(
-                '1.0.0', ['1.0.0'], True),
+                '2.0.2', ['1.0.0'], True, 'stable/b'),
         )
 
-    def test_beta_collapse(self):
+    def test_find_prior_branch(self):
         self.assertEqual(
             '1.0.0',
             self.scanner._find_scan_stop_point(
-                '2.0.0.0b1', ['2.0.0', '2.0.0.0rc1', '2.0.0.0b1', '1.0.0'],
-                True),
-        )
-
-    def test_rc_collapse(self):
-        self.assertEqual(
-            '1.0.0',
-            self.scanner._find_scan_stop_point(
-                '2.0.0.0rc1', ['2.0.0', '2.0.0.0rc1', '2.0.0.0b1', '1.0.0'],
-                True),
-        )
-
-    def test_rc_no_collapse(self):
-        self.assertEqual(
-            '2.0.0.0b1',
-            self.scanner._find_scan_stop_point(
-                '2.0.0.0rc1', ['2.0.0', '2.0.0.0rc1', '2.0.0.0b1', '1.0.0'],
-                False),
-        )
-
-    def test_nova_newton(self):
-        self.assertEqual(
-            '13.0.0.0rc3',
-            self.scanner._find_scan_stop_point(
-                '14.0.0',
-                [u'14.0.3', u'14.0.2', u'14.0.1', u'14.0.0.0rc2',
-                 u'14.0.0', u'14.0.0.0rc1', u'14.0.0.0b3', u'14.0.0.0b2',
-                 u'14.0.0.0b1', u'13.0.0.0rc3', u'13.0.0', u'13.0.0.0rc2',
-                 u'13.0.0.0rc1', u'13.0.0.0b3', u'13.0.0.0b2', u'13.0.0.0b1',
-                 u'12.0.0.0rc3', u'12.0.0', u'12.0.0.0rc2', u'12.0.0.0rc1',
-                 u'12.0.0.0b3', u'12.0.0.0b2', u'12.0.0.0b1', u'12.0.0a0',
-                 u'2015.1.0rc3', u'2015.1.0', u'2015.1.0rc2', u'2015.1.0rc1',
-                 u'2015.1.0b3', u'2015.1.0b2', u'2015.1.0b1', u'2014.2.rc2',
-                 u'2014.2', u'2014.2.rc1', u'2014.2.b3', u'2014.2.b2',
-                 u'2014.2.b1', u'2014.1.rc1', u'2014.1.b3', u'2014.1.b2',
-                 u'2014.1.b1', u'2013.2.rc1', u'2013.2.b3', u'2013.1.rc1',
-                 u'folsom-2', u'folsom-1', u'essex-1', u'diablo-2',
-                 u'diablo-1', u'2011.2', u'2011.2rc1', u'2011.2gamma1',
-                 u'2011.1rc1', u'0.9.0'],
-                True),
+                '2.0.2', ['2.0.2', '2.0.1', '2.0.0', '1.0.0'],
+                True, 'stable/b'),
         )
 
 

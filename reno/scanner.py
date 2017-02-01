@@ -470,6 +470,10 @@ class Scanner(object):
             self.conf.pre_release_tag_re,
             flags=re.VERBOSE | re.UNICODE,
         )
+        self.branch_name_re = re.compile(
+            self.conf.branch_name_re,
+            flags=re.VERBOSE | re.UNICODE,
+        )
 
     def _get_ref(self, name):
         if name:
@@ -694,9 +698,43 @@ class Scanner(object):
         "Return true if the file exists at the given commit."
         return bool(self.get_file_at_commit(filename, sha))
 
-    @staticmethod
-    def _find_scan_stop_point(earliest_version, versions_by_date,
-                              collapse_pre_releases):
+    def _get_earlier_branch(self, branch):
+        "Return the name of the branch created before the given branch."
+        # FIXME(dhellmann): Assumes branches come in order based on
+        # name. That may not be true for projects that branch based on
+        # version numbers instead of names.
+        if branch.startswith('origin/'):
+            branch = branch[7:]
+        LOG.debug('looking for the branch before %s', branch)
+        refs = self._repo.get_refs()
+        LOG.debug('refs %s', list(refs.keys()))
+        branch_names = set()
+        for r in refs.keys():
+            name = None
+            r = r.decode('utf-8')
+            if r.startswith('refs/remotes/origin/'):
+                name = r[20:]
+            elif r.startswith('refs/heads/'):
+                name = r[11:]
+            if name and self.branch_name_re.search(name):
+                branch_names.add(name)
+        branch_names = list(sorted(branch_names))
+        if branch not in branch_names:
+            LOG.debug('Could not find branch %r among %s',
+                      branch, branch_names)
+            return None
+        LOG.debug('found branches %s', branch_names)
+        current = branch_names.index(branch)
+        if current == 0:
+            # This is the first branch.
+            LOG.debug('%s appears to be the first branch', branch)
+            return None
+        previous = branch_names[current - 1]
+        LOG.debug('found earlier branch %s', previous)
+        return previous
+
+    def _find_scan_stop_point(self, earliest_version, versions_by_date,
+                              collapse_pre_releases, branch):
         """Return the version to use to stop the scan.
 
         Use the list of versions_by_date to get the tag with a
@@ -711,6 +749,7 @@ class Scanner(object):
         :param collapse_pre_releases: Boolean indicating whether we are
             collapsing pre-releases or not. If false, the next tag
             is used, regardless of its version.
+        :param branch: The name of the branch we are scanning.
 
         """
         if not earliest_version:
@@ -722,7 +761,17 @@ class Scanner(object):
             # The version we were given is not present, use a full
             # scan.
             return None
-        if not collapse_pre_releases:
+        # We need to look for the previous branch's root.
+        if branch and branch != 'master':
+            previous_branch = self._get_earlier_branch(branch)
+            if not previous_branch:
+                # This was the first branch, so scan the whole
+                # history.
+                return None
+            previous_base = self._get_branch_base(previous_branch)
+            return previous_base
+        is_pre_release = bool(self.pre_release_tag_re.search(earliest_version))
+        if is_pre_release and not collapse_pre_releases:
             # We just take the next tag.
             return versions_by_date[idx]
         # We need to look for a different version.
@@ -770,7 +819,8 @@ class Scanner(object):
         # If the user has told us where to stop, use that as the
         # default.
         scan_stop_tag = self._find_scan_stop_point(
-            earliest_version, versions_by_date, collapse_pre_releases)
+            earliest_version, versions_by_date,
+            collapse_pre_releases, branch)
 
         # If the user has not told us where to stop, try to work it
         # out for ourselves. If branch is set and is not "master",
@@ -779,10 +829,15 @@ class Scanner(object):
         if (stop_at_branch_base and
                 (not earliest_version) and branch and (branch != 'master')):
             LOG.debug('determining earliest_version from branch')
-            earliest_version = self._get_branch_base(branch)
+            branch_base = self._get_branch_base(branch)
             scan_stop_tag = self._find_scan_stop_point(
-                earliest_version, versions_by_date,
-                collapse_pre_releases)
+                branch_base, versions_by_date,
+                collapse_pre_releases, branch)
+            if not scan_stop_tag:
+                earliest_version = branch_base
+            else:
+                idx = versions_by_date.index(scan_stop_tag)
+                earliest_version = versions_by_date[idx - 1]
             if earliest_version and collapse_pre_releases:
                 if self.pre_release_tag_re.search(earliest_version):
                     # The earliest version won't actually be the pre-release
@@ -932,6 +987,7 @@ class Scanner(object):
         # Combine pre-releases into the final release, if we are told to
         # and the final release exists.
         if collapse_pre_releases:
+            LOG.debug('collapsing pre-release versions into final releases')
             collapsing = files_and_tags
             files_and_tags = collections.OrderedDict()
             for ov in versions_by_date:
@@ -958,12 +1014,16 @@ class Scanner(object):
                     files_and_tags[canonical_ver] = []
                 files_and_tags[canonical_ver].extend(collapsing[ov])
 
+        LOG.debug('files_and_tags %s',
+                  {k: len(v) for k, v in files_and_tags.items()})
         # Only return the parts of files_and_tags that actually have
         # filenames associated with the versions.
+        LOG.debug('trimming')
         trimmed = collections.OrderedDict()
         for ov in versions_by_date:
             if not files_and_tags.get(ov):
                 continue
+            LOG.debug('keeping %s', ov)
             # Sort the notes associated with the version so they are in a
             # deterministic order, to avoid having the same data result in
             # different output depending on random factors. Earlier
@@ -977,6 +1037,7 @@ class Scanner(object):
             # If we have been told to stop at a version, we can do that
             # now.
             if earliest_version and ov == earliest_version:
+                LOG.debug('stopping trimming at %s', earliest_version)
                 break
 
         LOG.debug(
