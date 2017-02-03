@@ -19,6 +19,7 @@ from docutils.parsers.rst import directives
 from docutils import statemachine
 from sphinx.util.nodes import nested_parse_with_titles
 
+from dulwich import repo
 from reno import config
 from reno import defaults
 from reno import formatter
@@ -51,6 +52,9 @@ class ReleaseNotesDirective(rst.Directive):
         branch = self.options.get('branch')
         reporoot_opt = self.options.get('reporoot', '.')
         reporoot = os.path.abspath(reporoot_opt)
+        # When building on RTD.org the root directory may not be
+        # the current directory, so look for it.
+        reporoot = repo.Repo.discover(reporoot).path
         relnotessubdir = self.options.get('relnotessubdir',
                                           defaults.RELEASE_NOTES_SUBDIR)
         conf = config.Config(reporoot, relnotessubdir)
