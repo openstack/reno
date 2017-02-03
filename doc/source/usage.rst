@@ -7,8 +7,8 @@ Creating New Release Notes
 
 The ``reno`` command line tool is used to create a new release note
 file in the correct format and with a unique name.  The ``new``
-subcommand combines a random suffix with a "slug" value to make the
-new file with a unique name that is easy to identify again later.
+subcommand combines a random suffix with a "slug" value to create
+the file with a unique name that is easy to identify again later.
 
 ::
 
@@ -32,19 +32,19 @@ being installed globally. For example
 
         releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
 
-The ``--edit`` option enables to edit the note just after its creation.
+The ``--edit`` option opens the new note in a text editor.
 
 ::
 
     $ reno new slug-goes-here --edit
-    ... Open your editor (defined with EDITOR environment variable) ...
+    ... Opens the editor set in the EDITOR environment variable, editing the new file ...
     Created new notes file in releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
 
 
-By default the new note is created under ``./releasenotes/notes``. Use
-the ``--rel-notes-dir`` to change the parent directory (the ``notes``
-subdirectory is always appended). It's also possible to set a custom
-template to create notes (see `Configuring Reno`_ ).
+By default, the new note is created under ``./releasenotes/notes``.
+The ``--rel-notes-dir`` command-line flag changes the parent directory
+(the ``notes`` subdirectory is always appended). It's also possible to
+set a custom template to create notes (see `Configuring Reno`_ ).
 
 Editing a Release Note
 ======================
@@ -123,8 +123,8 @@ entirely.
    other:
      - Add other notes here, or remove this section.
 
-Formatting
-----------
+Note File Syntax
+----------------
 
 Release notes may include embedded `reStructuredText`_, including simple
 inline markup like emphasis and pre-formatted text as well as complex
@@ -155,25 +155,20 @@ that is checked out). To limit the report to a subset of the available
 versions on the branch, use the ``--version`` option (it can be
 repeated).
 
-Notes are output in the order they are found by ``git log`` looking
-over the history of the branch. This is deterministic, but not
-necessarily predictable or mutable.
+Notes are output in the order they are found when scanning the git
+history of the branch using topological ordering. This is
+deterministic, but not necessarily predictable or mutable.
 
 Configuring Reno
 ================
 
-Reno looks for an optional ``config.yml`` file in your release notes
-directory.  This file may contain optional flags that you might use with a
-command. If the values do not apply to the command, they are ignored in the
-configuration file. For example, a couple reno commands allow you to specify
-
-- ``--branch``
-- ``--earliest-version``
-- ``--collapse-pre-releases``/``--no-collapse-pre-releases``
-- ``--ignore-cache``
-- ``--stop-at-branch-base``/``--no-stop-at-branch-base``
-
-So you might write a config file (if you use these often) like:
+Reno looks for an optional ``config.yml`` file in the release notes
+directory.  If the values in the configuration file do not apply to
+the command being run, they are ignored. For example, some reno
+commands take inputs controlling the branch, earliest revision, and
+other common parameters that control which notes are included in the
+output.  Because they are commonly set options, a configuration file
+may be the most convenient way to manage the values consistently.
 
 .. code-block:: yaml
 
@@ -186,15 +181,22 @@ So you might write a config file (if you use these often) like:
               <template-used-to-create-new-notes>
               ...
 
-These will be parsed first and then the CLI options will be applied after
-the config files.
+Many of the settings in the configuration file can be overridden by
+using command-line switches. For example:
+
+- ``--branch``
+- ``--earliest-version``
+- ``--collapse-pre-releases``/``--no-collapse-pre-releases``
+- ``--ignore-cache``
+- ``--stop-at-branch-base``/``--no-stop-at-branch-base``
 
 Debugging
 =========
 
-The way release notes are included into sphinx documents may mask where
-formatting errors occur. To generate the release notes manually, so that
-they can be put into a sphinx document directly for debugging, run:
+The true location of formatting errors in release notes may be masked
+because of the way release notes are included into sphinx documents.
+To generate the release notes manually, so that they can be put into a
+sphinx document directly for debugging, use the ``report`` command.
 
 .. code-block:: console
 
