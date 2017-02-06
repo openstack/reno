@@ -913,13 +913,16 @@ class Scanner(object):
             changes = porcelain.get_tree_changes(self._repo)
             for fname in changes['add']:
                 fname = fname.decode('utf-8')
-                tracker.add(fname, None, '*working-copy*')
+                if fname.startswith(prefix) and _note_file(fname):
+                    tracker.add(fname, None, '*working-copy*')
             for fname in changes['modify']:
                 fname = fname.decode('utf-8')
-                tracker.modify(fname, None, '*working-copy*')
+                if fname.startswith(prefix) and _note_file(fname):
+                    tracker.modify(fname, None, '*working-copy*')
             for fname in changes['delete']:
                 fname = fname.decode('utf-8')
-                tracker.delete(fname, None, '*working-copy*')
+                if fname.startswith(prefix) and _note_file(fname):
+                    tracker.delete(fname, None, '*working-copy*')
 
         # Process the git commit history.
         for counter, entry in enumerate(self._topo_traversal(branch), 1):
