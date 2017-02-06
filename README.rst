@@ -16,8 +16,3 @@ Project Meta-data
 * Source: http://git.openstack.org/cgit/openstack/reno
 * Bugs: http://bugs.launchpad.net/reno
 * IRC: #openstack-release
-
-Features
-========
-
-* TODO
