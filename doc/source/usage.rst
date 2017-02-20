@@ -162,7 +162,7 @@ deterministic, but not necessarily predictable or mutable.
 Configuring Reno
 ================
 
-Reno looks for an optional ``config.yml`` file in the release notes
+Reno looks for an optional ``config.yaml`` file in the release notes
 directory.  If the values in the configuration file do not apply to
 the command being run, they are ignored. For example, some reno
 commands take inputs controlling the branch, earliest revision, and
