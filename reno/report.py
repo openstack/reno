@@ -25,6 +25,7 @@ def report_cmd(args, conf):
         versions = ldr.versions
     text = formatter.format_report(
         ldr,
+        conf,
         versions,
         title='Release Notes',
     )

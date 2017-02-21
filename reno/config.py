@@ -140,6 +140,20 @@ class Config(object):
         # scanning history to determine where to stop, to find the
         # "base" of a branch. Other branches are ignored.
         'branch_name_re': 'stable/.+',
+
+        # The identifiers and names of permitted sections in the
+        # release notes, in the order in which the final report will
+        # be generated.
+        'sections': [
+            ['features', 'New Features'],
+            ['issues', 'Known Issues'],
+            ['upgrade', 'Upgrade Notes'],
+            ['deprecations', 'Deprecation Notes'],
+            ['critical', 'Critical Issues'],
+            ['security', 'Security Issues'],
+            ['fixes', 'Bug Fixes'],
+            ['other', 'Other Notes'],
+        ],
     }
 
     @classmethod
