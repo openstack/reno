@@ -1,7 +1,8 @@
 ---
 features:
   - |
-    The scanner for the "current" branch (usually master) now stops when it
-    encounters the base of an earlier branch matching the branch_name_re config
-    option. This results in less history appearing on the unreleased pages,
-    while still actually showing the current series and any unreleased notes.
+    The scanner for the "current" branch (usually ``master``) now stops
+    when it encounters the base of an earlier branch matching the
+    ``branch_name_re`` config option. This results in less history
+    appearing on the unreleased pages, while still actually showing
+    the current series and any unreleased notes.

@@ -3,7 +3,7 @@ features:
   - |
     Add a configuration option ``branch_name_re`` to hold a regular expression
     for choosing "interesting" branches when trying to automatically detect
-    how far back the scanner should look. The default is 'stable/.+', which
+    how far back the scanner should look. The default is ``stable/.+``, which
     works for the OpenStack practice of creating branches named after the
     stable series of releases.
 fixes:
