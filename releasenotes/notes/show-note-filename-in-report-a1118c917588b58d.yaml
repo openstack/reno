@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    The report output now includes debugging details with the filename
+    and sha for the version of the content used to indicate where the
+    content is from to assist with debugging formatting or content
+    issues.
