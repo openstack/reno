@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add a configuration option ``sections`` to hold the list of
+    permitted section identifiers and corresponding display names.
+    This also determines the order in which sections are collated.
+

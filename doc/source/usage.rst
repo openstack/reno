@@ -50,13 +50,16 @@ Editing a Release Note
 ======================
 
 The note file is a YAML file with several sections. All of the text is
-interpreted as having `reStructuredText`_ formatting.
+interpreted as having `reStructuredText`_ formatting. The permitted
+sections are configurable (see below) but default to the following
+list:
 
 prelude
 
   General comments about the release. The prelude from all notes in a
   section are combined, in note order, to produce a single prelude
-  introducing that release.
+  introducing that release. This section is always included, regardless
+  of what sections are configured.
 
 features
 
@@ -177,6 +180,14 @@ may be the most convenient way to manage the values consistently.
     earliest_version: 12.0.0
     collapse_pre_releases: false
     stop_at_branch_base: true
+    sections:
+      # The prelude section is implicitly included.
+      - [features, New Features]
+      - [issues, Known Issues]
+      - [upgrade, Upgrade Notes]
+      - [api, API Changes]
+      - [security, Security Issues]
+      - [fixes, Bug Fixes]
     template: |
               <template-used-to-create-new-notes>
               ...

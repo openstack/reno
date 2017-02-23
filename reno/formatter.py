@@ -13,18 +13,6 @@
 from __future__ import print_function
 
 
-_SECTION_ORDER = [
-    ('features', 'New Features'),
-    ('issues', 'Known Issues'),
-    ('upgrade', 'Upgrade Notes'),
-    ('deprecations', 'Deprecation Notes'),
-    ('critical', 'Critical Issues'),
-    ('security', 'Security Issues'),
-    ('fixes', 'Bug Fixes'),
-    ('other', 'Other Notes'),
-]
-
-
 def _indent_for_list(text, prefix='  '):
     """Indent some text to make it work as a list entry.
 
@@ -37,7 +25,7 @@ def _indent_for_list(text, prefix='  '):
     ]) + '\n'
 
 
-def format_report(loader, versions_to_include, title=None):
+def format_report(loader, config, versions_to_include, title=None):
     report = []
     if title:
         report.append('=' * len(title))
@@ -64,7 +52,7 @@ def format_report(loader, versions_to_include, title=None):
                 report.append(file_contents[n]['prelude'])
                 report.append('')
 
-        for section_name, section_title in _SECTION_ORDER:
+        for section_name, section_title in config.sections:
             notes = [
                 n
                 for fn, sha in notefiles

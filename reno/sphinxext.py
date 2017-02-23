@@ -90,6 +90,7 @@ class ReleaseNotesDirective(rst.Directive):
         info('got versions %s' % (versions,))
         text = formatter.format_report(
             ldr,
+            conf,
             versions,
             title=title,
         )
