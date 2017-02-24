@@ -143,7 +143,8 @@ class Config(object):
 
         # The identifiers and names of permitted sections in the
         # release notes, in the order in which the final report will
-        # be generated.
+        # be generated. A prelude section will always be automatically
+        # inserted before the first element of this list.
         'sections': [
             ['features', 'New Features'],
             ['issues', 'Known Issues'],
