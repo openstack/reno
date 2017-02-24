@@ -49,12 +49,13 @@ def format_report(loader, config, versions_to_include, title=None):
         notefiles = loader[version]
         for n, sha in notefiles:
             if 'prelude' in file_contents[n]:
+                report.append('.. %s @ %s\n' % (n, sha))
                 report.append(file_contents[n]['prelude'])
                 report.append('')
 
         for section_name, section_title in config.sections:
             notes = [
-                n
+                (n, fn, sha)
                 for fn, sha in notefiles
                 if file_contents[fn].get(section_name)
                 for n in file_contents[fn].get(section_name, [])
@@ -63,7 +64,8 @@ def format_report(loader, config, versions_to_include, title=None):
                 report.append(section_title)
                 report.append('-' * len(section_title))
                 report.append('')
-                for n in notes:
+                for n, fn, sha in notes:
+                    report.append('.. %s @ %s\n' % (fn, sha))
                     report.append('- %s' % _indent_for_list(n))
                 report.append('')
 
