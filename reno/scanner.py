@@ -219,20 +219,24 @@ class _ChangeTracker(object):
         # Remember uniqueids that have had files deleted.
         self.uniqueids_deleted = set()
 
-    def _common(self, uniqueid, version):
+    def _common(self, uniqueid, sha, version):
         if version not in self.versions:
             self.versions.append(version)
         # Update the "earliest" version where a UID appears
         # every time we see it, because we are scanning the
         # history in reverse order so "early" items come
         # later.
-        LOG.debug('%s: setting earliest reference to %s',
-                  uniqueid, version)
+        if uniqueid in self.earliest_seen:
+            LOG.debug('%s: resetting earliest reference from %s to %s for %s',
+                      uniqueid, self.earliest_seen[uniqueid], version, sha)
+        else:
+            LOG.debug('%s: setting earliest reference to %s for %s',
+                      uniqueid, version, sha)
         self.earliest_seen[uniqueid] = version
 
     def add(self, filename, sha, version):
         uniqueid = _get_unique_id(filename)
-        self._common(uniqueid, version)
+        self._common(uniqueid, sha, version)
         LOG.info('%s: adding %s from %s',
                  uniqueid, filename, version)
 
@@ -263,7 +267,7 @@ class _ChangeTracker(object):
 
     def rename(self, filename, sha, version):
         uniqueid = _get_unique_id(filename)
-        self._common(uniqueid, version)
+        self._common(uniqueid, sha, version)
 
         # If we have recorded that a UID was deleted, that
         # means that was the last change made to the file and
@@ -293,7 +297,7 @@ class _ChangeTracker(object):
 
     def modify(self, filename, sha, version):
         uniqueid = _get_unique_id(filename)
-        self._common(uniqueid, version)
+        self._common(uniqueid, sha, version)
 
         # If we have recorded that a UID was deleted, that
         # means that was the last change made to the file and
@@ -323,7 +327,7 @@ class _ChangeTracker(object):
 
     def delete(self, filename, sha, version):
         uniqueid = _get_unique_id(filename)
-        self._common(uniqueid, version)
+        self._common(uniqueid, sha, version)
         # This file is being deleted without a rename. If
         # we have already seen the UID before, that means
         # that after the file was deleted another file
@@ -994,6 +998,8 @@ class Scanner(object):
         for uniqueid, version in tracker.earliest_seen.items():
             try:
                 base, sha = tracker.last_name_by_id[uniqueid]
+                LOG.debug('%s: sorting %s into version %s',
+                          uniqueid, base, version)
                 files_and_tags[version].append((base, sha))
             except KeyError:
                 # Unable to find the file again, skip it to avoid breaking
