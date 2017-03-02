@@ -66,7 +66,9 @@ class ReleaseNotesDirective(rst.Directive):
         # out how Sphinx passes a "false" flag later.
         # 'collapse-pre-releases' in self.options
         opt_overrides['collapse_pre_releases'] = True
-        opt_overrides['stop_at_branch_base'] = True
+        # Only stop at the branch base if we have not been told
+        # explicitly which versions to include.
+        opt_overrides['stop_at_branch_base'] = (version_opt is None)
         if 'earliest-version' in self.options:
             opt_overrides['earliest_version'] = self.options.get(
                 'earliest-version')

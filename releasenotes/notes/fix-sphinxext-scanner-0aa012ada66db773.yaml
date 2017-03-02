@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixes a problem with the sphinx extension that caused it to
+    produce an error if it had a list of versions to include that were
+    not within the set that seemed to be on the branch because of the
+    branch-base detection logic. Now if a list of versions is
+    included, the scan always includes the full history.
