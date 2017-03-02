@@ -1416,6 +1416,42 @@ class BranchTest(Base):
         self.assertIsNotNone(head2)
         self.assertEqual(head1, head2)
 
+    def test_remote_branch_without_prefix(self):
+        self.repo.git('checkout', '2.0.0')
+        self.repo.git('checkout', '-b', 'stable/2')
+        self.repo.git('checkout', 'master')
+        scanner1 = scanner.Scanner(self.c)
+        head1 = scanner1._get_ref('stable/2')
+        self.assertIsNotNone(head1)
+        print('head1', head1)
+        # Create a second repository by cloning the first.
+        print(utils.check_output(
+            ['git', 'clone', self.reporoot, 'reporoot2'],
+            cwd=self.temp_dir,
+        ))
+        reporoot2 = os.path.join(self.temp_dir, 'reporoot2')
+        print(utils.check_output(
+            ['git', 'remote', 'update'],
+            cwd=reporoot2,
+        ))
+        print(utils.check_output(
+            ['git', 'remote', '-v'],
+            cwd=reporoot2,
+        ))
+        print(utils.check_output(
+            ['find', '.git/refs'],
+            cwd=reporoot2,
+        ))
+        print(utils.check_output(
+            ['git', 'branch', '-a'],
+            cwd=reporoot2,
+        ))
+        c2 = config.Config(reporoot2)
+        scanner2 = scanner.Scanner(c2)
+        head2 = scanner2._get_ref('stable/2')
+        self.assertIsNotNone(head2)
+        self.assertEqual(head1, head2)
+
 
 class ScanStopPointPrereleaseVersionsTest(Base):
 

@@ -487,6 +487,10 @@ class Scanner(object):
                 'refs/tags/' + name,
                 # If a stable branch was removed, look for its EOL tag.
                 'refs/tags/' + (name.rpartition('/')[-1] + '-eol'),
+                # If someone is using the "short" name for a branch
+                # without a local tracking branch, look to see if the
+                # name exists on the 'origin' remote.
+                'refs/remotes/origin/' + name,
             ]
             for ref in candidates:
                 key = ref.encode('utf-8')

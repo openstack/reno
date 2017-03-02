@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fix a problem with branch references so that it is now possible to
+    use a local tracking branch name when the branch only exists on
+    the 'origin' remote. For example, this allows references to
+    'stable/ocata' when there is no local branch with that name but
+    there is an 'origin/stable/ocata' branch.
