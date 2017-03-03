@@ -51,6 +51,9 @@ add_module_names = True
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# Do not warn about non-local image URI
+suppress_warnings = ['image.nonlocal_uri']
+
 # -- Options for HTML output --------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
