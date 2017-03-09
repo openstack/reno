@@ -96,7 +96,7 @@ class ReleaseNotesDirective(rst.Directive):
             versions,
             title=title,
         )
-        source_name = '<' + __name__ + '>'
+        source_name = '<%s %s>' % (__name__, branch or 'current branch')
         result = statemachine.ViewList()
         for line in text.splitlines():
             result.append(line, source_name)
