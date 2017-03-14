@@ -12,10 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import fixtures
 import textwrap
 
 import mock
-from oslotest import mockpatch
 
 from reno import cache
 from reno import config
@@ -51,8 +51,8 @@ class TestCache(base.TestCase):
     def setUp(self):
         super(TestCache, self).setUp()
         self.useFixture(
-            mockpatch.Patch('reno.scanner.Scanner.get_file_at_commit',
-                            new=self._get_note_body)
+            fixtures.MockPatch('reno.scanner.Scanner.get_file_at_commit',
+                               new=self._get_note_body)
         )
         self.c = config.Config('.')
 
