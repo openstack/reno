@@ -25,7 +25,8 @@ def _indent_for_list(text, prefix='  '):
     ]) + '\n'
 
 
-def format_report(loader, config, versions_to_include, title=None):
+def format_report(loader, config, versions_to_include, title=None,
+                  show_source=True):
     report = []
     if title:
         report.append('=' * len(title))
@@ -49,7 +50,8 @@ def format_report(loader, config, versions_to_include, title=None):
         notefiles = loader[version]
         for n, sha in notefiles:
             if 'prelude' in file_contents[n]:
-                report.append('.. %s @ %s\n' % (n, sha))
+                if show_source:
+                    report.append('.. %s @ %s\n' % (n, sha))
                 report.append(file_contents[n]['prelude'])
                 report.append('')
 
@@ -65,7 +67,8 @@ def format_report(loader, config, versions_to_include, title=None):
                 report.append('-' * len(section_title))
                 report.append('')
                 for n, fn, sha in notes:
-                    report.append('.. %s @ %s\n' % (fn, sha))
+                    if show_source:
+                        report.append('.. %s @ %s\n' % (fn, sha))
                     report.append('- %s' % _indent_for_list(n))
                 report.append('')
 

@@ -138,6 +138,13 @@ def main(argv=sys.argv[1:]):
         default=None,
         help='output filename, defaults to stdout',
     )
+    do_report.add_argument(
+        '--no-show-source',
+        dest='show_source',
+        default=True,
+        action='store_false',
+        help='do not show the source for notes',
+    )
     _build_query_arg_group(do_report)
     do_report.set_defaults(func=report.report_cmd)
 
