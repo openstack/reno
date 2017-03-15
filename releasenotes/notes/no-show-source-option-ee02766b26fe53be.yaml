@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add a ``--no-show-source`` option to the report command to skip
+    including the note reference file names and SHA information
+    in comments in the output. This restores the previous format of
+    the output for cases where it is meant to be read by people directly,
+    not just converted to HTML.

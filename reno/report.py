@@ -28,6 +28,7 @@ def report_cmd(args, conf):
         conf,
         versions,
         title='Release Notes',
+        show_source=args.show_source,
     )
     if args.output:
         with open(args.output, 'w') as f:
