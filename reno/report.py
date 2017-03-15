@@ -27,7 +27,7 @@ def report_cmd(args, conf):
         ldr,
         conf,
         versions,
-        title='Release Notes',
+        title=args.title,
         show_source=args.show_source,
     )
     if args.output:
