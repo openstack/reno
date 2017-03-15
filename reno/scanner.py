@@ -446,7 +446,9 @@ class RenoRepo(repo.Repo):
         # the one with the path matching the filename. Take the
         # associated SHA from the tree and get the file contents from
         # the repository.
-        commit = self[sha.encode('ascii')]
+        if hasattr(sha, 'encode'):
+            sha = sha.encode('ascii')
+        commit = self[sha]
         tree = self[commit.tree]
         try:
             mode, blob_sha = tree.lookup_path(self.get_object,
