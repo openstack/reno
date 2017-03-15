@@ -145,6 +145,11 @@ def main(argv=sys.argv[1:]):
         action='store_false',
         help='do not show the source for notes',
     )
+    do_report.add_argument(
+        '--title',
+        default='Release Notes',
+        help='set the main title of the generated report',
+    )
     _build_query_arg_group(do_report)
     do_report.set_defaults(func=report.report_cmd)
 

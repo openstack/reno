@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add a ``--title`` option to the report command.
