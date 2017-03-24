@@ -201,6 +201,78 @@ using command-line switches. For example:
 - ``--ignore-cache``
 - ``--stop-at-branch-base``/``--no-stop-at-branch-base``
 
+The following options are configurable:
+
+`notesdir`
+
+  The notes subdirectory within the `relnotesdir` where the notes live.
+
+  Defaults to ``notes``.
+
+`collapse_pre_releases`
+
+  Should pre-release versions be merged into the final release of the same
+  number (`1.0.0.0a1` notes appear under `1.0.0`).
+
+  Defaults to ``True``.
+
+`stop_at_branch_base`
+
+  Should the scanner stop at the base of a branch (True) or go ahead and scan
+  the entire history (False)?
+
+  Defaults to ``True``.
+
+`branch`
+
+  The git branch to scan.
+
+  Defaults to the "current" branch checked out.
+
+`earliest_version`
+
+  The earliest version to be included. This is usually the lowest version
+  number, and is meant to be the oldest version. If unset, all versions will be
+  scanned.
+
+  Defaults to ``None``.
+
+`template`
+
+  The template used by reno new to create a note.
+
+`release_tag_re`
+
+  The regex pattern used to match the repo tags representing a valid release
+  version. The pattern is compiled with the verbose and unicode flags enabled.
+
+  Defaults to ``((?:[\d.ab]|rc)+)``.
+
+`pre_release_tag_re`
+
+  The regex pattern used to check if a valid release version tag is also a
+  valid pre-release version. The pattern is compiled with the verbose and
+  unicode flags enabled. The pattern must define a group called `pre_release`
+  that matches the pre-release part of the tag and any separator, e.g for
+  pre-release version `12.0.0.0rc1` the default RE pattern will identify
+  `.0rc1` as the value of the group 'pre_release'.
+
+  Defaults to ``(?P<pre_release>\.\d+(?:[ab]|rc)+\d*)$``.
+
+`branch_name_re`
+
+  The pattern for names for branches that are relevant when scanning history to
+  determine where to stop, to find the "base" of a branch. Other branches are
+  ignored.
+
+  Defaults to ``stable/.+``.
+
+`sections`
+
+  The identifiers and names of permitted sections in the release notes, in the
+  order in which the final report will be generated. A prelude section will
+  always be automatically inserted before the first element of this list.
+
 Debugging
 =========
 
