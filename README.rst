@@ -48,7 +48,7 @@ from future documentation builds.
 Project Meta-data
 =================
 
-.. image:: http://governance.openstack.org/badges/reno.svg
+.. .. image:: http://governance.openstack.org/badges/reno.svg
     :target: http://governance.openstack.org/reference/tags/index.html
 
 * Free software: Apache license
