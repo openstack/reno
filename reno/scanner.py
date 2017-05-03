@@ -150,6 +150,11 @@ class _ChangeAggregator(object):
     _delete_op = set([diff_tree.CHANGE_DELETE])
     _add_op = set([diff_tree.CHANGE_ADD])
 
+    def __init__(self):
+        # Track UIDs that had a duplication issue but have been
+        # deleted so we know not to throw an error for them.
+        self._deleted_bad_uids = set()
+
     def aggregate_changes(self, walk_entry, changes):
         sha = walk_entry.commit.id
         by_uid = collections.defaultdict(list)
@@ -216,15 +221,19 @@ class _ChangeAggregator(object):
                         (uid, diff_tree.CHANGE_DELETE, c[1], sha)
                         for c in changes
                     )
+                    self._deleted_bad_uids.add(uid)
                 elif types == self._add_op:
                     # There were multiple files in one commit using the
                     # same UID but different slugs. Warn the user about
                     # this case and then ignore the files. We allow delete
                     # (see above) to ensure they can be cleaned up.
                     msg = ('%s: found several files in one commit (%s)'
-                           ' with the same UID, ignoring them: %s' %
+                           ' with the same UID: %s' %
                            (uid, sha, [c[1] for c in changes]))
-                    LOG.warning(msg)
+                    if uid not in self._deleted_bad_uids:
+                        raise ValueError(msg)
+                    else:
+                        LOG.warning(msg)
                 else:
                     raise ValueError('Unrecognized changes: {!r}'.format(
                         changes))

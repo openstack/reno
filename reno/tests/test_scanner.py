@@ -1798,14 +1798,16 @@ class AggregateChangesTest(Base):
             results,
         )
 
-    def test_add_multiple(self):
+    def test_add_multiple_after_delete(self):
         # Adding multiple files in one commit using the same UID but
-        # different slug causes the files to be ignored.
+        # different slug after we have seen a delete for the same UID
+        # causes the files to be ignored.
         entry = mock.Mock()
         n = self.get_note_num()
+        uid = '%016x' % n
         changes = []
         for i in range(2):
-            name = 'prefix/add%d-%016x.yaml' % (i, n)
+            name = 'prefix/add%d-%s.yaml' % (i, uid)
             entry.commit.id = 'commit-id'
             changes.append(
                 diff_tree.TreeChange(
@@ -1818,8 +1820,48 @@ class AggregateChangesTest(Base):
                     )
                 )
             )
+        # Set up the aggregator as though it had already seen a delete
+        # operation. Since the scan happens in reverse chronological
+        # order, the delete would have happened after the add, and we
+        # can ignore the files because the error has been corrected in
+        # a later patch.
+        self.aggregator._deleted_bad_uids.add(uid)
         results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual([], results)
+
+    def test_add_multiple_without_delete(self):
+        # Adding multiple files in one commit using the same UID but
+        # different slug without a delete operation causes an
+        # exception.
+        entry = mock.Mock()
+        n = self.get_note_num()
+        uid = '%016x' % n
+        changes = []
+        for i in range(2):
+            name = 'prefix/add%d-%s.yaml' % (i, uid)
+            entry.commit.id = 'commit-id'
+            changes.append(
+                diff_tree.TreeChange(
+                    type=diff_tree.CHANGE_ADD,
+                    old=objects.TreeEntry(path=None, mode=None, sha=None),
+                    new=objects.TreeEntry(
+                        path=name.encode('utf-8'),
+                        mode='0222',
+                        sha='not-a-hash',
+                    )
+                )
+            )
+
+        # aggregate_changes() is a generator, so we have to wrap it in
+        # list() to process the data, so we need a little temporary
+        # function to do that and pass to assertRaises().
+        def get_results():
+            return list(self.aggregator.aggregate_changes(entry, changes))
+
+        self.assertRaises(
+            ValueError,
+            get_results,
+        )
 
     def test_delete(self):
         entry = mock.Mock()

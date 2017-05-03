@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fix a problem caused by failing to process multiple files with the
+    same UID portion of the filename. Ignore existing cases as long as
+    there is a corrective patch to remove them. Prevent new cases from
+    being introduced. See https://bugs.launchpad.net/reno/+bug/1688042
+    for details.
