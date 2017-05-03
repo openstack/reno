@@ -201,6 +201,23 @@ def _aggregate_changes(walk_entry, changes, notesdir):
                 # different commits.
                 for c in changes:
                     results.append((uid, diff_tree.CHANGE_MODIFY, c[1], sha))
+            elif types == set([diff_tree.CHANGE_DELETE]):
+                # There were multiple files in one commit using the
+                # same UID but different slugs. Treat them as
+                # different files and allow them to be deleted.
+                results.extend(
+                    (uid, diff_tree.CHANGE_DELETE, c[1], sha)
+                    for c in changes
+                )
+            elif types == set([diff_tree.CHANGE_ADD]):
+                # There were multiple files in one commit using the
+                # same UID but different slugs. Warn the user about
+                # this case and then ignore the files. We allow delete
+                # (see above) to ensure they can be cleaned up.
+                LOG.warning(
+                    ('%s: found several files in one commit (%s)'
+                     ' with the same UID, ignoring them: %s'),
+                    uid, sha, [c[1] for c in changes])
             else:
                 raise ValueError('Unrecognized changes: {!r}'.format(changes))
     return results

@@ -1794,6 +1794,29 @@ class AggregateChangesTest(Base):
             results,
         )
 
+    def test_add_multiple(self):
+        # Adding multiple files in one commit using the same UID but
+        # different slug causes the files to be ignored.
+        entry = mock.Mock()
+        n = self.get_note_num()
+        changes = []
+        for i in range(2):
+            name = 'prefix/add%d-%016x.yaml' % (i, n)
+            entry.commit.id = 'commit-id'
+            changes.append(
+                diff_tree.TreeChange(
+                    type=diff_tree.CHANGE_ADD,
+                    old=objects.TreeEntry(path=None, mode=None, sha=None),
+                    new=objects.TreeEntry(
+                        path=name.encode('utf-8'),
+                        mode='0222',
+                        sha='not-a-hash',
+                    )
+                )
+            )
+        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        self.assertEqual([], results)
+
     def test_delete(self):
         entry = mock.Mock()
         n = self.get_note_num()
@@ -1815,6 +1838,31 @@ class AggregateChangesTest(Base):
             [('%016x' % n, 'delete', name)],
             results,
         )
+
+    def test_delete_multiple(self):
+        # Delete multiple files in one commit using the same UID but
+        # different slug.
+        entry = mock.Mock()
+        n = self.get_note_num()
+        changes = []
+        expected = []
+        for i in range(2):
+            name = 'prefix/delete%d-%016x.yaml' % (i, n)
+            entry.commit.id = 'commit-id'
+            changes.append(
+                diff_tree.TreeChange(
+                    type=diff_tree.CHANGE_DELETE,
+                    old=objects.TreeEntry(
+                        path=name.encode('utf-8'),
+                        mode='0222',
+                        sha='not-a-hash',
+                    ),
+                    new=objects.TreeEntry(path=None, mode=None, sha=None),
+                )
+            )
+            expected.append(('%016x' % n, 'delete', name, 'commit-id'))
+        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        self.assertEqual(expected, results)
 
     def test_change(self):
         entry = mock.Mock()
