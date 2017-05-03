@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add a ``lint`` command for checking the contents and names of the
+    release notes files against some basic validation rules.

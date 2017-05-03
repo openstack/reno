@@ -18,6 +18,7 @@ from reno import cache
 from reno import config
 from reno import create
 from reno import defaults
+from reno import linter
 from reno import lister
 from reno import report
 
@@ -172,6 +173,18 @@ def main(argv=sys.argv[1:]):
     )
     _build_query_arg_group(do_cache)
     do_cache.set_defaults(func=cache.cache_cmd)
+
+    do_linter = subparsers.add_parser(
+        'lint',
+        help='check some common mistakes',
+    )
+    do_linter.add_argument(
+        'reporoot',
+        default='.',
+        nargs='?',
+        help='root of the git repository',
+    )
+    do_linter.set_defaults(func=linter.lint_cmd)
 
     args = parser.parse_args(argv)
     conf = config.Config(args.reporoot, args.relnotesdir)

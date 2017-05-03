@@ -162,6 +162,15 @@ Notes are output in the order they are found when scanning the git
 history of the branch using topological ordering. This is
 deterministic, but not necessarily predictable or mutable.
 
+Checking Notes
+==============
+
+Run ``reno lint <path-to-git-repository>`` to test the existing
+release notes files against some rules for catching common
+mistakes. The command exits with an error code if there are any
+mistakes, so it can be used in a build pipeline to force some
+correctness.
+
 Configuring Reno
 ================
 
