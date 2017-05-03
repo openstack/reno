@@ -1750,6 +1750,10 @@ class VersionTest(Base):
 
 class AggregateChangesTest(Base):
 
+    def setUp(self):
+        super(AggregateChangesTest, self).setUp()
+        self.aggregator = scanner._ChangeAggregator()
+
     def test_ignore(self):
         entry = mock.Mock()
         n = self.get_note_num()
@@ -1766,7 +1770,7 @@ class AggregateChangesTest(Base):
                 )
             )
         ]
-        results = scanner._aggregate_changes(entry, changes, 'prefix')
+        results = self.aggregator.aggregate_changes(entry, changes)
         self.assertEqual(
             [],
             results,
@@ -1788,7 +1792,7 @@ class AggregateChangesTest(Base):
                 )
             )
         ]
-        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual(
             [('%016x' % n, 'add', name, 'commit-id')],
             results,
@@ -1814,7 +1818,7 @@ class AggregateChangesTest(Base):
                     )
                 )
             )
-        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual([], results)
 
     def test_delete(self):
@@ -1833,7 +1837,7 @@ class AggregateChangesTest(Base):
                 new=objects.TreeEntry(path=None, mode=None, sha=None)
             )
         ]
-        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual(
             [('%016x' % n, 'delete', name)],
             results,
@@ -1861,7 +1865,7 @@ class AggregateChangesTest(Base):
                 )
             )
             expected.append(('%016x' % n, 'delete', name, 'commit-id'))
-        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual(expected, results)
 
     def test_change(self):
@@ -1884,7 +1888,7 @@ class AggregateChangesTest(Base):
                 ),
             )
         ]
-        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual(
             [('%016x' % n, 'modify', name, 'commit-id')],
             results,
@@ -1916,7 +1920,7 @@ class AggregateChangesTest(Base):
                 new=objects.TreeEntry(path=None, mode=None, sha=None)
             )
         ]
-        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual(
             [('%016x' % n, 'rename', old_name, new_name, 'commit-id')],
             results,
@@ -1948,7 +1952,7 @@ class AggregateChangesTest(Base):
                 )
             ),
         ]
-        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual(
             [('%016x' % n, 'rename', old_name, new_name, 'commit-id')],
             results,
@@ -1994,7 +1998,7 @@ class AggregateChangesTest(Base):
                 ),
             ),
         ]]
-        results = list(scanner._aggregate_changes(entry, changes, 'prefix'))
+        results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual(
             [('%016x' % n, 'modify', old_name, 'commit-id'),
              ('%016x' % n, 'modify', old_name, 'commit-id')],

@@ -121,7 +121,7 @@ def _changes_in_subdir(repo, walk_entry, subdir):
     return changes_func(store, parent_subtree, commit_subtree)
 
 
-def _aggregate_changes(walk_entry, changes, notesdir):
+class _ChangeAggregator(object):
     """Collapse a series of changes based on uniqueness for file uids.
 
     The list of TreeChange instances describe changes between the old
@@ -140,87 +140,95 @@ def _aggregate_changes(walk_entry, changes, notesdir):
     The SHA values returned are for the commit, rather than the blob
     values in the TreeChange objects.
 
-    The path values in the change entries are encoded, so we decode
-    them to compare them against the notesdir and file pattern in
-    _note_file() and then return the decoded values to make consuming
-    them easier.
+    The path values in the change entries are encoded, so we return
+    the decoded values to make consuming them easier.
 
     """
-    sha = walk_entry.commit.id
-    by_uid = collections.defaultdict(list)
-    for ec in changes:
-        if not isinstance(ec, list):
-            ec = [ec]
-        else:
-            ec = ec
-        for c in ec:
-            LOG.debug('change %r', c)
-            if c.type == diff_tree.CHANGE_ADD:
-                path = c.new.path.decode('utf-8') if c.new.path else None
-                if _note_file(path):
-                    uid = _get_unique_id(path)
-                    by_uid[uid].append((c.type, path, sha))
-                else:
-                    LOG.debug('ignoring')
-            elif c.type == diff_tree.CHANGE_DELETE:
-                path = c.old.path.decode('utf-8') if c.old.path else None
-                if _note_file(path):
-                    uid = _get_unique_id(path)
-                    by_uid[uid].append((c.type, path))
-                else:
-                    LOG.debug('ignoring')
-            elif c.type == diff_tree.CHANGE_MODIFY:
-                path = c.new.path.decode('utf-8') if c.new.path else None
-                if _note_file(path):
-                    uid = _get_unique_id(path)
-                    by_uid[uid].append((c.type, path, sha))
-                else:
-                    LOG.debug('ignoring')
-            else:
-                raise ValueError('unhandled change type: {!r}'.format(c))
 
-    results = []
-    for uid, changes in sorted(by_uid.items()):
-        if len(changes) == 1:
-            results.append((uid,) + changes[0])
-        else:
-            types = set(c[0] for c in changes)
-            if types == set([diff_tree.CHANGE_ADD, diff_tree.CHANGE_DELETE]):
-                # A rename, combine the data from the add and delete entries.
-                added = [
-                    c for c in changes if c[0] == diff_tree.CHANGE_ADD
-                ][0]
-                deled = [
-                    c for c in changes if c[0] == diff_tree.CHANGE_DELETE
-                ][0]
-                results.append(
-                    (uid, diff_tree.CHANGE_RENAME, deled[1]) + added[1:]
-                )
-            elif types == set([diff_tree.CHANGE_MODIFY]):
-                # Merge commit with modifications to the same files in
-                # different commits.
-                for c in changes:
-                    results.append((uid, diff_tree.CHANGE_MODIFY, c[1], sha))
-            elif types == set([diff_tree.CHANGE_DELETE]):
-                # There were multiple files in one commit using the
-                # same UID but different slugs. Treat them as
-                # different files and allow them to be deleted.
-                results.extend(
-                    (uid, diff_tree.CHANGE_DELETE, c[1], sha)
-                    for c in changes
-                )
-            elif types == set([diff_tree.CHANGE_ADD]):
-                # There were multiple files in one commit using the
-                # same UID but different slugs. Warn the user about
-                # this case and then ignore the files. We allow delete
-                # (see above) to ensure they can be cleaned up.
-                LOG.warning(
-                    ('%s: found several files in one commit (%s)'
-                     ' with the same UID, ignoring them: %s'),
-                    uid, sha, [c[1] for c in changes])
+    _rename_op = set([diff_tree.CHANGE_ADD, diff_tree.CHANGE_DELETE])
+    _modify_op = set([diff_tree.CHANGE_MODIFY])
+    _delete_op = set([diff_tree.CHANGE_DELETE])
+    _add_op = set([diff_tree.CHANGE_ADD])
+
+    def aggregate_changes(self, walk_entry, changes):
+        sha = walk_entry.commit.id
+        by_uid = collections.defaultdict(list)
+        for ec in changes:
+            if not isinstance(ec, list):
+                ec = [ec]
             else:
-                raise ValueError('Unrecognized changes: {!r}'.format(changes))
-    return results
+                ec = ec
+            for c in ec:
+                LOG.debug('change %r', c)
+                if c.type == diff_tree.CHANGE_ADD:
+                    path = c.new.path.decode('utf-8') if c.new.path else None
+                    if _note_file(path):
+                        uid = _get_unique_id(path)
+                        by_uid[uid].append((c.type, path, sha))
+                    else:
+                        LOG.debug('ignoring')
+                elif c.type == diff_tree.CHANGE_DELETE:
+                    path = c.old.path.decode('utf-8') if c.old.path else None
+                    if _note_file(path):
+                        uid = _get_unique_id(path)
+                        by_uid[uid].append((c.type, path))
+                    else:
+                        LOG.debug('ignoring')
+                elif c.type == diff_tree.CHANGE_MODIFY:
+                    path = c.new.path.decode('utf-8') if c.new.path else None
+                    if _note_file(path):
+                        uid = _get_unique_id(path)
+                        by_uid[uid].append((c.type, path, sha))
+                    else:
+                        LOG.debug('ignoring')
+                else:
+                    raise ValueError('unhandled change type: {!r}'.format(c))
+
+        results = []
+        for uid, changes in sorted(by_uid.items()):
+            if len(changes) == 1:
+                results.append((uid,) + changes[0])
+            else:
+                types = set(c[0] for c in changes)
+                if types == self._rename_op:
+                    # A rename, combine the data from the add and
+                    # delete entries.
+                    added = [
+                        c for c in changes if c[0] == diff_tree.CHANGE_ADD
+                    ][0]
+                    deled = [
+                        c for c in changes if c[0] == diff_tree.CHANGE_DELETE
+                    ][0]
+                    results.append(
+                        (uid, diff_tree.CHANGE_RENAME, deled[1]) + added[1:]
+                    )
+                elif types == self._modify_op:
+                    # Merge commit with modifications to the same files in
+                    # different commits.
+                    for c in changes:
+                        results.append((uid, diff_tree.CHANGE_MODIFY,
+                                        c[1], sha))
+                elif types == self._delete_op:
+                    # There were multiple files in one commit using the
+                    # same UID but different slugs. Treat them as
+                    # different files and allow them to be deleted.
+                    results.extend(
+                        (uid, diff_tree.CHANGE_DELETE, c[1], sha)
+                        for c in changes
+                    )
+                elif types == self._add_op:
+                    # There were multiple files in one commit using the
+                    # same UID but different slugs. Warn the user about
+                    # this case and then ignore the files. We allow delete
+                    # (see above) to ensure they can be cleaned up.
+                    msg = ('%s: found several files in one commit (%s)'
+                           ' with the same UID, ignoring them: %s' %
+                           (uid, sha, [c[1] for c in changes]))
+                    LOG.warning(msg)
+                else:
+                    raise ValueError('Unrecognized changes: {!r}'.format(
+                        changes))
+        return results
 
 
 class _ChangeTracker(object):
@@ -951,6 +959,8 @@ class Scanner(object):
                 if fname.startswith(prefix) and _note_file(fname):
                     tracker.delete(fname, None, '*working-copy*')
 
+        aggregator = _ChangeAggregator()
+
         # Process the git commit history.
         for counter, entry in enumerate(self._topo_traversal(branch), 1):
 
@@ -974,7 +984,7 @@ class Scanner(object):
             # need to prefix that with the notesdir before giving it
             # to the tracker.
             changes = _changes_in_subdir(self._repo, entry, notesdir)
-            for change in _aggregate_changes(entry, changes, notesdir):
+            for change in aggregator.aggregate_changes(entry, changes):
                 uniqueid = change[0]
 
                 c_type = change[1]
