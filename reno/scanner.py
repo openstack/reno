@@ -64,7 +64,7 @@ def _note_file(name):
     if fnmatch.fnmatch(name, '*.yaml'):
         return True
     else:
-        LOG.warning('found and ignored extra file %s', name)
+        LOG.info('found and ignored extra file %s', name)
     return False
 
 
@@ -233,7 +233,7 @@ class _ChangeAggregator(object):
                     if uid not in self._deleted_bad_uids:
                         raise ValueError(msg)
                     else:
-                        LOG.warning(msg)
+                        LOG.info(msg)
                 else:
                     raise ValueError('Unrecognized changes: {!r}'.format(
                         changes))
@@ -634,7 +634,7 @@ class Scanner(object):
                     return tags[-1]
                 else:
                     # Naughty, naughty, branching without tagging.
-                    LOG.error(
+                    LOG.info(
                         ('There is no tag on commit %s at the base of %s. '
                          'Branch scan short-cutting is disabled.'),
                         c.commit.sha().hexdigest(), branch)
