@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Sphinx 1.6.1 now interprets error and warning log messages as
+    reasons to abort the build when strict mode is enabled. This
+    release changes the log level for some calls that weren't really
+    errors to begin with to avoid having Sphinx abort the build
+    unnecessarily.
