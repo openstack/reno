@@ -612,7 +612,7 @@ class BasicTest(Base):
         self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
         self._add_notes_file()
         self.repo.git('tag', '-s', '-m', 'middle tag', '2.0.0')
-        self._add_notes_file()
+        f3 = self._add_notes_file()
         self.repo.git('tag', '-s', '-m', 'last tag', '3.0.0')
         self.repo.git('branch', 'stable/a')
         f4 = self._add_notes_file()
@@ -627,6 +627,7 @@ class BasicTest(Base):
         }
         self.assertEqual(
             {'3.0.0-1': [f4],
+             '3.0.0': [f3],
              },
             results,
         )
@@ -1112,6 +1113,7 @@ class BranchTest(Base):
         self.assertEqual(
             {
                 '2.0.0-1': [f21],
+                '2.0.0': [self.f2],
             },
             results,
         )
