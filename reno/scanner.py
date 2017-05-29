@@ -887,7 +887,16 @@ class Scanner(object):
                 LOG.debug('looking at base of %s to stop scanning master',
                           branches[-1])
                 scan_stop_tag = self._get_branch_base(branches[-1])
-                earliest_version = current_version
+                # If there is a tag on this branch after the point
+                # where the earlier branch was created, then use that
+                # tag as the earliest version to show in the current
+                # "series". If there is no such tag, then go all the
+                # way to the base of that earlier branch.
+                try:
+                    idx = versions_by_date.index(scan_stop_tag) + 1
+                    earliest_version = versions_by_date[idx]
+                except IndexError:
+                    earliest_version = scan_stop_tag
         elif branch and stop_at_branch_base and not earliest_version:
             # If branch is set and is not "master",
             # then we want to stop at the version before the tag at the
