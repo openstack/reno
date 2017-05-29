@@ -15,6 +15,16 @@
 import os
 import sys
 
+# oslosphinx uses reno and reno uses oslosphinx. Make oslosphinx for
+# reno optional to break the build cycle
+try:
+    import oslosphinx
+except:
+    has_oslosphinx = False
+else:
+    has_oslosphinx = True
+
+
 sys.path.insert(0, os.path.abspath('../..'))
 # -- General configuration ----------------------------------------------------
 
@@ -23,9 +33,11 @@ sys.path.insert(0, os.path.abspath('../..'))
 extensions = [
     'sphinx.ext.autodoc',
     #'sphinx.ext.intersphinx',
-    'oslosphinx',
     'reno.sphinxext',
 ]
+
+if has_oslosphinx:
+    extensions.append('oslosphinx')
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
 # text edit cycles.
