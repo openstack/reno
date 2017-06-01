@@ -176,7 +176,7 @@ class _ChangeAggregator(object):
                     path = c.old.path.decode('utf-8') if c.old.path else None
                     if _note_file(path):
                         uid = _get_unique_id(path)
-                        by_uid[uid].append((c.type, path))
+                        by_uid[uid].append((c.type, path, sha))
                     else:
                         LOG.debug('ignoring')
                 elif c.type == diff_tree.CHANGE_MODIFY:
@@ -1013,7 +1013,7 @@ class Scanner(object):
                     tracker.add(fullpath, sha, current_version)
 
                 elif c_type == diff_tree.CHANGE_DELETE:
-                    path = change[-1]
+                    path, blob_sha = change[-2:]
                     fullpath = os.path.join(notesdir, path)
                     tracker.delete(fullpath, sha, current_version)
 

@@ -1883,7 +1883,7 @@ class AggregateChangesTest(Base):
         ]
         results = list(self.aggregator.aggregate_changes(entry, changes))
         self.assertEqual(
-            [('%016x' % n, 'delete', name)],
+            [('%016x' % n, 'delete', name, entry.commit.id)],
             results,
         )
 

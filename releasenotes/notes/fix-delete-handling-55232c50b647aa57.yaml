@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Correct a problem with handling deleted release notes that
+    triggered a TypeError with a message like "Can't mix strings and
+    bytes in path components"
