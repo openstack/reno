@@ -685,9 +685,55 @@ class Scanner(object):
         todo = collections.deque()
         todo.appendleft(head)
 
+        ignore_null_merges = self.conf.ignore_null_merges
+        if ignore_null_merges:
+            LOG.debug('ignoring null-merge commits')
+
         while todo:
             sha = todo.popleft()
             entry = all[sha]
+            null_merge = False
+
+            # OpenStack used to use null-merges to bring final release
+            # tags from stable branches back into the master
+            # branch. This confuses the regular traversal because it
+            # makes that stable branch appear to be part of master
+            # and/or the later stable branch. When we hit one of those
+            # tags, skip it and take the first parent.
+            if ignore_null_merges and len(entry.commit.parents) > 1:
+                # Look for tags on the 2nd and later parents. The
+                # first parent is part of the branch we were
+                # originally trying to traverse, and any tags on it
+                # need to be kept.
+                for p in entry.commit.parents[1:]:
+                    t = self._get_valid_tags_on_commit(p)
+                    # If we have a tag being merged in, we need to
+                    # include a check to verify that this is actually
+                    # a null-merge (there are no changes).
+                    if t and not entry.changes():
+                        LOG.debug(
+                            'treating %s as a null-merge because '
+                            'parent %s has tag(s) %s',
+                            sha, p, t,
+                        )
+                        null_merge = True
+                        break
+                if null_merge:
+                    # Make it look like the parent entries that we're
+                    # going to skip have been emitted so the
+                    # bookkeeping for children works properly and we
+                    # can continue past the merge.
+                    emitted.update(set(entry.commit.parents[1:]))
+                    # Make it look like the current entry was emitted
+                    # so the bookkeeping for children works properly
+                    # and we can continue past the merge.
+                    emitted.add(sha)
+                    # Now set up the first parent so it is processed
+                    # later.
+                    first_parent = entry.commit.parents[0]
+                    if first_parent not in todo:
+                        todo.appendleft(first_parent)
+                    continue
 
             # If a node has multiple children, it is the start point
             # for a branch that was merged back into the rest of the

@@ -155,6 +155,18 @@ class Config(object):
             ['fixes', 'Bug Fixes'],
             ['other', 'Other Notes'],
         ],
+
+        # When this option is set to True, any merge commits with no
+        # changes and in which the second or later parent is tagged
+        # are considered "null-merges" that bring the tag information
+        # into the current branch but nothing else.
+        #
+        # OpenStack used to use null-merges to bring final release
+        # tags from stable branches back into the master branch. This
+        # confuses the regular traversal because it makes that stable
+        # branch appear to be part of master and/or the later stable
+        # branch. This option allows us to ignore those.
+        'ignore_null_merges': True,
     }
 
     @classmethod

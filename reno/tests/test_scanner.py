@@ -1010,6 +1010,83 @@ class MergeCommitTest(Base):
         )
 
 
+class NullMergeTest(Base):
+
+    def setUp(self):
+        super(NullMergeTest, self).setUp()
+        self.repo.add_file('ignore-0.txt')
+        self.n1 = self._add_notes_file()
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+
+        # Create a branch, add a note, and tag it.
+        self.repo.git('checkout', '-b', 'test_ignore_null_merge')
+        self.n2 = self._add_notes_file()
+        self.repo.git('tag', '-s', '-m', 'second tag', '2.0.0')
+
+        # Move back to master and advance it.
+        self.repo.git('checkout', 'master')
+        self.repo.add_file('ignore-1.txt')
+        self.n3 = self._add_notes_file()
+
+        # Merge only the tag from the first branch back into master.
+        self.repo.git(
+            'merge', '--no-ff', '--strategy', 'ours', '2.0.0',
+        )
+
+        # Add another note file.
+        self.n4 = self._add_notes_file()
+        self.repo.git('tag', '-s', '-m', 'third tag', '3.0.0')
+
+        self.repo.git('log', '--decorate', '--oneline', '--graph', '--all')
+        # The results should look like:
+        #
+        # * afea344 (HEAD -> master, tag: 3.0.0) add slug-0000000000000004.yaml
+        # *   7bb295c Merge tag '2.0.0'
+        # |\
+        # | * 260c80b (tag: 2.0.0, test_ignore_null_merge) add slug-0000000000000002.yaml  # noqa
+        # * | 5981ae3 add slug-0000000000000003.yaml
+        # * | 00f9376 add ignore-1.txt
+        # |/
+        # * d24faf9 (tag: 1.0.0) add slug-0000000000000001.yaml
+        # * 6c221cd add ignore-0.txt
+
+    def test_ignore(self):
+        # The scanner should skip over the null-merge and include the
+        # notes that come before the version being merged in, up to
+        # the base of the previous branch.
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0': [self.n1],
+             '3.0.0': [self.n3, self.n4]},
+            results,
+        )
+
+    def test_follow(self):
+        # The scanner should not skip over the null-merge. The output
+        # should include the 2.0.0 tag that was merged in, as well as
+        # the earlier 1.0.0 version.
+        self.c.override(
+            ignore_null_merges=False,
+        )
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0': [self.n1],
+             '2.0.0': [self.n2, self.n3],
+             '3.0.0': [self.n4]},
+            results,
+        )
+
+
 class UniqueIdTest(Base):
 
     def test_legacy(self):
