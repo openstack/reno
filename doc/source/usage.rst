@@ -234,7 +234,9 @@ The following options are configurable:
 
 `branch`
 
-  The git branch to scan.
+  The git branch to scan. If a stable branch is specified but does not exist,
+  reno attempts to automatically convert that to an "end-of-life" tag. For
+  example, ``origin/stable/liberty`` would be converted to ``liberty-eol``.
 
   Defaults to the "current" branch checked out.
 
