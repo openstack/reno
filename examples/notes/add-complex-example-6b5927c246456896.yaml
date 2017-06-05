@@ -14,18 +14,24 @@ prelude: |
   | with | so the reStructuredText
   | parser will retain
   | the line breaks.
+features:
+  This note is a simple string, and does not retain its
+  formatting when it is rendered in HTML. rst markup here
+  may break the YAML parser, since the string is not escaped.
+fixes:
+  - Use YAML lists to add multiple items to the same section.
+  - Another fix could be listed here.
 other:
   - |
-    This bullet item includes a paragraph and a nested list.
+    This bullet item includes a paragraph and a nested list,
+    which works because the content of the YAML list item
+    is an escaped string block with reStructuredText formatting.
 
     * list item 1
     * list item 2
 
-    ::
+    .. code-block:: text
 
       This example is also rendered
       correctly on multiple lines
       as a pre-formatted block.
-features:
-  This note is a simple string, and does not retain its
-  formatting when it is rendered in HTML.
