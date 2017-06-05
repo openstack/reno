@@ -1,0 +1,5 @@
+---
+features:
+  Release notes entries may now be made up of single strings. This
+  simplifies formatting for smaller notes, and eliminates a class of
+  errors associated with escaping reStructuredText inside YAML lists.
