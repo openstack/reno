@@ -660,6 +660,88 @@ class BasicTest(Base):
         )
 
 
+class IgnoreTest(Base):
+
+    def test_by_fullname(self):
+        self._make_python_package()
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file()
+        f2 = self._add_notes_file()
+        self.c.override(
+            ignore_notes=[f1],
+        )
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0-2': [f2]},
+            results,
+        )
+
+    def test_by_basename(self):
+        self._make_python_package()
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file()
+        f2 = self._add_notes_file()
+        self.c.override(
+            ignore_notes=[os.path.basename(f1)],
+        )
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0-2': [f2]},
+            results,
+        )
+
+    def test_by_uid(self):
+        self._make_python_package()
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file()
+        f2 = self._add_notes_file()
+        self.c.override(
+            ignore_notes=[scanner._get_unique_id(f1)],
+        )
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0-2': [f2]},
+            results,
+        )
+
+    def test_by_multiples(self):
+        self._make_python_package()
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        f1 = self._add_notes_file()
+        f2 = self._add_notes_file()
+        self.c.override(
+            ignore_notes=[
+                scanner._get_unique_id(f1),
+                scanner._get_unique_id(f2),
+            ],
+        )
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {},
+            results,
+        )
+
+
 class FileContentsTest(Base):
 
     def test_basic_file(self):

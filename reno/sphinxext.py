@@ -39,6 +39,7 @@ class ReleaseNotesDirective(rst.Directive):
         'collapse-pre-releases': directives.flag,
         'earliest-version': directives.unchanged,
         'stop-at-branch-base': directives.flag,
+        'ignore-notes': directives.unchanged,
     }
 
     def run(self):
@@ -57,6 +58,10 @@ class ReleaseNotesDirective(rst.Directive):
         reporoot = repo.Repo.discover(reporoot).path
         relnotessubdir = self.options.get('relnotessubdir',
                                           defaults.RELEASE_NOTES_SUBDIR)
+        ignore_notes = [
+            name.strip()
+            for name in self.options.get('ignore-notes', '').split(',')
+        ]
         conf = config.Config(reporoot, relnotessubdir)
         opt_overrides = {}
         if 'notesdir' in self.options:
@@ -74,6 +79,8 @@ class ReleaseNotesDirective(rst.Directive):
                 'earliest-version')
         if branch:
             opt_overrides['branch'] = branch
+        if ignore_notes:
+            opt_overrides['ignore_notes'] = ignore_notes
         conf.override(**opt_overrides)
 
         notesdir = os.path.join(relnotessubdir, conf.notesdir)

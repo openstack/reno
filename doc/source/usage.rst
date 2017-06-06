@@ -299,6 +299,19 @@ The following options are configurable:
 
   Defaults to ``True``.
 
+`ignore_notes`
+
+  A list of filenames or UIDs for notes that should be ignored by the
+  reno scanner. It is most useful to set this when a note is edited on
+  the wrong branch, making it appear to be part of a release that it
+  is not.
+
+  .. warning::
+
+    Setting the option in the main configuration file makes it apply
+    to all branches. To ignore a note in the HTML build, use the
+    ``ignore-notes`` parameter to the ``release-notes`` sphinx
+    directive.
 
 Debugging
 =========

@@ -514,6 +514,10 @@ class Scanner(object):
             self.conf.branch_name_re,
             flags=re.VERBOSE | re.UNICODE,
         )
+        self._ignore_uids = set(
+            _get_unique_id(fn)
+            for fn in self.conf.ignore_notes
+        )
 
     def _get_ref(self, name):
         if name:
@@ -1066,6 +1070,11 @@ class Scanner(object):
             changes = _changes_in_subdir(self._repo, entry, notesdir)
             for change in aggregator.aggregate_changes(entry, changes):
                 uniqueid = change[0]
+
+                if uniqueid in self._ignore_uids:
+                    LOG.info('ignoring %s based on configuration setting',
+                             uniqueid)
+                    continue
 
                 c_type = change[1]
 

@@ -167,6 +167,12 @@ class Config(object):
         # branch appear to be part of master and/or the later stable
         # branch. This option allows us to ignore those.
         'ignore_null_merges': True,
+
+        # Note files to be ignored. It's useful to be able to ignore a
+        # file if it is edited on the wrong branch. Notes should be
+        # specified by their filename or UID. Setting the value in the
+        # configuration file makes it apply to all branches.
+        'ignore_notes': [],
     }
 
     @classmethod

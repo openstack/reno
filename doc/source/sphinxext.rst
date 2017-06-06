@@ -59,6 +59,13 @@ Enable the extension by adding ``'reno.sphinxext'`` to the
      typically set to the version used to create the branch to limit
      the output to only versions on that branch.
 
+   *ignore-notes*
+
+     A string containing a comma-delimited list of filenames or UIDs
+     for notes that should be ignored by the scanner.  It is most
+     useful to set this when a note is edited on the wrong branch,
+     making it appear to be part of a release that it is not.
+
 Examples
 ========
 
