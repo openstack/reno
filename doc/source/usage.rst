@@ -284,6 +284,22 @@ The following options are configurable:
   order in which the final report will be generated. A prelude section will
   always be automatically inserted before the first element of this list.
 
+`ignore_null_merges`
+
+  OpenStack used to use null-merges to bring final release tags from
+  stable branches back into the master branch. This confuses the
+  regular traversal because it makes that stable branch appear to be
+  part of master and/or the later stable branch. This option allows us
+  to ignore those.
+
+  When this option is set to True, any merge commits with no changes
+  and in which the second or later parent is tagged are considered
+  "null-merges" that bring the tag information into the current branch
+  but nothing else.
+
+  Defaults to ``True``.
+
+
 Debugging
 =========
 

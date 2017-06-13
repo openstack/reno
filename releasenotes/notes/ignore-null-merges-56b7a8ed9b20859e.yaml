@@ -1,0 +1,18 @@
+---
+features:
+  - |
+    By default, reno now ignores "null" merge commits that bring in
+    tags from other threads. The new configuration option
+    ``ignore_null_merges`` controls this behavior. Setting the flag to
+    False restores the previous behavior in which the null-merge
+    commits were traversed like any other merge commit.
+upgrade:
+  - |
+    The new configuration option ``ignore_null_merges`` causes the
+    scanner to ignore merge commits with no changes when one of the
+    parents being merged in has a release tag on it.
+fixes:
+  - |
+    This release fixes a problem with the scanner that may have caused
+    it to stop scanning a branch prematurely when the tag from another
+    branch had been merged into the history.
