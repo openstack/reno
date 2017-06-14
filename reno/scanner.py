@@ -729,9 +729,11 @@ class Scanner(object):
                     # and we can continue past the merge.
                     emitted.add(sha)
                     # Now set up the first parent so it is processed
-                    # later.
+                    # later, as long as we haven't already processed
+                    # it.
                     first_parent = entry.commit.parents[0]
-                    if first_parent not in todo:
+                    if (first_parent not in todo and
+                            first_parent not in emitted):
                         todo.appendleft(first_parent)
                     continue
 
@@ -771,7 +773,7 @@ class Scanner(object):
                 # to grow very large, but it's not clear the output
                 # will be produced in the right order.
                 for p in entry.commit.parents:
-                    if p not in todo:
+                    if p not in todo and p not in emitted:
                         todo.appendleft(p)
 
             else:

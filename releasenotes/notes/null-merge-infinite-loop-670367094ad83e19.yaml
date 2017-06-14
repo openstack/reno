@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Remove an infinite loop in the traversal algorithm caused by some
+    null-merge skip situations.
