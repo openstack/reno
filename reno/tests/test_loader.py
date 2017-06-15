@@ -67,7 +67,7 @@ class TestValidate(base.TestCase):
         ldr.parse_note_file('note1', None)
         self.assertIn('prelude', self.logger.output)
 
-    def test_non_prelude_single_string(self):
+    def test_non_prelude_single_string_converted_to_list(self):
         note_bodies = yaml.safe_load(textwrap.dedent('''
         issues: |
           This is a single string.
@@ -75,8 +75,8 @@ class TestValidate(base.TestCase):
         print(type(note_bodies['issues']))
         self.assertIsInstance(note_bodies['issues'], six.string_types)
         ldr = self._make_loader(note_bodies)
-        ldr.parse_note_file('note1', None)
-        self.assertIn('list of strings', self.logger.output)
+        parse_results = ldr.parse_note_file('note1', None)
+        self.assertIsInstance(parse_results['issues'], list)
 
     def test_note_with_colon_as_dict(self):
         note_bodies = yaml.safe_load(textwrap.dedent('''

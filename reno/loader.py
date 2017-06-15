@@ -101,6 +101,8 @@ class Loader(object):
             body = self._scanner.get_file_at_commit(filename, sha)
             content = yaml.safe_load(body)
 
+        cleaned_content = {}
+
         for section_name, section_content in content.items():
             if section_name == 'prelude':
                 if not isinstance(section_content, six.string_types):
@@ -111,10 +113,15 @@ class Loader(object):
                         filename,
                     )
             else:
-                if not isinstance(section_content, list):
+                if isinstance(section_content, six.string_types):
+                    # A single string is OK, but wrap it with a list
+                    # so the rest of the code can treat the data model
+                    # consistently.
+                    section_content = [section_content]
+                elif not isinstance(section_content, list):
                     LOG.warning(
                         ('The %s section of %s '
-                         'does not parse as a list of strings. '
+                         'does not parse as a string or list of strings. '
                          'Is the YAML input escaped properly?') % (
                              section_name, filename),
                     )
@@ -128,5 +135,6 @@ class Loader(object):
                                  ) % (item, section_name,
                                       filename, type(item)),
                             )
+            cleaned_content[section_name] = section_content
 
-        return content
+        return cleaned_content

@@ -26,3 +26,6 @@ other:
       This example is also rendered
       correctly on multiple lines
       as a pre-formatted block.
+features:
+  This note is a simple string, and does not retain its
+  formatting when it is rendered in HTML.
