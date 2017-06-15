@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add a new configuration option ``ignore_notes``. Setting the value
+    to a list of filenames or UIDs for notes causes the reno scanner
+    to ignore them.  It is most useful to set this when a note is
+    edited on the wrong branch, making it appear to be part of a
+    release that it is not.
