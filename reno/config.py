@@ -95,7 +95,7 @@ class Config(object):
     _OPTS = {
         # The notes subdirectory within the relnotesdir where the
         # notes live.
-        'notesdir': 'notes',
+        'notesdir': defaults.NOTES_SUBDIR,
 
         # Should pre-release versions be merged into the final release
         # of the same number (1.0.0.0a1 notes appear under 1.0.0).

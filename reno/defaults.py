@@ -11,3 +11,4 @@
 # under the License.
 
 RELEASE_NOTES_SUBDIR = 'releasenotes'
+NOTES_SUBDIR = 'notes'
