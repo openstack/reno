@@ -19,74 +19,6 @@ from reno import defaults
 
 LOG = logging.getLogger(__name__)
 
-_TEMPLATE = """\
----
-prelude: >
-    Replace this text with content to appear at the top of the section for this
-    release. All of the prelude content is merged together and then rendered
-    separately from the items listed in other parts of the file, so the text
-    needs to be worded so that both the prelude and the other items make sense
-    when read independently. This may mean repeating some details. Not every
-    release note requires a prelude. Usually only notes describing major
-    features or adding release theme details should have a prelude.
-features:
-  - |
-    List new features here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-issues:
-  - |
-    List known issues here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-upgrade:
-  - |
-    List upgrade notes here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-deprecations:
-  - |
-    List deprecations notes here, or remove this section.  All of the list
-    items in this section are combined when the release notes are rendered, so
-    the text needs to be worded so that it does not depend on any information
-    only available in another section, such as the prelude. This may mean
-    repeating some details.
-critical:
-  - |
-    Add critical notes here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-security:
-  - |
-    Add security notes here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-fixes:
-  - |
-    Add normal bug fixes here, or remove this section.  All of the list items
-    in this section are combined when the release notes are rendered, so the
-    text needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-other:
-  - |
-    Add other notes here, or remove this section.  All of the list items in
-    this section are combined when the release notes are rendered, so the text
-    needs to be worded so that it does not depend on any information only
-    available in another section, such as the prelude. This may mean repeating
-    some details.
-"""
-
 
 class Config(object):
 
@@ -115,7 +47,7 @@ class Config(object):
         'earliest_version': None,
 
         # The template used by reno new to create a note.
-        'template': _TEMPLATE,
+        'template': defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME),
 
         # The RE pattern used to match the repo tags representing a valid
         # release version. The pattern is compiled with the verbose and unicode
@@ -155,6 +87,13 @@ class Config(object):
             ['fixes', 'Bug Fixes'],
             ['other', 'Other Notes'],
         ],
+
+        # The name of the prelude section in the note template. This
+        # allows users to rename the section to, for example,
+        # 'release_summary' or 'project_wide_general_announcements',
+        # which is displayed in titlecase in the report after
+        # replacing underscores with spaces.
+        'prelude_section_name': defaults.PRELUDE_SECTION_NAME,
 
         # When this option is set to True, any merge commits with no
         # changes and in which the second or later parent is tagged
@@ -219,6 +158,13 @@ class Config(object):
         else:
             self.override(**self._contents)
 
+    def _rename_prelude_section(self, **kwargs):
+        key = 'prelude_section_name'
+        if key in kwargs and kwargs[key] != self._OPTS[key]:
+            new_prelude_name = kwargs[key]
+
+            self.template = defaults.TEMPLATE.format(new_prelude_name)
+
     def override(self, **kwds):
         """Set the values of the named configuration options.
 
@@ -227,6 +173,9 @@ class Config(object):
         present.
 
         """
+        # Replace prelude section name if it has been changed.
+        self._rename_prelude_section(**kwds)
+
         for n, v in kwds.items():
             if n not in self._OPTS:
                 LOG.warning('ignoring unknown configuration value %r = %r',
@@ -267,6 +216,15 @@ class Config(object):
            manually if required.
         """
         return os.path.join(self.relnotesdir, self.notesdir)
+
+    @property
+    def options(self):
+        """Get all configuration options as a dict.
+
+        Returns the actual configuration options after overrides.
+        """
+        options = {o: getattr(self, o) for o in self._OPTS}
+        return options
 
 # def parse_config_into(parsed_arguments):
 

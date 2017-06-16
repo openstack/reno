@@ -48,13 +48,21 @@ def format_report(loader, config, versions_to_include, title=None,
 
         # Add the preludes.
         notefiles = loader[version]
-        for n, sha in notefiles:
-            if 'prelude' in file_contents[n]:
-                if show_source:
-                    report.append('.. %s @ %s\n' % (n, sha))
-                report.append(file_contents[n]['prelude'])
-                report.append('')
+        prelude_name = config.prelude_section_name
+        notefiles_with_prelude = [(n, sha) for n, sha in notefiles
+                                  if prelude_name in file_contents[n]]
+        if notefiles_with_prelude:
+            report.append(prelude_name.replace('_', ' ').title())
+            report.append('-' * len(prelude_name))
+            report.append('')
 
+        for n, sha in notefiles_with_prelude:
+            if show_source:
+                report.append('.. %s @ %s\n' % (n, sha))
+            report.append(file_contents[n][prelude_name])
+            report.append('')
+
+        # Add other sections.
         for section_name, section_title in config.sections:
             notes = [
                 (n, fn, sha)

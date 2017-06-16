@@ -17,6 +17,7 @@ import os
 import fixtures
 
 from reno import config
+from reno import defaults
 from reno import main
 from reno.tests import base
 
@@ -35,10 +36,7 @@ collapse_pre_releases: false
 
     def test_defaults(self):
         c = config.Config(self.tempdir.path)
-        actual = {
-            o: getattr(c, o)
-            for o in config.Config._OPTS.keys()
-        }
+        actual = c.options
         self.assertEqual(config.Config._OPTS, actual)
 
     def test_override(self):
@@ -46,10 +44,7 @@ collapse_pre_releases: false
         c.override(
             collapse_pre_releases=False,
         )
-        actual = {
-            o: getattr(c, o)
-            for o in config.Config._OPTS.keys()
-        }
+        actual = c.options
         expected = {}
         expected.update(config.Config._OPTS)
         expected['collapse_pre_releases'] = False
@@ -63,10 +58,7 @@ collapse_pre_releases: false
         c.override(
             notesdir='value2',
         )
-        actual = {
-            o: getattr(c, o)
-            for o in config.Config._OPTS.keys()
-        }
+        actual = c.options
         expected = {}
         expected.update(config.Config._OPTS)
         expected['notesdir'] = 'value2'
@@ -119,10 +111,7 @@ collapse_pre_releases: false
         c = self._run_override_from_parsed_args([
             '--no-collapse-pre-releases',
         ])
-        actual = {
-            o: getattr(c, o)
-            for o in config.Config._OPTS.keys()
-        }
+        actual = c.options
         expected = {}
         expected.update(config.Config._OPTS)
         expected['collapse_pre_releases'] = False
@@ -158,6 +147,22 @@ class TestConfigProperties(base.TestCase):
         self.assertEqual('releasenotes/thenotes', self.c.notespath)
 
     def test_template(self):
-        self.assertEqual(config._TEMPLATE, self.c.template)
+        template = defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME)
+        self.assertEqual(template, self.c.template)
         self.c.override(template='i-am-a-template')
+        self.assertEqual('i-am-a-template', self.c.template)
+
+    def test_prelude_override(self):
+        template = defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME)
+        self.assertEqual(template, self.c.template)
+        self.c.override(prelude_section_name='fake_prelude_name')
+        expected_template = defaults.TEMPLATE.format('fake_prelude_name')
+        self.assertEqual(expected_template, self.c.template)
+
+    def test_prelude_and_template_override(self):
+        template = defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME)
+        self.assertEqual(template, self.c.template)
+        self.c.override(prelude_section_name='fake_prelude_name',
+                        template='i-am-a-template')
+        self.assertEqual('fake_prelude_name', self.c.prelude_section_name)
         self.assertEqual('i-am-a-template', self.c.template)

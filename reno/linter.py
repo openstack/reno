@@ -30,8 +30,8 @@ def lint_cmd(args, conf):
 
     error = 0
     load = loader.Loader(conf, ignore_cache=True)
-
-    allowed_section_names = ['prelude'] + [s[0] for s in conf.sections]
+    allowed_section_names = [conf.prelude_section_name] + \
+                            [s[0] for s in conf.sections]
 
     uids = {}
     for f in notes:
