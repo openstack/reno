@@ -21,8 +21,9 @@ from reno import scanner
 LOG = logging.getLogger(__name__)
 
 
-def get_cache_filename(reporoot, notesdir):
-    return os.path.join(reporoot, notesdir, 'reno.cache')
+def get_cache_filename(conf):
+    return os.path.normpath(os.path.join(
+        conf.reporoot, conf.notespath, 'reno.cache'))
 
 
 class Loader(object):
@@ -54,8 +55,7 @@ class Loader(object):
         self._cache = None
         self._scanner = None
         self._scanner_output = None
-        self._cache_filename = get_cache_filename(self._reporoot,
-                                                  self._notespath)
+        self._cache_filename = get_cache_filename(conf)
 
         self._load_data()
 

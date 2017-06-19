@@ -74,7 +74,7 @@ def write_cache_db(conf, versions_to_include,
         stream = open(outfilename, 'w')
         close_stream = True
     else:
-        outfilename = loader.get_cache_filename(conf.reporoot, conf.notespath)
+        outfilename = loader.get_cache_filename(conf)
         if not os.path.exists(os.path.dirname(outfilename)):
             os.makedirs(os.path.dirname(outfilename))
         stream = open(outfilename, 'w')

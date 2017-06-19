@@ -259,7 +259,13 @@ class Config(object):
 
     @property
     def notespath(self):
-        "The path in the repo where notes are kept."
+        """The path in the repo where notes are kept.
+
+        .. important::
+
+           This does not take ``reporoot`` into account. You need to add this
+           manually if required.
+        """
         return os.path.join(self.relnotesdir, self.notesdir)
 
 # def parse_config_into(parsed_arguments):
