@@ -6,10 +6,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   design
-   installation
-   usage
-   sphinxext
-   contributing
-   history
-   examples
+   user/index
+   install/index
+   contributor/index
+   releasenotes/index

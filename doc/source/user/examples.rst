@@ -5,7 +5,7 @@
 Input file
 ==========
 
-.. literalinclude:: ../../examples/notes/add-complex-example-6b5927c246456896.yaml
+.. literalinclude:: ../../../examples/notes/add-complex-example-6b5927c246456896.yaml
    :caption: examples/notes/add-complex-example-6b5927c246456896.yaml
    :language: yaml
 

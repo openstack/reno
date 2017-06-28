@@ -141,7 +141,7 @@ not needed for the bullet items in the other sections of the template.
 To escape the text of any section and *retain* the newlines, prefix
 the value with ``|``. For example:
 
-.. include:: ../../examples/notes/add-complex-example-6b5927c246456896.yaml
+.. include:: ../../../examples/notes/add-complex-example-6b5927c246456896.yaml
    :literal:
 
 See :doc:`examples` for the rendered version of the note.
