@@ -18,11 +18,11 @@ import sys
 # oslosphinx uses reno and reno uses oslosphinx. Make oslosphinx for
 # reno optional to break the build cycle
 try:
-    import oslosphinx
+    import openstackdocstheme
 except:
-    has_oslosphinx = False
+    has_theme = False
 else:
-    has_oslosphinx = True
+    has_theme = True
 
 
 sys.path.insert(0, os.path.abspath('../..'))
@@ -36,8 +36,15 @@ extensions = [
     'reno.sphinxext',
 ]
 
-if has_oslosphinx:
-    extensions.append('oslosphinx')
+if has_theme:
+    extensions.append('openstackdocstheme')
+    html_theme = 'openstackdocs'
+
+# openstackdocstheme options
+repository_name = 'openstack/reno'
+bug_project = 'reno'
+bug_tag = ''
+html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
 # text edit cycles.
