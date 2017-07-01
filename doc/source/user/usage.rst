@@ -174,13 +174,13 @@ correctness.
 Configuring Reno
 ================
 
-Reno looks for an optional ``config.yaml`` file in the release notes
-directory.  If the values in the configuration file do not apply to
-the command being run, they are ignored. For example, some reno
-commands take inputs controlling the branch, earliest revision, and
-other common parameters that control which notes are included in the
-output.  Because they are commonly set options, a configuration file
-may be the most convenient way to manage the values consistently.
+Reno looks for an optional config file, either ``config.yaml`` in the release
+notes directory or ``reno.yaml`` in the root directory. If the values in the
+configuration file do not apply to the command being run, they are ignored. For
+example, some reno commands take inputs controlling the branch, earliest
+revision, and other common parameters that control which notes are included in
+the output. Because they are commonly set options, a configuration file may be
+the most convenient way to manage the values consistently.
 
 .. code-block:: yaml
 

@@ -9,7 +9,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-import errno
+
 import logging
 import os.path
 
@@ -89,8 +89,6 @@ other:
 
 
 class Config(object):
-
-    _FILENAME = 'config.yaml'
 
     _OPTS = {
         # The notes subdirectory within the relnotesdir where the
@@ -191,7 +189,6 @@ class Config(object):
         :param str relnotesdir:
             The directory containing release notes. Defaults to
             'releasenotes'.
-
         """
         self.reporoot = reporoot
         if relnotesdir is None:
@@ -200,22 +197,26 @@ class Config(object):
         # Initialize attributes from the defaults.
         self.override(**self._OPTS)
 
-        self._filename = os.path.join(self.reporoot, relnotesdir,
-                                      self._FILENAME)
         self._contents = {}
         self._load_file()
 
     def _load_file(self):
+        filenames = [
+            os.path.join(self.reporoot, self.relnotesdir, 'config.yaml'),
+            os.path.join(self.reporoot, 'reno.yaml')]
+
+        for filename in filenames:
+            if os.path.isfile(filename):
+                break
+        else:
+            LOG.info('no configuration file in: %s', ', '.join(filenames))
+            return
+
         try:
-            with open(self._filename, 'r') as fd:
+            with open(filename, 'r') as fd:
                 self._contents = yaml.safe_load(fd)
         except IOError as err:
-            if err.errno == errno.ENOENT:
-                LOG.info('no configuration file in %s',
-                         self._filename)
-            else:
-                LOG.warning('did not load config file %s: %s',
-                            self._filename, err)
+            LOG.warning('did not load config file %s: %s', filename, err)
         else:
             self.override(**self._contents)
 

@@ -77,16 +77,22 @@ collapse_pre_releases: false
             config.Config(self.tempdir.path)
             self.assertEqual(1, logger.call_count)
 
-    def test_load_file(self):
-        rn_path = self.tempdir.join('releasenotes')
-        os.mkdir(rn_path)
-        config_path = self.tempdir.join('releasenotes/' +
-                                        config.Config._FILENAME)
+    def _test_load_file(self, config_path):
         with open(config_path, 'w') as fd:
             fd.write(self.EXAMPLE_CONFIG)
         self.addCleanup(os.unlink, config_path)
         c = config.Config(self.tempdir.path)
         self.assertEqual(False, c.collapse_pre_releases)
+
+    def test_load_file_in_releasenotesdir(self):
+        rn_path = self.tempdir.join('releasenotes')
+        os.mkdir(rn_path)
+        config_path = self.tempdir.join('releasenotes/config.yaml')
+        self._test_load_file(config_path)
+
+    def test_load_file_in_repodir(self):
+        config_path = self.tempdir.join('reno.yaml')
+        self._test_load_file(config_path)
 
     def test_get_default(self):
         d = config.Config.get_default('notesdir')

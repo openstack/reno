@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    reno will now scan for a ``reno.yaml`` file in the root repo directory if a
+    ``config.yaml`` file does not exist in the releasenotes directory. This
+    allows users to do away with the unnecessary ``notes`` subdirectory in the
+    releasenotes directory.
