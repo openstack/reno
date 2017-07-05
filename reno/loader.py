@@ -104,13 +104,13 @@ class Loader(object):
         cleaned_content = {}
 
         for section_name, section_content in content.items():
-            if section_name == 'prelude':
+            if section_name == self._config.prelude_section_name:
                 if not isinstance(section_content, six.string_types):
                     LOG.warning(
-                        ('The prelude section of %s '
+                        ('The %s section of %s '
                          'does not parse as a single string. '
                          'Is the YAML input escaped properly?') %
-                        filename,
+                        (self._config.prelude_section_name, filename),
                     )
             else:
                 if isinstance(section_content, six.string_types):

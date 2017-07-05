@@ -56,8 +56,8 @@ list:
 
 prelude
 
-  General comments about the release. The prelude from all notes in a
-  section are combined, in note order, to produce a single prelude
+  General comments about the release. Prelude sections from all notes in a
+  release are combined, in note order, to produce a single prelude
   introducing that release. This section is always included, regardless
   of what sections are configured.
 
@@ -197,6 +197,9 @@ the most convenient way to manage the values consistently.
       - [api, API Changes]
       - [security, Security Issues]
       - [fixes, Bug Fixes]
+    # Change prelude_section_name to 'release_summary' from default value
+    # 'prelude'.
+    prelude_section_name: release_summary
     template: |
               <template-used-to-create-new-notes>
               ...
@@ -283,6 +286,15 @@ The following options are configurable:
   The identifiers and names of permitted sections in the release notes, in the
   order in which the final report will be generated. A prelude section will
   always be automatically inserted before the first element of this list.
+
+`prelude_section_name`
+
+  The name of the prelude section in the note template. Note that the
+  value for this must be a single word, but can have underscores. The
+  value is displayed in titlecase in the report after replacing
+  underscores with spaces.
+
+  Defaults to ``prelude``
 
 `ignore_null_merges`
 
