@@ -39,12 +39,12 @@ We had several design inputs:
   containing a release note on a particular topic.
 * Release notes should be grouped by type in the output document.
 
-    1. New features
-    2. Known issues
-    3. Upgrade notes
-    4. Security fixes
-    5. Bugs fixes
-    6. Other
+  1. New features
+  2. Known issues
+  3. Upgrade notes
+  4. Security fixes
+  5. Bugs fixes
+  6. Other
 
 We want to eventually provide the ability to create a release notes
 file for a given release and add it to the source distribution for the

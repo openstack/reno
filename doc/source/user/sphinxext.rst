@@ -23,44 +23,36 @@ Enable the extension by adding ``'reno.sphinxext'`` to the
    Options:
 
    *branch*
-
      The name of the branch to scan. Defaults to the current branch.
 
    *reporoot*
-
      The path to the repository root directory. Defaults to the
      directory where ``sphinx-build`` is being run.
 
    *relnotessubdir*
-
      The path under ``reporoot`` where the release notes are. Defaults
      to ``releasenotes``.
 
    *notesdir*
-
      The path under ``relnotessubdir`` where the release notes
      are. Defaults to ``notes``.
 
    *version*
-
      A comma separated list of versions to include in the notes. The
      default is to include all versions found on ``branch``.
 
    *collapse-pre-releases*
-
      A flag indicating that notes attached to pre-release versions
      should be incorporated into the notes for the final release,
      after the final release is tagged.
 
    *earliest-version*
-
      A string containing the version number of the earliest version to
      be included. For example, when scanning a branch, this is
      typically set to the version used to create the branch to limit
      the output to only versions on that branch.
 
    *ignore-notes*
-
      A string containing a comma-delimited list of filenames or UIDs
      for notes that should be ignored by the scanner.  It is most
      useful to set this when a note is edited on the wrong branch,
@@ -72,14 +64,14 @@ Examples
 The release notes for the "current" branch, with "Release Notes" as a
 title.
 
-::
+.. code-block:: rest
 
     .. release-notes:: Release Notes
 
 The release notes for the "stable/liberty" branch, with a separate
 title.
 
-::
+.. code-block:: rest
 
    =======================
     Liberty Release Notes
@@ -90,7 +82,7 @@ title.
 
 The release notes for version "1.0.0".
 
-::
+.. code-block:: rest
 
    .. release-notes:: 1.0.0 Release Notes
       :version: 1.0.0

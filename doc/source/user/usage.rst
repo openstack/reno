@@ -55,55 +55,46 @@ sections are configurable (see below) but default to the following
 list:
 
 prelude
-
   General comments about the release. Prelude sections from all notes in a
   release are combined, in note order, to produce a single prelude
   introducing that release. This section is always included, regardless
   of what sections are configured.
 
 features
-
   A list of new major features in the release.
 
 issues
-
   A list of known issues in the release. For example, if a new driver
   is experimental or known to not work in some cases, it should be
   mentioned here.
 
 upgrade
-
   A list of upgrade notes in the release. For example, if a database
   schema alteration is needed.
 
 deprecations
-
   A list of features, APIs, configuration options to be deprecated in the
   release. Deprecations should not be used for something that is removed in the
   release, use upgrade section instead. Deprecation should allow time for users
   to make necessary changes for the removal to happen in a future release.
 
 critical
-
   A list of *fixed* critical bugs.
 
 security
-
   A list of *fixed* security issues.
 
 fixes
-
   A list of other *fixed* bugs.
 
 other
-
   Other notes that are important but do not fall into any of the given
   categories.
 
 Any sections that would be blank should be left out of the note file
 entirely.
 
-::
+.. code-block:: yaml
 
    ---
    prelude: >
@@ -141,8 +132,8 @@ not needed for the bullet items in the other sections of the template.
 To escape the text of any section and *retain* the newlines, prefix
 the value with ``|``. For example:
 
-.. include:: ../../../examples/notes/add-complex-example-6b5927c246456896.yaml
-   :literal:
+.. literalinclude:: ../../../examples/notes/add-complex-example-6b5927c246456896.yaml
+   :language: yaml
 
 See :doc:`examples` for the rendered version of the note.
 
@@ -216,27 +207,23 @@ using command-line switches. For example:
 The following options are configurable:
 
 `notesdir`
-
   The notes subdirectory within the `relnotesdir` where the notes live.
 
   Defaults to ``notes``.
 
 `collapse_pre_releases`
-
   Should pre-release versions be merged into the final release of the same
   number (`1.0.0.0a1` notes appear under `1.0.0`).
 
   Defaults to ``True``.
 
 `stop_at_branch_base`
-
   Should the scanner stop at the base of a branch (True) or go ahead and scan
   the entire history (False)?
 
   Defaults to ``True``.
 
 `branch`
-
   The git branch to scan. If a stable branch is specified but does not exist,
   reno attempts to automatically convert that to an "end-of-life" tag. For
   example, ``origin/stable/liberty`` would be converted to ``liberty-eol``.
@@ -244,7 +231,6 @@ The following options are configurable:
   Defaults to the "current" branch checked out.
 
 `earliest_version`
-
   The earliest version to be included. This is usually the lowest version
   number, and is meant to be the oldest version. If unset, all versions will be
   scanned.
@@ -252,18 +238,15 @@ The following options are configurable:
   Defaults to ``None``.
 
 `template`
-
   The template used by reno new to create a note.
 
 `release_tag_re`
-
   The regex pattern used to match the repo tags representing a valid release
   version. The pattern is compiled with the verbose and unicode flags enabled.
 
   Defaults to ``((?:[\d.ab]|rc)+)``.
 
 `pre_release_tag_re`
-
   The regex pattern used to check if a valid release version tag is also a
   valid pre-release version. The pattern is compiled with the verbose and
   unicode flags enabled. The pattern must define a group called `pre_release`
@@ -274,7 +257,6 @@ The following options are configurable:
   Defaults to ``(?P<pre_release>\.\d+(?:[ab]|rc)+\d*)$``.
 
 `branch_name_re`
-
   The pattern for names for branches that are relevant when scanning history to
   determine where to stop, to find the "base" of a branch. Other branches are
   ignored.
@@ -282,13 +264,11 @@ The following options are configurable:
   Defaults to ``stable/.+``.
 
 `sections`
-
   The identifiers and names of permitted sections in the release notes, in the
   order in which the final report will be generated. A prelude section will
   always be automatically inserted before the first element of this list.
 
 `prelude_section_name`
-
   The name of the prelude section in the note template. Note that the
   value for this must be a single word, but can have underscores. The
   value is displayed in titlecase in the report after replacing
@@ -297,7 +277,6 @@ The following options are configurable:
   Defaults to ``prelude``
 
 `ignore_null_merges`
-
   OpenStack used to use null-merges to bring final release tags from
   stable branches back into the master branch. This confuses the
   regular traversal because it makes that stable branch appear to be
@@ -312,7 +291,6 @@ The following options are configurable:
   Defaults to ``True``.
 
 `ignore_notes`
-
   A list of filenames or UIDs for notes that should be ignored by the
   reno scanner. It is most useful to set this when a note is edited on
   the wrong branch, making it appear to be part of a release that it
