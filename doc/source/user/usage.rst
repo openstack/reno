@@ -315,6 +315,41 @@ sphinx document directly for debugging, use the ``report`` command.
 
     $ reno report .
 
+Updating Stable Branch Release Notes
+====================================
+
+Occasionally it is necessary to update release notes for past releases
+due to URLs changing or errors not being noticed until after they have
+been released. In cases like these, it is important to note that any
+updates to these release notes should be proposed directly to the stable
+branch where they were introduced.
+
+.. note::
+
+   Due to the way reno scans release notes, if a note is updated on a
+   later branch instead of its original branch, it will then show up
+   in the release notes for the later release.
+
+If a note is accidentally modified in a later branch causing it to show
+up in the wrong release's notes, the ``ignore-notes`` directive may be
+used to manually exclude it from the generated output:
+
+::
+
+      ===========================
+       Pike Series Release Notes
+      ===========================
+
+      .. release-notes::
+         :branch: stable/pike
+         :ignore-notes:
+           mistake-note-1-ee6274467572906b.yaml,
+           mistake-note-2-dd6274467572906b.yaml
+
+
+Even though the note will be parsed in the newer release, it will be
+excluded from the output for that release.
+
 Within OpenStack
 ================
 
