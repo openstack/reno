@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add a ``build_reno`` setuptools command that allows users to generate a
+    release notes document and a reno cache file that can be used to build
+    release notes documents without the full Git history present.

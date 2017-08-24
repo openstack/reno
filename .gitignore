@@ -48,6 +48,9 @@ doc/build
 AUTHORS
 ChangeLog
 
+# reno generates these
+RELEASENOTES.rst
+
 # Editors
 *~
 .*.swp
