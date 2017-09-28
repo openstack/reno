@@ -532,7 +532,17 @@ class Scanner(object):
                 # name exists on the 'origin' remote.
                 'refs/remotes/origin/' + name,
             ]
+            # If the reference points explicitly to the origin remote,
+            # but that remote isn't present (as it won't be when zuul
+            # configures the repo in CI), then we want the shortened
+            # form of the reference. We put this option last in the
+            # list because we want the more explicit name to be used
+            # when someone is running reno locally with a more
+            # standard git configuration.
+            if name.startswith('origin/'):
+                candidates.append('refs/heads/' + name.partition('/')[-1])
             for ref in candidates:
+                LOG.debug('looking for ref {!r} as {!r}'.format(name, ref))
                 key = ref.encode('utf-8')
                 if key in self._repo.refs:
                     sha = self._repo.refs[key]
@@ -542,6 +552,8 @@ class Scanner(object):
                         # signed tags point to the signature and we
                         # need to dereference it to get to the commit.
                         sha = o.object[1]
+                    LOG.info('found ref {!r} as {!r} at {}'.format(
+                        name, ref, sha))
                     return sha
             # If we end up here we didn't find any of the candidates.
             raise ValueError('Unknown reference {!r}'.format(name))

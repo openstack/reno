@@ -1794,6 +1794,26 @@ class GetRefTest(Base):
         expected = self.scanner._repo.head()
         self.assertEqual(expected, ref)
 
+    def test_stable_branch(self):
+        self.scanner = scanner.Scanner(self.c)
+        ref = self.scanner._get_ref('stable/foo')
+        expected = self.scanner._repo.head()
+        self.assertEqual(expected, ref)
+
+    def test_stable_branch_with_origin_prefix(self):
+        self.scanner = scanner.Scanner(self.c)
+        ref = self.scanner._get_ref('origin/stable/foo')
+        expected = self.scanner._repo.head()
+        self.assertEqual(expected, ref)
+
+    def test_no_such_value(self):
+        self.scanner = scanner.Scanner(self.c)
+        self.assertRaises(
+            ValueError,
+            self.scanner._get_ref,
+            'missing/remote',
+        )
+
 
 class TagsTest(Base):
 
