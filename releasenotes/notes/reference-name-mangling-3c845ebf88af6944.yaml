@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    The automatic branch name handling is updated so that if the
+    reference points explicitly to the origin remote, but that remote
+    isn't present (as it won't be when zuul configures the repo in
+    CI), then the shortened form of the reference without the prefix
+    is used instead. This allows explicit references to
+    ``origin/stable/name`` to be translated to ``stable/name`` and
+    find the expected branch.
