@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    The --from-template flag was added to the release note creation command.
+    This enables one to create a release note from a pre-defined template,
+    which is useful when automating the creation of commits.

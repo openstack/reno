@@ -40,6 +40,20 @@ The ``--edit`` option opens the new note in a text editor.
     ... Opens the editor set in the EDITOR environment variable, editing the new file ...
     Created new notes file in releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
 
+The ``--from-template`` option allows you to use a pre-defined file and use
+that as the release note.
+
+::
+
+    $ reno new slug-goes-here --from-template my-file.yaml
+    ... Creates a release note using the provided file my-file.yaml ...
+    Created new notes file in releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
+
+.. note::
+
+    You can also combine the flags ``--edit`` and ``--from-template``
+    to create a release note from a specified file and immediately start an
+    editor to modify the new file.
 
 By default, the new note is created under ``./releasenotes/notes``.
 The ``--rel-notes-dir`` command-line flag changes the parent directory

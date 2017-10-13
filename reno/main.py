@@ -100,6 +100,10 @@ def main(argv=sys.argv[1:]):
         help='Edit note after its creation (require EDITOR env variable)',
     )
     do_new.add_argument(
+        '--from-template',
+        help='Template to get the release note from.',
+    )
+    do_new.add_argument(
         'slug',
         help='descriptive title of note (keep it short)',
     )

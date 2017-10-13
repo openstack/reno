@@ -47,6 +47,16 @@ def _edit_file(filename):
     return True
 
 
+def _get_user_template(template_file):
+    if not os.path.exists(template_file):
+        raise ValueError(
+            'The provided template file %s doesn\'t '
+            'exist' % template_file,
+        )
+    with open(template_file, 'r') as f:
+        return f.read()
+
+
 def create_cmd(args, conf):
     "Create a new release note file from the template."
     # NOTE(dhellmann): There is a short race window where we might try
@@ -57,7 +67,11 @@ def create_cmd(args, conf):
     # concern.
     slug = args.slug.replace(' ', '-')
     filename = _pick_note_file_name(conf.notespath, slug)
-    _make_note_file(filename, conf.template)
+    if args.from_template:
+        template = _get_user_template(args.from_template)
+    else:
+        template = conf.template
+    _make_note_file(filename, template)
     if args.edit and not _edit_file(filename):
         print('Was unable to edit the new note. EDITOR environment variable '
               'is missing!')
