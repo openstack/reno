@@ -6,6 +6,11 @@ At the command line::
 
     $ pip install reno
 
+.. note::
+
+   Reno's dependencies include C extension modules, which in turn
+   depend on having the Python source header files installed.
+
 Sphinx Extension
 ================
 

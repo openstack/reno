@@ -1,0 +1,5 @@
+gcc [platform:rpm test]
+python-dev [platform:dpkg test]
+python-devel [platform:rpm test]
+python3-devel [platform:fedora platform:suse]
+python3 [platform:suse]
