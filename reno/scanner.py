@@ -315,7 +315,7 @@ class _ChangeTracker(object):
                 uniqueid,
             )
 
-    def rename(self, filename, sha, version):
+    def _change(self, filename, sha, version):
         uniqueid = _get_unique_id(filename)
         self._common(uniqueid, sha, version)
 
@@ -348,46 +348,15 @@ class _ChangeTracker(object):
             )
         else:
             LOG.debug(
-                '%s: renamed file already known with the new name',
-                uniqueid,
-            )
-
-    def modify(self, filename, sha, version):
-        uniqueid = _get_unique_id(filename)
-        self._common(uniqueid, sha, version)
-
-        # If we have recorded that a UID was deleted, that
-        # means that was the last change made to the file and
-        # we can ignore it.
-        if uniqueid in self.uniqueids_deleted:
-            LOG.debug(
-                '%s: has already been deleted, ignoring this change',
-                uniqueid,
-            )
-            return
-
-        if uniqueid in self.last_name_by_id:
-            LOG.debug('%s: already added', uniqueid)
-            to_update = self.last_name_by_id
-        else:
-            LOG.debug('%s: seen but not added', uniqueid)
-            to_update = self.seen_but_not_added
-
-        # An existing file is being modified. We may have
-        # seen it before, if there were subsequent
-        # modifications, so only store the name
-        # information if it is not there already.
-        if uniqueid not in to_update:
-            to_update[uniqueid] = (filename, sha)
-            LOG.info(
-                '%s: update to %s in commit %s',
-                uniqueid, filename, sha,
-            )
-        else:
-            LOG.debug(
                 '%s: modified file already known',
                 uniqueid,
             )
+
+    def rename(self, filename, sha, version):
+        self._change(filename, sha, version)
+
+    def modify(self, filename, sha, version):
+        self._change(filename, sha, version)
 
     def delete(self, filename, sha, version):
         uniqueid = _get_unique_id(filename)
