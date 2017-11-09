@@ -1254,7 +1254,7 @@ class BranchTest(Base):
         self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
         self.f2 = self._add_notes_file('slug2')
         self.repo.git('tag', '-s', '-m', 'first tag', '2.0.0')
-        self._add_notes_file('slug3')
+        self.f3 = self._add_notes_file('slug3')
         self.repo.git('tag', '-s', '-m', 'first tag', '3.0.0')
 
     def test_files_current_branch(self):
@@ -1612,6 +1612,33 @@ class BranchTest(Base):
         head2 = scanner2._get_ref('stable/2')
         self.assertIsNotNone(head2)
         self.assertEqual(head1, head2)
+
+    def test_modify_old_branch_note_on_master(self):
+        # Modify a note from a stable branch on master and ensure that
+        # the note does not appear in the scanner output from master.
+        # This should replicate the problem described in bug #1682796
+        self.repo.git('checkout', '2.0.0')
+        self.repo.git('branch', 'stable/2')
+        self.repo.git('checkout', 'master')
+        with open(os.path.join(self.reporoot, self.f1), 'w') as f:
+            f.write('new file contents')
+        self.repo.commit('update %s' % self.f1)
+        self.c.override(
+            earliest_version=None,
+        )
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {
+                '2.0.0': [self.f2],
+                '3.0.0': [self.f3],
+            },
+            results,
+        )
 
 
 class ScanStopPointPrereleaseVersionsTest(Base):
@@ -2226,4 +2253,139 @@ class AggregateChangesTest(Base):
             [('%016x' % n, 'modify', old_name, 'commit-id'),
              ('%016x' % n, 'modify', old_name, 'commit-id')],
             results,
+        )
+
+
+class ChangeTrackerTest(base.TestCase):
+
+    def setUp(self):
+        super(ChangeTrackerTest, self).setUp()
+        self.changes = scanner._ChangeTracker()
+        basename = '%s-%016x.yaml' % ('slug', 1)
+        self.filename = os.path.join('releasenotes', 'notes', basename)
+        self.filename2 = self.filename.replace('slug', 'guls')
+        self.uniqueid = scanner._get_unique_id(self.filename)
+        self.fake_logger = self.useFixture(
+            fixtures.FakeLogger(
+                format='%(levelname)8s %(name)s %(message)s',
+                level=logging.DEBUG,
+                nuke_handlers=True,
+            )
+        )
+
+    def test_add(self):
+        self.changes.add(self.filename, 'sha1', 'version')
+        self.assertEqual(
+            {},
+            self.changes.seen_but_not_added,
+        )
+        self.assertEqual(
+            ['version'],
+            self.changes.versions,
+        )
+        self.assertEqual(
+            'version',
+            self.changes.earliest_seen[self.uniqueid],
+        )
+        self.assertEqual(
+            {self.uniqueid: (self.filename, 'sha1')},
+            self.changes.last_name_by_id,
+        )
+        self.assertEqual(
+            set(),
+            self.changes.uniqueids_deleted,
+        )
+
+    def test_modify_with_add(self):
+        self.changes.modify(self.filename, 'sha2', 'version2')
+        self.changes.add(self.filename, 'sha1', 'version1')
+        self.assertEqual(
+            {},
+            self.changes.seen_but_not_added,
+        )
+        self.assertEqual(
+            ['version2', 'version1'],
+            self.changes.versions,
+        )
+        self.assertEqual(
+            'version1',
+            self.changes.earliest_seen[self.uniqueid],
+        )
+        self.assertEqual(
+            {self.uniqueid: (self.filename, 'sha2')},
+            self.changes.last_name_by_id,
+        )
+        self.assertEqual(
+            set(),
+            self.changes.uniqueids_deleted,
+        )
+
+    def test_modify_without_add(self):
+        self.changes.modify(self.filename, 'sha2', 'version2')
+        self.assertEqual(
+            {self.uniqueid: (self.filename, 'sha2')},
+            self.changes.seen_but_not_added,
+        )
+        self.assertEqual(
+            ['version2'],
+            self.changes.versions,
+        )
+        self.assertEqual(
+            'version2',
+            self.changes.earliest_seen[self.uniqueid],
+        )
+        self.assertEqual(
+            {},
+            self.changes.last_name_by_id,
+        )
+        self.assertEqual(
+            set(),
+            self.changes.uniqueids_deleted,
+        )
+
+    def test_rename_with_add(self):
+        self.changes.rename(self.filename2, 'sha2', 'version2')
+        self.changes.add(self.filename, 'sha1', 'version1')
+        self.assertEqual(
+            {},
+            self.changes.seen_but_not_added,
+        )
+        self.assertEqual(
+            ['version2', 'version1'],
+            self.changes.versions,
+        )
+        self.assertEqual(
+            'version1',
+            self.changes.earliest_seen[self.uniqueid],
+        )
+        self.assertEqual(
+            {self.uniqueid: (self.filename2, 'sha2')},
+            self.changes.last_name_by_id,
+        )
+        self.assertEqual(
+            set(),
+            self.changes.uniqueids_deleted,
+        )
+
+    def test_rename_without_add(self):
+        self.changes.rename(self.filename2, 'sha2', 'version2')
+        self.assertEqual(
+            {self.uniqueid: (self.filename2, 'sha2')},
+            self.changes.seen_but_not_added,
+        )
+        self.assertEqual(
+            ['version2'],
+            self.changes.versions,
+        )
+        self.assertEqual(
+            'version2',
+            self.changes.earliest_seen[self.uniqueid],
+        )
+        self.assertEqual(
+            {},
+            self.changes.last_name_by_id,
+        )
+        self.assertEqual(
+            set(),
+            self.changes.uniqueids_deleted,
         )

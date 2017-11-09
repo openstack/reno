@@ -252,6 +252,10 @@ class _ChangeTracker(object):
         self.last_name_by_id = {}
         # Remember uniqueids that have had files deleted.
         self.uniqueids_deleted = set()
+        # Remember files that are changed but not explicitly added so
+        # when we do see an add we can use the more recent tracking
+        # info and if we don't see the add we know to ignore the file.
+        self.seen_but_not_added = {}
 
     def _common(self, uniqueid, sha, version):
         if version not in self.versions:
@@ -284,12 +288,24 @@ class _ChangeTracker(object):
             )
             return
 
-        # A note is being added in this commit. If we have
-        # not seen it before, it was added here and never
-        # changed.
-        if uniqueid not in self.last_name_by_id:
+        if uniqueid in self.seen_but_not_added:
+            # The note was seen for a modify operation already but
+            # this is where it was added. We want to remember where
+            # the modification happened, because that came earlier in
+            # the scan (and therefore later in the history).
+            filename, sha = self.seen_but_not_added[uniqueid]
             self.last_name_by_id[uniqueid] = (filename, sha)
             LOG.info(
+                '%s: copying data for %s from commit %s',
+                uniqueid, filename, sha,
+            )
+            del self.seen_but_not_added[uniqueid]
+        elif uniqueid not in self.last_name_by_id:
+            # The note was added already and we want to keep that
+            # other reference because it came earlier in the scan (and
+            # therefore later in the history).
+            self.last_name_by_id[uniqueid] = (filename, sha)
+            LOG.debug(
                 '%s: new %s in commit %s',
                 uniqueid, filename, sha,
             )
@@ -313,12 +329,19 @@ class _ChangeTracker(object):
             )
             return
 
+        if uniqueid in self.last_name_by_id:
+            LOG.debug('%s: already added', uniqueid)
+            to_update = self.last_name_by_id
+        else:
+            LOG.debug('%s: seen but not added', uniqueid)
+            to_update = self.seen_but_not_added
+
         # The file is being renamed. We may have seen it
         # before, if there were subsequent modifications,
         # so only store the name information if it is not
         # there already.
-        if uniqueid not in self.last_name_by_id:
-            self.last_name_by_id[uniqueid] = (filename, sha)
+        if uniqueid not in to_update:
+            to_update[uniqueid] = (filename, sha)
             LOG.info(
                 '%s: update to %s in commit %s',
                 uniqueid, filename, sha,
@@ -343,12 +366,19 @@ class _ChangeTracker(object):
             )
             return
 
+        if uniqueid in self.last_name_by_id:
+            LOG.debug('%s: already added', uniqueid)
+            to_update = self.last_name_by_id
+        else:
+            LOG.debug('%s: seen but not added', uniqueid)
+            to_update = self.seen_but_not_added
+
         # An existing file is being modified. We may have
         # seen it before, if there were subsequent
         # modifications, so only store the name
         # information if it is not there already.
-        if uniqueid not in self.last_name_by_id:
-            self.last_name_by_id[uniqueid] = (filename, sha)
+        if uniqueid not in to_update:
+            to_update[uniqueid] = (filename, sha)
             LOG.info(
                 '%s: update to %s in commit %s',
                 uniqueid, filename, sha,
