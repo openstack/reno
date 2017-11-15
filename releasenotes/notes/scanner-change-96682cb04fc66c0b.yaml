@@ -1,0 +1,11 @@
+---
+fixes:
+  - |
+    A fix is included to ignore changes to a note file until the
+    scanner encounters the git operation that adds the file. This
+    ensures that if a file is modified on master when it should be
+    modified on another branch the note is not erroneously
+    incorporated into the notes for the next release from master.
+    fixes `bug 1682796`_
+
+    .. _bug 1682796: https://bugs.launchpad.net/neutron/+bug/1682796
