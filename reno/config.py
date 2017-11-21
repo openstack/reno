@@ -26,71 +26,74 @@ Opt = collections.namedtuple('Opt', 'name default help')
 
 _OPTIONS = [
     Opt('notesdir', defaults.NOTES_SUBDIR,
-        textwrap.dedent("""
+        textwrap.dedent("""\
         The notes subdirectory within the relnotesdir where the
         notes live.
         """)),
 
     Opt('collapse_pre_releases', True,
-        textwrap.dedent("""
+        textwrap.dedent("""\
         Should pre-release versions be merged into the final release
         of the same number (1.0.0.0a1 notes appear under 1.0.0).
         """)),
 
     Opt('stop_at_branch_base', True,
-        textwrap.dedent("""
+        textwrap.dedent("""\
         Should the scanner stop at the base of a branch (True) or go
         ahead and scan the entire history (False)?
         """)),
 
     Opt('branch', None,
-        textwrap.dedent("""
-        # The git branch to scan. Defaults to the "current" branch
-        # checked out.
+        textwrap.dedent("""\
+        The git branch to scan. Defaults to the "current" branch
+        checked out. If a stable branch is specified but does not
+        exist, reno attempts to automatically convert that to an
+        "end-of-life" tag. For example, ``origin/stable/liberty``
+        would be converted to ``liberty-eol``.
         """)),
 
     Opt('earliest_version', None,
-        textwrap.dedent("""
-        # The earliest version to be included. This is usually the
-        # lowest version number, and is meant to be the oldest
-        # version.
+        textwrap.dedent("""\
+        The earliest version to be included. This is usually the
+        lowest version number, and is meant to be the oldest
+        version. If unset, all versions will be scanned.
         """)),
 
     Opt('template', defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME),
-        textwrap.dedent("""
-        # The template used by reno new to create a note.
+        textwrap.dedent("""\
+        The template used by reno new to create a note.
         """)),
 
     Opt('release_tag_re',
-        textwrap.dedent('''
+        textwrap.dedent('''\
         ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
                            # pre-releases
         '''),
-        textwrap.dedent("""
-        # The RE pattern used to match the repo tags representing a valid
-        # release version. The pattern is compiled with the verbose and unicode
-        # flags enabled.
+        textwrap.dedent("""\
+        The regex pattern used to match the repo tags representing a
+        valid release version. The pattern is compiled with the
+        verbose and unicode flags enabled.
         """)),
 
     Opt('pre_release_tag_re',
-        textwrap.dedent('''
+        textwrap.dedent('''\
         (?P<pre_release>\.\d+(?:[ab]|rc)+\d*)$
         '''),
-        textwrap.dedent("""
-        # The RE pattern used to check if a valid release version tag is also a
-        # valid pre-release version. The pattern is compiled with the verbose
-        # and unicode flags enabled. The pattern must define a group called
-        # 'pre_release' that matches the pre-release part of the tag and any
-        # separator, e.g for pre-release version '12.0.0.0rc1' the default RE
-        # pattern will identify '.0rc1' as the value of the group
-        # 'pre_release'.
+        textwrap.dedent("""\
+        The regex pattern used to check if a valid release version tag
+        is also a valid pre-release version. The pattern is compiled
+        with the verbose and unicode flags enabled. The pattern must
+        define a group called 'pre_release' that matches the
+        pre-release part of the tag and any separator, e.g for
+        pre-release version '12.0.0.0rc1' the default pattern will
+        identify '.0rc1' as the value of the group 'pre_release'.
         """)),
 
     Opt('branch_name_re', 'stable/.+',
-        textwrap.dedent("""
-        # The pattern for names for branches that are relevant when
-        # scanning history to determine where to stop, to find the
-        # "base" of a branch. Other branches are ignored.
+        textwrap.dedent("""\
+        The pattern for names for branches that are relevant when
+        scanning history to determine where to stop, to find the
+        "base" of a branch. Other branches are ignored.
         """)),
 
     Opt('sections',
@@ -104,42 +107,46 @@ _OPTIONS = [
             ['fixes', 'Bug Fixes'],
             ['other', 'Other Notes'],
         ],
-        textwrap.dedent("""
-        # The identifiers and names of permitted sections in the
-        # release notes, in the order in which the final report will
-        # be generated. A prelude section will always be automatically
-        # inserted before the first element of this list.
+        textwrap.dedent("""\
+        The identifiers and names of permitted sections in the
+        release notes, in the order in which the final report will
+        be generated. A prelude section will always be automatically
+        inserted before the first element of this list.
         """)),
 
     Opt('prelude_section_name', defaults.PRELUDE_SECTION_NAME,
-        textwrap.dedent("""
-        # The name of the prelude section in the note template. This
-        # allows users to rename the section to, for example,
-        # 'release_summary' or 'project_wide_general_announcements',
-        # which is displayed in titlecase in the report after
-        # replacing underscores with spaces.
+        textwrap.dedent("""\
+        The name of the prelude section in the note template. This
+        allows users to rename the section to, for example,
+        'release_summary' or 'project_wide_general_announcements',
+        which is displayed in titlecase in the report after
+        replacing underscores with spaces.
         """)),
 
     Opt('ignore_null_merges', True,
-        textwrap.dedent("""
-        # When this option is set to True, any merge commits with no
-        # changes and in which the second or later parent is tagged
-        # are considered "null-merges" that bring the tag information
-        # into the current branch but nothing else.
-        #
-        # OpenStack used to use null-merges to bring final release
-        # tags from stable branches back into the master branch. This
-        # confuses the regular traversal because it makes that stable
-        # branch appear to be part of master and/or the later stable
-        # branch. This option allows us to ignore those.
+        textwrap.dedent("""\
+        When this option is set to True, any merge commits with no
+        changes and in which the second or later parent is tagged
+        are considered "null-merges" that bring the tag information
+        into the current branch but nothing else.
+
+        OpenStack used to use null-merges to bring final release
+        tags from stable branches back into the master branch. This
+        confuses the regular traversal because it makes that stable
+        branch appear to be part of master and/or the later stable
+        branch. This option allows us to ignore those.
         """)),
 
     Opt('ignore_notes', [],
-        textwrap.dedent("""
-        # Note files to be ignored. It's useful to be able to ignore a
-        # file if it is edited on the wrong branch. Notes should be
-        # specified by their filename or UID. Setting the value in the
-        # configuration file makes it apply to all branches.
+        textwrap.dedent("""\
+        Note files to be ignored. It's useful to be able to ignore a
+        file if it is edited on the wrong branch. Notes should be
+        specified by their filename or UID.
+
+        Setting the option in the main configuration file makes it
+        apply to all branches. To ignore a note in the HTML build, use
+        the ``ignore-notes`` parameter to the ``release-notes`` sphinx
+        directive.
         """)),
 ]
 

@@ -25,7 +25,6 @@ else:
     has_theme = True
 
 
-sys.path.insert(0, os.path.abspath('../..'))
 # -- General configuration ----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -34,6 +33,7 @@ extensions = [
     'sphinx.ext.autodoc',
     # 'sphinx.ext.intersphinx',
     'reno.sphinxext',
+    'reno._exts.show_reno_config',
 ]
 
 if has_theme:
