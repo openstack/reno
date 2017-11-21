@@ -37,7 +37,11 @@ collapse_pre_releases: false
     def test_defaults(self):
         c = config.Config(self.tempdir.path)
         actual = c.options
-        self.assertEqual(config.Config._OPTS, actual)
+        expected = {
+            o.name: o.default
+            for o in config._OPTIONS
+        }
+        self.assertEqual(expected, actual)
 
     def test_override(self):
         c = config.Config(self.tempdir.path)
@@ -45,8 +49,10 @@ collapse_pre_releases: false
             collapse_pre_releases=False,
         )
         actual = c.options
-        expected = {}
-        expected.update(config.Config._OPTS)
+        expected = {
+            o.name: o.default
+            for o in config._OPTIONS
+        }
         expected['collapse_pre_releases'] = False
         self.assertEqual(expected, actual)
 
@@ -59,8 +65,10 @@ collapse_pre_releases: false
             notesdir='value2',
         )
         actual = c.options
-        expected = {}
-        expected.update(config.Config._OPTS)
+        expected = {
+            o.name: o.default
+            for o in config._OPTIONS
+        }
         expected['notesdir'] = 'value2'
         self.assertEqual(expected, actual)
 
@@ -108,18 +116,24 @@ collapse_pre_releases: false
     def test_override_from_parsed_args_empty(self):
         c = self._run_override_from_parsed_args([])
         actual = {
-            o: getattr(c, o)
-            for o in config.Config._OPTS.keys()
+            o.name: getattr(c, o.name)
+            for o in config._OPTIONS
         }
-        self.assertEqual(config.Config._OPTS, actual)
+        expected = {
+            o.name: o.default
+            for o in config._OPTIONS
+        }
+        self.assertEqual(expected, actual)
 
     def test_override_from_parsed_args(self):
         c = self._run_override_from_parsed_args([
             '--no-collapse-pre-releases',
         ])
         actual = c.options
-        expected = {}
-        expected.update(config.Config._OPTS)
+        expected = {
+            o.name: o.default
+            for o in config._OPTIONS
+        }
         expected['collapse_pre_releases'] = False
         self.assertEqual(expected, actual)
 

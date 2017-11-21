@@ -10,8 +10,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
 import logging
 import os.path
+import textwrap
 
 import yaml
 
@@ -20,41 +22,61 @@ from reno import defaults
 LOG = logging.getLogger(__name__)
 
 
-class Config(object):
+Opt = collections.namedtuple('Opt', 'name default help')
 
-    _OPTS = {
-        # The notes subdirectory within the relnotesdir where the
-        # notes live.
-        'notesdir': defaults.NOTES_SUBDIR,
+_OPTIONS = [
+    Opt('notesdir', defaults.NOTES_SUBDIR,
+        textwrap.dedent("""
+        The notes subdirectory within the relnotesdir where the
+        notes live.
+        """)),
 
-        # Should pre-release versions be merged into the final release
-        # of the same number (1.0.0.0a1 notes appear under 1.0.0).
-        'collapse_pre_releases': True,
+    Opt('collapse_pre_releases', True,
+        textwrap.dedent("""
+        Should pre-release versions be merged into the final release
+        of the same number (1.0.0.0a1 notes appear under 1.0.0).
+        """)),
 
-        # Should the scanner stop at the base of a branch (True) or go
-        # ahead and scan the entire history (False)?
-        'stop_at_branch_base': True,
+    Opt('stop_at_branch_base', True,
+        textwrap.dedent("""
+        Should the scanner stop at the base of a branch (True) or go
+        ahead and scan the entire history (False)?
+        """)),
 
+    Opt('branch', None,
+        textwrap.dedent("""
         # The git branch to scan. Defaults to the "current" branch
         # checked out.
-        'branch': None,
+        """)),
 
+    Opt('earliest_version', None,
+        textwrap.dedent("""
         # The earliest version to be included. This is usually the
         # lowest version number, and is meant to be the oldest
         # version.
-        'earliest_version': None,
+        """)),
 
+    Opt('template', defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME),
+        textwrap.dedent("""
         # The template used by reno new to create a note.
-        'template': defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME),
+        """)),
 
+    Opt('release_tag_re',
+        textwrap.dedent('''
+        ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
+                           # pre-releases
+        '''),
+        textwrap.dedent("""
         # The RE pattern used to match the repo tags representing a valid
         # release version. The pattern is compiled with the verbose and unicode
         # flags enabled.
-        'release_tag_re': '''
-            ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
-                               # pre-releases
-        ''',
+        """)),
 
+    Opt('pre_release_tag_re',
+        textwrap.dedent('''
+        (?P<pre_release>\.\d+(?:[ab]|rc)+\d*)$
+        '''),
+        textwrap.dedent("""
         # The RE pattern used to check if a valid release version tag is also a
         # valid pre-release version. The pattern is compiled with the verbose
         # and unicode flags enabled. The pattern must define a group called
@@ -62,20 +84,17 @@ class Config(object):
         # separator, e.g for pre-release version '12.0.0.0rc1' the default RE
         # pattern will identify '.0rc1' as the value of the group
         # 'pre_release'.
-        'pre_release_tag_re': '''
-            (?P<pre_release>\.\d+(?:[ab]|rc)+\d*)$
-        ''',
+        """)),
 
+    Opt('branch_name_re', 'stable/.+',
+        textwrap.dedent("""
         # The pattern for names for branches that are relevant when
         # scanning history to determine where to stop, to find the
         # "base" of a branch. Other branches are ignored.
-        'branch_name_re': 'stable/.+',
+        """)),
 
-        # The identifiers and names of permitted sections in the
-        # release notes, in the order in which the final report will
-        # be generated. A prelude section will always be automatically
-        # inserted before the first element of this list.
-        'sections': [
+    Opt('sections',
+        [
             ['features', 'New Features'],
             ['issues', 'Known Issues'],
             ['upgrade', 'Upgrade Notes'],
@@ -85,14 +104,24 @@ class Config(object):
             ['fixes', 'Bug Fixes'],
             ['other', 'Other Notes'],
         ],
+        textwrap.dedent("""
+        # The identifiers and names of permitted sections in the
+        # release notes, in the order in which the final report will
+        # be generated. A prelude section will always be automatically
+        # inserted before the first element of this list.
+        """)),
 
+    Opt('prelude_section_name', defaults.PRELUDE_SECTION_NAME,
+        textwrap.dedent("""
         # The name of the prelude section in the note template. This
         # allows users to rename the section to, for example,
         # 'release_summary' or 'project_wide_general_announcements',
         # which is displayed in titlecase in the report after
         # replacing underscores with spaces.
-        'prelude_section_name': defaults.PRELUDE_SECTION_NAME,
+        """)),
 
+    Opt('ignore_null_merges', True,
+        textwrap.dedent("""
         # When this option is set to True, any merge commits with no
         # changes and in which the second or later parent is tagged
         # are considered "null-merges" that bring the tag information
@@ -103,20 +132,27 @@ class Config(object):
         # confuses the regular traversal because it makes that stable
         # branch appear to be part of master and/or the later stable
         # branch. This option allows us to ignore those.
-        'ignore_null_merges': True,
+        """)),
 
+    Opt('ignore_notes', [],
+        textwrap.dedent("""
         # Note files to be ignored. It's useful to be able to ignore a
         # file if it is edited on the wrong branch. Notes should be
         # specified by their filename or UID. Setting the value in the
         # configuration file makes it apply to all branches.
-        'ignore_notes': [],
-    }
+        """)),
+]
+
+
+class Config(object):
+
+    _OPTS = {o.name: o for o in _OPTIONS}
 
     @classmethod
     def get_default(cls, opt):
         "Return the default for an option."
         try:
-            return cls._OPTS[opt]
+            return cls._OPTS[opt].default
         except KeyError:
             raise ValueError('unknown option name %r' % (opt,))
 
@@ -134,7 +170,7 @@ class Config(object):
             relnotesdir = defaults.RELEASE_NOTES_SUBDIR
         self.relnotesdir = relnotesdir
         # Initialize attributes from the defaults.
-        self.override(**self._OPTS)
+        self.override(**{o.name: o.default for o in _OPTIONS})
 
         self._contents = {}
         self._load_file()
@@ -161,7 +197,7 @@ class Config(object):
 
     def _rename_prelude_section(self, **kwargs):
         key = 'prelude_section_name'
-        if key in kwargs and kwargs[key] != self._OPTS[key]:
+        if key in kwargs and kwargs[key] != self._OPTS[key].default:
             new_prelude_name = kwargs[key]
 
             self.template = defaults.TEMPLATE.format(new_prelude_name)
@@ -192,9 +228,9 @@ class Config(object):
 
         """
         arg_values = {
-            o: getattr(parsed_args, o)
-            for o in self._OPTS.keys()
-            if hasattr(parsed_args, o)
+            o.name: getattr(parsed_args, o.name)
+            for o in _OPTIONS
+            if hasattr(parsed_args, o.name)
         }
         self.override(**arg_values)
 
@@ -224,7 +260,10 @@ class Config(object):
 
         Returns the actual configuration options after overrides.
         """
-        options = {o: getattr(self, o) for o in self._OPTS}
+        options = {
+            o.name: getattr(self, o.name)
+            for o in _OPTIONS
+        }
         return options
 
 # def parse_config_into(parsed_arguments):
