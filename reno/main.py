@@ -191,12 +191,13 @@ def main(argv=sys.argv[1:]):
     do_linter.set_defaults(func=linter.lint_cmd)
 
     args = parser.parse_args(argv)
-    conf = config.Config(args.reporoot, args.relnotesdir)
-    conf.override_from_parsed_args(args)
 
     logging.basicConfig(
         level=args.verbosity,
         format='%(message)s',
     )
+
+    conf = config.Config(args.reporoot, args.relnotesdir)
+    conf.override_from_parsed_args(args)
 
     return args.func(args, conf)

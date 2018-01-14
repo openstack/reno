@@ -912,9 +912,14 @@ class Scanner(object):
         collapse_pre_releases = self.conf.collapse_pre_releases
         stop_at_branch_base = self.conf.stop_at_branch_base
 
-        LOG.info('scanning %s/%s (branch=%s earliest_version=%s)',
-                 reporoot.rstrip('/'), notesdir.lstrip('/'),
-                 branch or '*current*', earliest_version)
+        LOG.info(
+            ('scanning %s/%s '
+             '(branch=%s earliest_version=%s collapse_pre_releases=%s)'),
+            reporoot.rstrip('/'), notesdir.lstrip('/'),
+            branch or '*current*',
+            earliest_version,
+            collapse_pre_releases,
+        )
 
         # Determine the current version, which might be an unreleased or
         # dev version if there are unreleased commits at the head of the

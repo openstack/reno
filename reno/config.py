@@ -188,6 +188,7 @@ class Config(object):
             os.path.join(self.reporoot, 'reno.yaml')]
 
         for filename in filenames:
+            LOG.debug('looking for configuration file %s', filename)
             if os.path.isfile(filename):
                 break
         else:
@@ -197,6 +198,7 @@ class Config(object):
         try:
             with open(filename, 'r') as fd:
                 self._contents = yaml.safe_load(fd)
+            LOG.info('loaded configuration file %s', filename)
         except IOError as err:
             LOG.warning('did not load config file %s: %s', filename, err)
         else:
