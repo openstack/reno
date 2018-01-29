@@ -96,6 +96,25 @@ _OPTIONS = [
         "base" of a branch. Other branches are ignored.
         """)),
 
+    Opt('closed_branch_tag_re', '(.+)-eol',
+        textwrap.dedent("""\
+        The pattern for names for tags that replace closed
+        branches that are relevant when scanning history to
+        determine where to stop, to find the "base" of a
+        branch. Other tags are ignored.
+        """)),
+
+    Opt('branch_name_prefix', 'stable/',
+        textwrap.dedent("""\
+        The prefix to add to tags for closed branches
+        to restore the old branch name to allow sorting
+        to place the tag in the proper place in history.
+        For example, OpenStack turns "mitaka-eol" into
+        "stable/mitaka" by removing the "-eol" suffix
+        via closed_branch_tag_re and setting the prefix
+        to "stable/".
+        """)),
+
     Opt('sections',
         [
             ['features', 'New Features'],

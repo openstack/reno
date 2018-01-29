@@ -513,6 +513,11 @@ class Scanner(object):
             self.conf.branch_name_re,
             flags=re.VERBOSE | re.UNICODE,
         )
+        self.branch_name_prefix = self.conf.branch_name_prefix
+        self.closed_branch_tag_re = re.compile(
+            self.conf.closed_branch_tag_re,
+            flags=re.VERBOSE | re.UNICODE,
+        )
         self._ignore_uids = set(
             _get_unique_id(fn)
             for fn in self.conf.ignore_notes
@@ -818,6 +823,18 @@ class Scanner(object):
             elif r.startswith('refs/heads/'):
                 name = r[11:]
             if name and self.branch_name_re.search(name):
+                LOG.debug('branch name %s', name)
+                branch_names.add(name)
+                continue
+            if not r.startswith('refs/tags/'):
+                continue
+            # See if the ref is a closed branch tag.
+            name = r.rpartition('/')[-1]
+            match = self.closed_branch_tag_re.search(name)
+            if match:
+                name = self.branch_name_prefix + match.group(1)
+                LOG.debug('closed branch tag %s becomes %s',
+                          r.rpartition('/')[-1], name)
                 branch_names.add(name)
         return list(sorted(branch_names))
 
@@ -987,6 +1004,7 @@ class Scanner(object):
             # base of the branch, which involves a bit of searching.
             LOG.debug('determining earliest_version from branch')
             branch_base = self._get_branch_base(branch)
+            LOG.debug('branch base %s', branch_base)
             scan_stop_tag = self._find_scan_stop_point(
                 branch_base, versions_by_date,
                 collapse_pre_releases, branch)
@@ -995,6 +1013,8 @@ class Scanner(object):
             else:
                 idx = versions_by_date.index(scan_stop_tag)
                 earliest_version = versions_by_date[idx - 1]
+                LOG.debug('using version before %s as scan stop point',
+                          scan_stop_tag)
             if earliest_version and collapse_pre_releases:
                 if self.pre_release_tag_re.search(earliest_version):
                     # The earliest version won't actually be the pre-release

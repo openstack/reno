@@ -1,0 +1,19 @@
+---
+features:
+  - |
+    Adds new configuration options ``closed_branch_tag_re`` (to
+    identify tags that replace branches that have been closed) and
+    ``branch_name_prefix`` (a value to be added back to the closed
+    branch tag to turn it into the original branch name.
+
+    These options are used in OpenStack to support scanning the
+    history of a branch based on the previous series branch, even
+    after that previous series is closed by setting
+    ``closed_branch_tag_re`` to ``(.+)-eol`` so that the series name
+    in a value like ``"mitaka-eol"`` is extracted using the
+    group. With ``branch_name_prefix`` set to ``"stable/"`` the tag
+    ``mitaka-eol`` becomes the branch name ``stable/mitaka``.
+fixes:
+  - |
+    Fixes bug 1746076 so that scanning stable branches correctly
+    includes the history of earlier closed stable branches.

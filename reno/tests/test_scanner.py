@@ -2389,3 +2389,53 @@ class ChangeTrackerTest(base.TestCase):
             set(),
             self.changes.uniqueids_deleted,
         )
+
+
+class GetSeriesBranchesTest(Base):
+
+    def setUp(self):
+        super(GetSeriesBranchesTest, self).setUp()
+        self.repo.add_file('test.txt')
+
+    def test_none(self):
+        self.scanner = scanner.Scanner(self.c)
+        self.assertEqual(
+            [],
+            self.scanner._get_series_branches(),
+        )
+
+    def test_real_branches_sorted_names(self):
+        self.repo.git(
+            'checkout', '-b', 'stable/a',
+        )
+        self.repo.git(
+            'checkout', '-b', 'stable/b',
+        )
+        self.scanner = scanner.Scanner(self.c)
+        self.assertEqual(
+            ['stable/a', 'stable/b'],
+            self.scanner._get_series_branches(),
+        )
+
+    def test_eol_tag(self):
+        self.repo.git(
+            'tag', '-s', '-m', 'closed branch', 'a-eol',
+        )
+        self.scanner = scanner.Scanner(self.c)
+        self.assertEqual(
+            ['stable/a'],
+            self.scanner._get_series_branches(),
+        )
+
+    def test_mix_tag_and_branch(self):
+        self.repo.git(
+            'tag', '-s', '-m', 'closed branch', 'a-eol',
+        )
+        self.repo.git(
+            'checkout', '-b', 'stable/b',
+        )
+        self.scanner = scanner.Scanner(self.c)
+        self.assertEqual(
+            ['stable/a', 'stable/b'],
+            self.scanner._get_series_branches(),
+        )
