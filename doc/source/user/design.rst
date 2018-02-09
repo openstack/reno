@@ -50,3 +50,63 @@ We want to eventually provide the ability to create a release notes
 file for a given release and add it to the source distribution for the
 project. As a first step, we are going to settle for publishing
 release notes in the documentation for a project.
+
+Assumptions
+-----------
+
+Based on the above, *reno* makes a couple of assumptions about the release
+policy used for a given project. *reno* expects all development, including bug
+fixes, to take place on a single branch, ``master``. If *stable* or *release*
+branches are used to support an older release then development should not take
+place on these branches. Instead, bug fixes should be backported or
+cherry-picked from ``master`` to the given *stable* branch. This is commonly
+referred to as a `trunk-based`__ development workflow.
+
+.. code-block:: none
+   :caption: Trunk-based development. This is what *reno* expects.
+
+    * bc823f0 (HEAD -> master) Fix a bug
+    |
+    | * 9723350 (tag: 1.0.1, stable/1.0) Fix a bug
+    | * 49e2158 (tag: 1.0.0) Release 1.0
+    * | ad13f52 Fix a bug on master
+    * | 81b6b41 doc: Handle multiple branches in release notes
+    |/
+    * 0faba45 Integrate reno
+    * a7beb14 (tag: 0.1.0) Add documentation
+    * e23b0c8 Add gitignore
+    * ff980c7 Initial commit
+
+(where ``9723350`` is the backported version of ``bc823f0``).
+
+By comparison, *reno* does not currently support projects where development is
+spread across multiple active branches. In these situations, bug fixes are
+developed on the offending *stable* or *release* branch and this branch is
+later merged back into ``master``. This is commonly referred to as a
+`git-flow-based`__ development workflow.
+
+.. code-block:: none
+   :caption: git-flow-based development. This is not compatible with *reno*.
+
+    * 7df1078 (HEAD -> master) Merge branch 'stable/1.0'
+    |\
+    | * 9723350 (tag: 1.0.1, stable/1.0) Fix a bug on stable
+    | * 49e2158 (tag: 1.0.0) Release 1.0
+    * | ad13f52 Fix a bug on master
+    * | 81b6b41 doc: Handle multiple branches in release notes
+    |/
+    * 0faba45 Integrate reno
+    * a7beb14 (tag: 0.1.0) Add documentation
+    * e23b0c8 Add gitignore
+    * ff980c7 Initial commit
+
+When this happens, *reno* has no way to distinguish between changes that apply
+to the given *stable* branch and those that apply to ``master``. This is
+because *reno* is *branch-based*, rather than *release-based*. If your project
+uses this workflow, *reno* might not be for you.
+
+More information is available `here`__.
+
+__ https://trunkbaseddevelopment.com/
+__ http://nvie.com/posts/a-successful-git-branching-model/
+__ https://bugs.launchpad.net/reno/+bug/1588309
