@@ -1,5 +1,5 @@
-If you would like to contribute to the development of OpenStack, you must
-follow the steps in this page:
+If you would like to contribute to the development of OpenStack, start by
+following the steps in this page:
 https://docs.openstack.org/infra/manual/developers.html
 
 If you already have a good understanding of how the system works and your
