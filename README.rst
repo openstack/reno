@@ -48,8 +48,8 @@ from future documentation builds.
 Project Meta-data
 =================
 
-.. .. image:: https://governance.openstack.org/badges/reno.svg
-    :target: https://governance.openstack.org/reference/tags/index.html
+.. .. image:: https://governance.openstack.org/tc/badges/reno.svg
+    :target: https://governance.openstack.org/tc/reference/tags/index.html
 
 * Free software: Apache license
 * Documentation: https://docs.openstack.org/reno/latest/
