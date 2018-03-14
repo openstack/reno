@@ -54,5 +54,5 @@ Project Meta-data
 * Free software: Apache license
 * Documentation: https://docs.openstack.org/reno/latest/
 * Source: https://git.openstack.org/cgit/openstack/reno
-* Bugs: https://bugs.launchpad.net/reno
+* Bugs: https://storyboard.openstack.org/#!/project/933
 * IRC: #openstack-release on freenode
