@@ -60,7 +60,7 @@ fixes, to take place on a single branch, ``master``. If *stable* or *release*
 branches are used to support an older release then development should not take
 place on these branches. Instead, bug fixes should be backported or
 cherry-picked from ``master`` to the given *stable* branch. This is commonly
-referred to as a `trunk-based`__ development workflow.
+referred to as a `trunk-based`_ development workflow.
 
 .. code-block:: none
    :caption: Trunk-based development. This is what *reno* expects.
@@ -83,7 +83,7 @@ By comparison, *reno* does not currently support projects where development is
 spread across multiple active branches. In these situations, bug fixes are
 developed on the offending *stable* or *release* branch and this branch is
 later merged back into ``master``. This is commonly referred to as a
-`git-flow-based`__ development workflow.
+`git-flow-based`_ development workflow.
 
 .. code-block:: none
    :caption: git-flow-based development. This is not compatible with *reno*.
@@ -105,8 +105,8 @@ to the given *stable* branch and those that apply to ``master``. This is
 because *reno* is *branch-based*, rather than *release-based*. If your project
 uses this workflow, *reno* might not be for you.
 
-More information is available `here`__.
+More information is available  `here`_.
 
-__ https://trunkbaseddevelopment.com/
-__ http://nvie.com/posts/a-successful-git-branching-model/
-__ https://bugs.launchpad.net/reno/+bug/1588309
+.. _trunk-based: https://trunkbaseddevelopment.com/
+.. _git-flow-based: http://nvie.com/posts/a-successful-git-branching-model/
+.. _here: https://storyboard.openstack.org/#!/story/1588309
