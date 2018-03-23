@@ -277,3 +277,29 @@ the CI jobs and other project-specific settings used for reno. Refer
 to the `Managing Release Notes
 <https://docs.openstack.org/project-team-guide/release-management.html#managing-release-notes>`__
 section of the Project Team Guide for details.
+
+Within Travis CI
+================
+
+The `Travis CI <https://travis-ci.org/>`_ uses shallow git clones,
+which prevents reno from accessing the repo data it needs. You'll
+see an error message like the one mentioned in
+`Launchpad bug 1703603 <https://bugs.launchpad.net/reno/+bug/1703603>`_.
+
+To use reno within a Travis CI job, the cloned repository needs to be
+unshallowed in the ``.travis.yml`` control file with the command
+``git fetch --unshallow --tags``, like in this example:
+
+.. code-block:: yaml
+
+   ---
+   language: python
+
+   python:
+     - 2.7
+
+   install:
+     - git fetch --unshallow --tags
+
+   script:
+     - reno report .
