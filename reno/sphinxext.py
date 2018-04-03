@@ -30,6 +30,9 @@ class ReleaseNotesDirective(rst.Directive):
 
     has_content = True
 
+    # FIXME(dhellmann): We should be able to build this information
+    # from the configuration options so we don't have to edit it
+    # manually when we add new options.
     option_spec = {
         'branch': directives.unchanged,
         'reporoot': directives.unchanged,
@@ -40,6 +43,7 @@ class ReleaseNotesDirective(rst.Directive):
         'earliest-version': directives.unchanged,
         'stop-at-branch-base': directives.flag,
         'ignore-notes': directives.unchanged,
+        'unreleased-version-title': directives.unchanged,
     }
 
     def run(self):
@@ -77,6 +81,10 @@ class ReleaseNotesDirective(rst.Directive):
         if 'earliest-version' in self.options:
             opt_overrides['earliest_version'] = self.options.get(
                 'earliest-version')
+        if 'unreleased-version-title' in self.options:
+            opt_overrides['unreleased_version_title'] = self.options.get(
+                'unreleased-version-title')
+
         if branch:
             opt_overrides['branch'] = branch
         if ignore_notes:

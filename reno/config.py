@@ -167,6 +167,13 @@ _OPTIONS = [
         the ``ignore-notes`` parameter to the ``release-notes`` sphinx
         directive.
         """)),
+
+    Opt('unreleased_version_title', '',
+        textwrap.dedent("""\
+        The title to use for any notes that do not appear in a
+        released version. If this option is unset, the development
+        version number is used (for example, ``3.0.0-3``).
+        """)),
 ]
 
 

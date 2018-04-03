@@ -3,6 +3,7 @@
 ===============
 
 .. release-notes:: Unreleased
+   :unreleased-version-title: In Development
 
 .. release-notes:: Mainline
    :branch: origin/master

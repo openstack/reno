@@ -156,3 +156,38 @@ class TestFormatterCustomSections(TestFormatterBase):
         expected = [prelude_pos, api_pos, features_pos]
         actual = list(sorted([prelude_pos, features_pos, api_pos]))
         self.assertEqual(expected, actual)
+
+
+class TestFormatterCustomUnreleaseTitle(TestFormatterBase):
+
+    note_bodies = {
+        'note1': {
+            'prelude': 'This is the prelude.',
+        },
+    }
+
+    scanner_output = {
+        '0.1.0-1': [('note1', 'shaA')],
+    }
+
+    versions = ['0.1.0-1']
+
+    def test_with_title(self):
+        self.c.override(unreleased_version_title='Not Released')
+        result = formatter.format_report(
+            loader=self.ldr,
+            config=self.c,
+            versions_to_include=self.versions,
+            title='This is the title',
+        )
+        self.assertIn('Not Released', result)
+        self.assertNotIn('0.1.0-1', result)
+
+    def test_without_title(self):
+        result = formatter.format_report(
+            loader=self.ldr,
+            config=self.c,
+            versions_to_include=self.versions,
+            title='This is the title',
+        )
+        self.assertIn('0.1.0-1', result)

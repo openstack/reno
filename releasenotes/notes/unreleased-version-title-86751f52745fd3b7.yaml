@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Added configuration option ``unreleased_version_title`` with
+    associated Sphinx directive argument to control whether to show
+    the computed version number for changes that have not been
+    tagged, or to show a static title string specified in the option
+    value.
