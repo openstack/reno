@@ -282,13 +282,14 @@ Within Travis CI
 ================
 
 The `Travis CI <https://travis-ci.org/>`_ uses shallow git clones,
-which prevents reno from accessing the repo data it needs. You'll
-see an error message like the one mentioned in
+and detached head, which prevents reno from accessing the repo data
+it needs.
+You'll see an error message like the one mentioned in
 `Launchpad bug 1703603 <https://bugs.launchpad.net/reno/+bug/1703603>`_.
 
 To use reno within a Travis CI job, the cloned repository needs to be
-unshallowed in the ``.travis.yml`` control file with the command
-``git fetch --unshallow --tags``, like in this example:
+unshallowed and checked out in the right branch from your ``.travis.yml``,
+like in the following example:
 
 .. code-block:: yaml
 
@@ -296,10 +297,16 @@ unshallowed in the ``.travis.yml`` control file with the command
    language: python
 
    python:
-     - 2.7
+     - 3.5
 
    install:
-     - git fetch --unshallow --tags
+     - |
+        # Force unshallow and checkout the current branch
+        # https://docs.openstack.org/reno/latest/user/usage.html#within-travis-ci
+        git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+        git fetch --unshallow --tags
+        git symbolic-ref --short HEAD || git checkout -b ${TRAVIS_BRANCH}-test $TRAVIS_BRANCH
+        # Ref: https://stackoverflow.com/questions/32580821/how-can-i-customize-override-the-git-clone-step-in-travis-ci
 
    script:
      - reno report .
