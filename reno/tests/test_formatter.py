@@ -156,6 +156,7 @@ class TestFormatterCustomSections(TestFormatterBase):
         expected = [prelude_pos, api_pos, features_pos]
         actual = list(sorted([prelude_pos, features_pos, api_pos]))
         self.assertEqual(expected, actual)
+        self.assertIn('.. _relnotes_1.0.0_API Changes:', result)
 
 
 class TestFormatterCustomUnreleaseTitle(TestFormatterBase):
@@ -182,6 +183,7 @@ class TestFormatterCustomUnreleaseTitle(TestFormatterBase):
         )
         self.assertIn('Not Released', result)
         self.assertNotIn('0.1.0-1', result)
+        self.assertIn('.. _This is the title_Not Released:', result)
 
     def test_without_title(self):
         result = formatter.format_report(
@@ -191,3 +193,49 @@ class TestFormatterCustomUnreleaseTitle(TestFormatterBase):
             title='This is the title',
         )
         self.assertIn('0.1.0-1', result)
+        self.assertIn('.. _This is the title_0.1.0-1:', result)
+
+
+class TestFormatterAnchors(TestFormatterBase):
+
+    note_bodies = {
+        'note1': {
+            'prelude': 'This is the prelude.',
+        },
+        'note2': {
+            'issues': [
+                'This is the first issue.',
+                'This is the second issue.',
+            ],
+        },
+        'note3': {
+            'features': [
+                'We added a feature!',
+            ],
+            'upgrade': None,
+        },
+    }
+
+    def test_with_title(self):
+        self.c.override(unreleased_version_title='Not Released')
+        result = formatter.format_report(
+            loader=self.ldr,
+            config=self.c,
+            versions_to_include=self.versions,
+            title='This is the title',
+        )
+        self.assertIn('.. _This is the title_0.0.0:', result)
+        self.assertIn('.. _This is the title_0.0.0_Prelude:', result)
+        self.assertIn('.. _This is the title_1.0.0:', result)
+        self.assertIn('.. _This is the title_1.0.0_Known Issues:', result)
+
+    def test_without_title(self):
+        result = formatter.format_report(
+            loader=self.ldr,
+            config=self.c,
+            versions_to_include=self.versions,
+        )
+        self.assertIn('.. _relnotes_0.0.0:', result)
+        self.assertIn('.. _relnotes_0.0.0_Prelude:', result)
+        self.assertIn('.. _relnotes_1.0.0:', result)
+        self.assertIn('.. _relnotes_1.0.0_Known Issues:', result)

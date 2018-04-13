@@ -25,6 +25,21 @@ def _indent_for_list(text, prefix='  '):
     ]) + '\n'
 
 
+def _anchor(version_title, title):
+    title = title or 'relnotes'
+    return '.. _{title}_{version_title}:'.format(
+        title=title,
+        version_title=version_title)
+
+
+def _section_anchor(section_title, version_title, title):
+    # Get the title and remove the trailing :
+    title = _anchor(version_title, title)[:-1]
+    return "{title}_{section_title}:".format(
+        title=title,
+        section_title=section_title)
+
+
 def format_report(loader, config, versions_to_include, title=None,
                   show_source=True):
     report = []
@@ -44,11 +59,13 @@ def format_report(loader, config, versions_to_include, title=None,
     for version in versions_to_include:
         if '-' in version:
             # This looks like an "unreleased version".
-            title = config.unreleased_version_title or version
+            version_title = config.unreleased_version_title or version
         else:
-            title = version
-        report.append(title)
-        report.append('=' * len(title))
+            version_title = version
+        report.append(_anchor(version_title, title))
+        report.append('')
+        report.append(version_title)
+        report.append('=' * len(version_title))
         report.append('')
 
         # Add the preludes.
@@ -57,7 +74,11 @@ def format_report(loader, config, versions_to_include, title=None,
         notefiles_with_prelude = [(n, sha) for n, sha in notefiles
                                   if prelude_name in file_contents[n]]
         if notefiles_with_prelude:
-            report.append(prelude_name.replace('_', ' ').title())
+            prelude_title = prelude_name.replace('_', ' ').title()
+            report.append(_section_anchor(
+                prelude_title, version_title, title))
+            report.append('')
+            report.append(prelude_title)
             report.append('-' * len(prelude_name))
             report.append('')
 
@@ -76,6 +97,9 @@ def format_report(loader, config, versions_to_include, title=None,
                 for n in file_contents[fn].get(section_name, [])
             ]
             if notes:
+                report.append(_section_anchor(
+                    section_title, version_title, title))
+                report.append('')
                 report.append(section_title)
                 report.append('-' * len(section_title))
                 report.append('')
