@@ -2,8 +2,8 @@
  Release Notes
 ===============
 
-.. release-notes:: Mainline
+.. release-notes::
    :unreleased-version-title: In Development
 
-.. release-notes:: Newton Series
+.. release-notes:: Newton and Earlier
    :branch: origin/stable/newton
