@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added explicitly calculated anchors to ensure section links are both
+    unique and stable over time.
