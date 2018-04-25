@@ -176,6 +176,8 @@ mistakes. The command exits with an error code if there are any
 mistakes, so it can be used in a build pipeline to force some
 correctness.
 
+.. _configuration:
+
 Configuring Reno
 ================
 

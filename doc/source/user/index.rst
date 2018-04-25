@@ -8,4 +8,5 @@
    design
    usage
    sphinxext
+   setuptools
    examples
