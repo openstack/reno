@@ -29,6 +29,7 @@ def report_cmd(args, conf):
         versions,
         title=args.title,
         show_source=args.show_source,
+        branch=args.branch,
     )
     if args.output:
         with open(args.output, 'w') as f:

@@ -239,3 +239,32 @@ class TestFormatterAnchors(TestFormatterBase):
         self.assertIn('.. _relnotes_0.0.0_Prelude:', result)
         self.assertIn('.. _relnotes_1.0.0:', result)
         self.assertIn('.. _relnotes_1.0.0_Known Issues:', result)
+
+    def test_with_branch_and_title(self):
+        self.c.override(unreleased_version_title='Not Released')
+        result = formatter.format_report(
+            loader=self.ldr,
+            config=self.c,
+            versions_to_include=self.versions,
+            title='This is the title',
+            branch='stable/queens',
+        )
+        self.assertIn('.. _This is the title_0.0.0_stable_queens:', result)
+        self.assertIn('.. _This is the title_0.0.0_stable_queens_Prelude:',
+                      result)
+        self.assertIn('.. _This is the title_1.0.0_stable_queens:', result)
+        self.assertIn(
+            '.. _This is the title_1.0.0_stable_queens_Known Issues:',
+            result)
+
+    def test_with_branch(self):
+        result = formatter.format_report(
+            loader=self.ldr,
+            config=self.c,
+            versions_to_include=self.versions,
+            branch='stable/queens',
+        )
+        self.assertIn('.. _relnotes_0.0.0_stable_queens:', result)
+        self.assertIn('.. _relnotes_0.0.0_stable_queens_Prelude:', result)
+        self.assertIn('.. _relnotes_1.0.0_stable_queens:', result)
+        self.assertIn('.. _relnotes_1.0.0_stable_queens_Known Issues:', result)

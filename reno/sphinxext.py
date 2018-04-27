@@ -110,6 +110,7 @@ class ReleaseNotesDirective(rst.Directive):
             conf,
             versions,
             title=title,
+            branch=branch,
         )
         source_name = '<%s %s>' % (__name__, branch or 'current branch')
         result = statemachine.ViewList()

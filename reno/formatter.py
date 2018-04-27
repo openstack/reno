@@ -25,23 +25,26 @@ def _indent_for_list(text, prefix='  '):
     ]) + '\n'
 
 
-def _anchor(version_title, title):
+def _anchor(version_title, title, branch):
     title = title or 'relnotes'
-    return '.. _{title}_{version_title}:'.format(
+    return '.. _{title}_{version_title}{branch}:'.format(
         title=title,
-        version_title=version_title)
+        version_title=version_title,
+        branch=('_' + branch.replace('/', '_') if branch else ''),
+    )
 
 
-def _section_anchor(section_title, version_title, title):
+def _section_anchor(section_title, version_title, title, branch):
     # Get the title and remove the trailing :
-    title = _anchor(version_title, title)[:-1]
+    title = _anchor(version_title, title, branch)[:-1]
     return "{title}_{section_title}:".format(
         title=title,
-        section_title=section_title)
+        section_title=section_title,
+    )
 
 
 def format_report(loader, config, versions_to_include, title=None,
-                  show_source=True):
+                  show_source=True, branch=None):
     report = []
     if title:
         report.append('=' * len(title))
@@ -62,7 +65,7 @@ def format_report(loader, config, versions_to_include, title=None,
             version_title = config.unreleased_version_title or version
         else:
             version_title = version
-        report.append(_anchor(version_title, title))
+        report.append(_anchor(version_title, title, branch))
         report.append('')
         report.append(version_title)
         report.append('=' * len(version_title))
@@ -76,7 +79,7 @@ def format_report(loader, config, versions_to_include, title=None,
         if notefiles_with_prelude:
             prelude_title = prelude_name.replace('_', ' ').title()
             report.append(_section_anchor(
-                prelude_title, version_title, title))
+                prelude_title, version_title, title, branch))
             report.append('')
             report.append(prelude_title)
             report.append('-' * len(prelude_name))
@@ -98,7 +101,7 @@ def format_report(loader, config, versions_to_include, title=None,
             ]
             if notes:
                 report.append(_section_anchor(
-                    section_title, version_title, title))
+                    section_title, version_title, title, branch))
                 report.append('')
                 report.append(section_title)
                 report.append('-' * len(section_title))
