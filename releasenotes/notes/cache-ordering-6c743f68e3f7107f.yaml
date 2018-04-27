@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Correct a problem with version number ordering when reading data
+    from the cache file. See
+    https://storyboard.openstack.org/#!/story/2001934 for details.

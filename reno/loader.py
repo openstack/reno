@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
 import logging
 import os.path
 
@@ -71,10 +72,10 @@ class Loader(object):
                 # Save the cached scanner output to the same attribute
                 # it would be in if we had loaded it "live". This
                 # simplifies some of the logic in the other methods.
-                self._scanner_output = {
-                    n['version']: n['files']
+                self._scanner_output = collections.OrderedDict(
+                    (n['version'], n['files'])
                     for n in self._cache['notes']
-                }
+                )
         else:
             self._scanner = scanner.Scanner(self._config)
             self._scanner_output = self._scanner.get_notes_by_version()
