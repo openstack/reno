@@ -67,6 +67,7 @@ class Loader(object):
             LOG.debug('ignoring cache file %s', self._cache_filename)
 
         if (not self._ignore_cache) and cache_file_exists:
+            LOG.debug('loading cache file %s', self._cache_filename)
             with open(self._cache_filename, 'r') as f:
                 self._cache = yaml.safe_load(f.read())
                 # Save the cached scanner output to the same attribute
