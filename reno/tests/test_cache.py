@@ -56,31 +56,33 @@ class TestCache(base.TestCase):
         )
         self.c = config.Config('.')
 
-    def test_build_cache_db(self):
-        with mock.patch('reno.scanner.Scanner.get_notes_by_version') as gnbv:
-            gnbv.return_value = self.scanner_output
-            db = cache.build_cache_db(
-                self.c,
-                versions_to_include=[],
-            )
-            expected = {
-                'notes': [
-                    {'version': k, 'files': v}
-                    for k, v in self.scanner_output.items()
-                ],
-                'file-contents': {
-                    'note1': {
-                        'prelude': 'This is the prelude.\n',
-                    },
-                    'note2': {
-                        'issues': [
-                            'This is the first issue.',
-                            'This is the second issue.',
-                        ],
-                    },
-                    'note3': {
-                        'features': ['We added a feature!'],
-                    },
+    @mock.patch('reno.scanner.Scanner.get_notes_by_version')
+    def test_build_cache_db(self, gnbv):
+        gnbv.return_value = self.scanner_output
+        expected = {
+            'notes': [
+                {'version': k, 'files': v}
+                for k, v in self.scanner_output.items()
+            ],
+            'file-contents': {
+                'note1': {
+                    'prelude': 'This is the prelude.\n',
                 },
-            }
-            self.assertEqual(expected, db)
+                'note2': {
+                    'issues': [
+                        'This is the first issue.',
+                        'This is the second issue.',
+                    ],
+                },
+                'note3': {
+                    'features': ['We added a feature!'],
+                },
+            },
+        }
+
+        db = cache.build_cache_db(
+            self.c,
+            versions_to_include=[],
+        )
+
+        self.assertEqual(expected, db)
