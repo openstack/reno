@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    The ``reno cache`` command and ``build_reno`` setuptools command now
+    default to scanning to all enabled branches. This ensures the cache is
+    complete for projects that use multiple branches, such as stable branches.

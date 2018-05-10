@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
 import os
 import sys
 
@@ -21,7 +22,14 @@ from reno import scanner
 
 def build_cache_db(conf, versions_to_include):
     s = scanner.Scanner(conf)
-    notes = s.get_notes_by_version()
+
+    branches = [conf.branch]
+    if not conf.branch:  # if no branch requested, scan all
+        branches += s.get_series_branches()
+
+    notes = collections.OrderedDict()
+    for branch in branches:
+        notes.update(s.get_notes_by_version(branch))
 
     # Default to including all versions returned by the scanner.
     if not versions_to_include:

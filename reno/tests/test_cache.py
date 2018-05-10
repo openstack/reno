@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
 import fixtures
 import textwrap
 
@@ -24,10 +25,15 @@ from reno.tests import base
 
 class TestCache(base.TestCase):
 
-    scanner_output = {
-        '0.0.0': [('note1', 'shaA')],
-        '1.0.0': [('note2', 'shaB'), ('note3', 'shaC')],
-    }
+    scanner_output = [
+        collections.OrderedDict([  # master
+            ('0.0.0', [('note1', 'shaA')]),
+            ('1.0.0', [('note2', 'shaB'), ('note3', 'shaC')]),
+        ]),
+        collections.OrderedDict([  # stable/1.0
+            ('1.0.1', [('note4', 'shaD')]),
+        ]),
+    ]
 
     note_bodies = {
         'note1': textwrap.dedent("""
@@ -42,7 +48,11 @@ class TestCache(base.TestCase):
         'note3': textwrap.dedent("""
         features:
           - We added a feature!
-        """)
+        """),
+        'note4': textwrap.dedent("""
+        fixes:
+          - We fixed all the bugs!
+        """),
     }
 
     def _get_note_body(self, filename, sha):
@@ -57,12 +67,18 @@ class TestCache(base.TestCase):
         self.c = config.Config('.')
 
     @mock.patch('reno.scanner.Scanner.get_notes_by_version')
-    def test_build_cache_db(self, gnbv):
-        gnbv.return_value = self.scanner_output
+    @mock.patch('reno.scanner.Scanner.get_series_branches')
+    def test_build_cache_db(self, mock_get_branches, mock_get_notes):
+        mock_get_notes.side_effect = self.scanner_output
+        mock_get_branches.return_value = ['stable/1.0']
         expected = {
             'notes': [
-                {'version': k, 'files': v}
-                for k, v in self.scanner_output.items()
+                {'version': '0.0.0',
+                 'files': [('note1', 'shaA')]},
+                {'version': '1.0.0',
+                 'files': [('note2', 'shaB'), ('note3', 'shaC')]},
+                {'version': '1.0.1',
+                 'files': [('note4', 'shaD')]},
             ],
             'file-contents': {
                 'note1': {
@@ -77,6 +93,9 @@ class TestCache(base.TestCase):
                 'note3': {
                     'features': ['We added a feature!'],
                 },
+                'note4': {
+                    'fixes': ['We fixed all the bugs!'],
+                },
             },
         }
 
@@ -85,4 +104,7 @@ class TestCache(base.TestCase):
             versions_to_include=[],
         )
 
+        mock_get_branches.assert_called_once()
+        mock_get_notes.assert_has_calls([
+            mock.call(None), mock.call('stable/1.0')])
         self.assertEqual(expected, db)
