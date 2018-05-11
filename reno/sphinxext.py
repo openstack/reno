@@ -114,8 +114,9 @@ class ReleaseNotesDirective(rst.Directive):
         )
         source_name = '<%s %s>' % (__name__, branch or 'current branch')
         result = statemachine.ViewList()
-        for line in text.splitlines():
-            result.append(line, source_name)
+        for line_num, line in enumerate(text.splitlines(), 1):
+            info('{:>4d}: {}'.format(line_num, line))
+            result.append(line, source_name, line_num)
 
         node = nodes.section()
         node.document = self.state.document
