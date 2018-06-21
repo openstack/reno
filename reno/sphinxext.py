@@ -10,13 +10,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import logging
 import os.path
 
 from docutils import nodes
 from docutils.parsers import rst
 from docutils.parsers.rst import directives
 from docutils import statemachine
+from sphinx.util import logging
 from sphinx.util.nodes import nested_parse_with_titles
 
 from dulwich import repo
@@ -24,6 +24,8 @@ from reno import config
 from reno import defaults
 from reno import formatter
 from reno import loader
+
+LOG = logging.getLogger(__name__)
 
 
 class ReleaseNotesDirective(rst.Directive):
@@ -47,12 +49,6 @@ class ReleaseNotesDirective(rst.Directive):
     }
 
     def run(self):
-        env = self.state.document.settings.env
-        app = env.app
-
-        def info(msg):
-            app.info('[reno] %s' % (msg,))
-
         title = ' '.join(self.content)
         branch = self.options.get('branch')
         reporoot_opt = self.options.get('reporoot', '.')
@@ -92,9 +88,9 @@ class ReleaseNotesDirective(rst.Directive):
         conf.override(**opt_overrides)
 
         notesdir = os.path.join(relnotessubdir, conf.notesdir)
-        info('scanning %s for %s release notes' %
-             (os.path.join(conf.reporoot, notesdir),
-              branch or 'current branch'))
+        LOG.info('scanning %s for %s release notes' % (
+                 os.path.join(conf.reporoot, notesdir),
+                 branch or 'current branch'))
 
         ldr = loader.Loader(conf)
         if version_opt is not None:
@@ -104,7 +100,7 @@ class ReleaseNotesDirective(rst.Directive):
             ]
         else:
             versions = ldr.versions
-        info('got versions %s' % (versions,))
+        LOG.info('got versions %s' % (versions,))
         text = formatter.format_report(
             ldr,
             conf,
@@ -115,7 +111,7 @@ class ReleaseNotesDirective(rst.Directive):
         source_name = '<%s %s>' % (__name__, branch or 'current branch')
         result = statemachine.ViewList()
         for line_num, line in enumerate(text.splitlines(), 1):
-            info('{:>4d}: {}'.format(line_num, line))
+            LOG.debug('{:>4d}: {}'.format(line_num, line))
             result.append(line, source_name, line_num)
 
         node = nodes.section()
@@ -126,8 +122,3 @@ class ReleaseNotesDirective(rst.Directive):
 
 def setup(app):
     app.add_directive('release-notes', ReleaseNotesDirective)
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format='[%(name)s] %(message)s',
-    )
