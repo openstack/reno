@@ -88,6 +88,9 @@ def main(argv=sys.argv[1:]):
     )
     subparsers = parser.add_subparsers(
         title='commands',
+        description='valid commands',
+        dest='command',
+        help='additional help',
     )
 
     do_new = subparsers.add_parser(
@@ -191,6 +194,10 @@ def main(argv=sys.argv[1:]):
     do_linter.set_defaults(func=linter.lint_cmd)
 
     args = parser.parse_args(argv)
+    # no arguments, print help messaging, then exit with error(1)
+    if not args.command:
+        parser.print_help()
+        return 1
 
     logging.basicConfig(
         level=args.verbosity,
