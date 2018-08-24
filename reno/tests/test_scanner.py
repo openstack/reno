@@ -273,6 +273,20 @@ class BasicTest(Base):
             results,
         )
 
+    def test_tag_with_v_prefix(self):
+        filename = self._add_notes_file()
+        self.repo.git('tag', '-s', '-m', 'tag with v prefix', 'v1.0.0')
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'v1.0.0': [filename]},
+            results,
+        )
+
     def test_note_commit_after_tag(self):
         self._make_python_package()
         self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
@@ -872,6 +886,23 @@ class PreReleaseTest(Base):
         }
         self.assertEqual(
             {'1.0.0.0rc2': [f1],
+             },
+            results,
+        )
+
+    def test_tag_with_v_prefix(self):
+        self._make_python_package()
+        self.repo.git('tag', '-s', '-m', 'first tag', 'v1.0.0.0a1')
+        f1 = self._add_notes_file('slug1')
+        self.repo.git('tag', '-s', '-m', 'first tag', 'v1.0.0.0a2')
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'v1.0.0.0a2': [f1],
              },
             results,
         )

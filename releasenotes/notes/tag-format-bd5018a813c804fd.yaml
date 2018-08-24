@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Allow optional 'v' prefix in the default version tag regex.

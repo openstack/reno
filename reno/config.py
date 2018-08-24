@@ -66,7 +66,7 @@ _OPTIONS = [
 
     Opt('release_tag_re',
         textwrap.dedent('''\
-        ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
+        ((?:v?[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
                            # pre-releases
         '''),
         textwrap.dedent("""\
@@ -77,7 +77,7 @@ _OPTIONS = [
 
     Opt('pre_release_tag_re',
         textwrap.dedent('''\
-        (?P<pre_release>\.\d+(?:[ab]|rc)+\d*)$
+        (?P<pre_release>\.v?\d+(?:[ab]|rc)+\d*)$
         '''),
         textwrap.dedent("""\
         The regex pattern used to check if a valid release version tag
