@@ -1,5 +1,14 @@
 .. include:: ../../README.rst
 
+EuroPython 2018 Presentation
+============================
+
+.. raw:: html
+
+   <iframe width="560" height="315"
+   src="https://www.youtube.com/embed/tEOGJ_h0Lx0" frameborder="0"
+   allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 Contents
 ========
 
