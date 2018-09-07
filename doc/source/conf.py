@@ -42,8 +42,8 @@ if has_theme:
 
 # openstackdocstheme options
 repository_name = 'openstack/reno'
-bug_project = 'reno'
-bug_tag = ''
+bug_project = '933'
+bug_tag = 'docs'
 html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
