@@ -9,6 +9,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+from __future__ import unicode_literals
 
 import os.path
 
@@ -111,7 +112,7 @@ class ReleaseNotesDirective(rst.Directive):
         source_name = '<%s %s>' % (__name__, branch or 'current branch')
         result = statemachine.ViewList()
         for line_num, line in enumerate(text.splitlines(), 1):
-            LOG.debug(u'{:>4d}: {}'.format(line_num, line))
+            LOG.debug('%4d: %s', line_num, line)
             result.append(line, source_name, line_num)
 
         node = nodes.section()
