@@ -5,7 +5,7 @@
 *reno* supports integration with `setuptools`_ and *setuptools* derivatives
 like *pbr* through a custom command - ``build_reno``.
 
-.. _pbr: http://docs.openstack.org/developer/pbr/
+.. _pbr: https://docs.openstack.org/pbr/latest/
 .. _setuptools: https://setuptools.readthedocs.io/en/latest/
 
 Using setuptools integration
