@@ -218,7 +218,7 @@ class Config(object):
             if os.path.isfile(filename):
                 break
         else:
-            LOG.info('no configuration file in: %s', ', '.join(filenames))
+            self._report_missing_config_files(filenames)
             return
 
         try:
@@ -226,9 +226,19 @@ class Config(object):
                 self._contents = yaml.safe_load(fd)
             LOG.info('loaded configuration file %s', filename)
         except IOError as err:
-            LOG.warning('did not load config file %s: %s', filename, err)
+            self._report_failure_config_file(filename, err)
         else:
             self.override(**self._contents)
+
+    def _report_missing_config_files(self, filenames):
+        # NOTE(dhellmann): This is extracted so we can mock it for
+        # testing.
+        LOG.info('no configuration file in: %s', ', '.join(filenames))
+
+    def _report_failure_config_file(self, filename, err):
+        # NOTE(dhellmann): This is extracted so we can mock it for
+        # testing.
+        LOG.warning('did not load config file %s: %s', filename, err)
 
     def _rename_prelude_section(self, **kwargs):
         key = 'prelude_section_name'

@@ -73,9 +73,10 @@ collapse_pre_releases: false
         self.assertEqual(expected, actual)
 
     def test_load_file_not_present(self):
-        with mock.patch.object(config.LOG, 'info') as logger:
+        missing = 'reno.config.Config._report_missing_config_files'
+        with mock.patch(missing) as error_handler:
             config.Config(self.tempdir.path)
-            self.assertEqual(1, logger.call_count)
+            self.assertEqual(1, error_handler.call_count)
 
     def _test_load_file(self, config_path):
         with open(config_path, 'w') as fd:
