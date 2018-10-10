@@ -275,9 +275,11 @@ class Config(object):
         arg_values = {
             o.name: getattr(parsed_args, o.name)
             for o in _OPTIONS
-            if hasattr(parsed_args, o.name)
+            if getattr(parsed_args, o.name, None) is not None
         }
-        self.override(**arg_values)
+        if arg_values:
+            LOG.info('[config] updating from command line options')
+            self.override(**arg_values)
 
     @property
     def reporoot(self):

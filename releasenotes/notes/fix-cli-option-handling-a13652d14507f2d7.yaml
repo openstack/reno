@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix an issue with the way command line options and configuration
+    settings interact so that the settings in the configuration file
+    are used properly when command line arguments for those options
+    are not provided.

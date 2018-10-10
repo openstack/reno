@@ -126,7 +126,7 @@ collapse_pre_releases: false
         }
         self.assertEqual(expected, actual)
 
-    def test_override_from_parsed_args(self):
+    def test_override_from_parsed_args_boolean_false(self):
         c = self._run_override_from_parsed_args([
             '--no-collapse-pre-releases',
         ])
@@ -136,6 +136,30 @@ collapse_pre_releases: false
             for o in config._OPTIONS
         }
         expected['collapse_pre_releases'] = False
+        self.assertEqual(expected, actual)
+
+    def test_override_from_parsed_args_boolean_true(self):
+        c = self._run_override_from_parsed_args([
+            '--collapse-pre-releases',
+        ])
+        actual = c.options
+        expected = {
+            o.name: o.default
+            for o in config._OPTIONS
+        }
+        expected['collapse_pre_releases'] = True
+        self.assertEqual(expected, actual)
+
+    def test_override_from_parsed_args_string(self):
+        c = self._run_override_from_parsed_args([
+            '--earliest-version', '1.2.3',
+        ])
+        actual = c.options
+        expected = {
+            o.name: o.default
+            for o in config._OPTIONS
+        }
+        expected['earliest_version'] = '1.2.3'
         self.assertEqual(expected, actual)
 
     def test_override_from_parsed_args_ignore_non_options(self):
