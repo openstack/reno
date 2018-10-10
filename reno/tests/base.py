@@ -31,3 +31,4 @@ class TestCase(testtools.TestCase):
         self._stderr_fixture = fixtures.StringStream('stderr')
         self.stderr = self.useFixture(self._stderr_fixture).stream
         self.useFixture(fixtures.MonkeyPatch('sys.stderr', self.stderr))
+        self.useFixture(fixtures.FakeLogger())
