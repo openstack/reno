@@ -3,6 +3,7 @@
       - openstack-python-jobs
       - openstack-python35-jobs
       - openstack-python36-jobs
+      - openstack-python37-jobs
       - openstack-cover-jobs
       - publish-openstack-docs-pti
       - openstack-lower-constraints-jobs
