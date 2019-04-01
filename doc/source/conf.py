@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
-
 # oslosphinx uses reno and reno uses oslosphinx. Make oslosphinx for
 # reno optional to break the build cycle
 try:
-    import openstackdocstheme
-except:
+    import openstackdocstheme  # noqa
+except ImportError:
     has_theme = False
 else:
     has_theme = True
@@ -31,27 +28,12 @@ else:
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
-    # 'sphinx.ext.intersphinx',
     'reno.sphinxext',
     'reno._exts.show_reno_config',
 ]
 
 if has_theme:
     extensions.append('openstackdocstheme')
-    html_theme = 'openstackdocs'
-
-# openstackdocstheme options
-repository_name = 'openstack/reno'
-bug_project = '933'
-bug_tag = 'docs'
-html_last_updated_fmt = '%Y-%m-%d %H:%M'
-
-# autodoc generation is a bit aggressive and a nuisance when doing heavy
-# text edit cycles.
-# execute "export SPHINX_DEBUG=1" in your terminal to disable
-
-# The suffix of source filenames.
-source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
@@ -60,39 +42,18 @@ master_doc = 'index'
 project = u'reno'
 copyright = u'2013, OpenStack Foundation'
 
-# If true, '()' will be appended to :func: etc. cross-reference text.
-add_function_parentheses = True
-
-# If true, the current module name will be prepended to all description
-# unit titles (such as .. function::).
-add_module_names = True
-
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
 # Do not warn about non-local image URI
 suppress_warnings = ['image.nonlocal_uri']
 
-# -- Options for HTML output --------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  Major themes that come with
-# Sphinx are currently 'default' and 'sphinxdoc'.
-# html_theme_path = ["."]
-# html_theme = '_theme'
-# html_static_path = ['static']
+# -- openstackdocstheme configuration -----------------------------------------
 
-# Output file base name for HTML help builder.
-htmlhelp_basename = '%sdoc' % project
+if has_theme:
+    html_theme = 'openstackdocs'
 
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title, author, documentclass
-# [howto/manual]).
-latex_documents = [
-    ('index',
-     '%s.tex' % project,
-     u'%s Documentation' % project,
-     u'OpenStack Foundation', 'manual'),
-]
-
-# Example configuration for intersphinx: refer to the Python standard library.
-# intersphinx_mapping = {'http://docs.python.org/': None}
+repository_name = 'openstack/reno'
+bug_project = '933'
+bug_tag = 'docs'
