@@ -89,6 +89,9 @@ def _changes_in_subdir(repo, walk_entry, subdir):
     commit = walk_entry.commit
     store = repo.object_store
 
+    if os.path.sep == '\\':
+        subdir = subdir.replace('\\', '/')
+
     parents = walk_entry._get_parents(commit)
 
     if not parents:
@@ -484,6 +487,10 @@ class RenoRepo(repo.Repo):
         commit = self[sha]
         tree = self[commit.tree]
         try:
+            if os.path.sep == '\\':
+                # Dulwich doesn't handle Windows paths, we need to take care of
+                # it ourselves
+                filename = filename.replace('\\', '/')
             mode, blob_sha = tree.lookup_path(self.get_object,
                                               filename.encode('utf-8'))
         except KeyError:
