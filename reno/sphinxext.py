@@ -21,6 +21,7 @@ from sphinx.util import logging
 from sphinx.util.nodes import nested_parse_with_titles
 
 from dulwich import repo
+import reno
 from reno import config
 from reno import defaults
 from reno import formatter
@@ -123,3 +124,8 @@ class ReleaseNotesDirective(rst.Directive):
 
 def setup(app):
     app.add_directive('release-notes', ReleaseNotesDirective)
+    metadata_dict = {
+        'version': reno.__version__,
+        'parallel_read_safe': False
+    }
+    return metadata_dict
