@@ -2432,7 +2432,7 @@ class GetSeriesBranchesTest(Base):
         self.scanner = scanner.Scanner(self.c)
         self.assertEqual(
             [],
-            self.scanner._get_series_branches(),
+            self.scanner.get_series_branches(),
         )
 
     def test_real_branches_sorted_names(self):
@@ -2445,7 +2445,7 @@ class GetSeriesBranchesTest(Base):
         self.scanner = scanner.Scanner(self.c)
         self.assertEqual(
             ['stable/a', 'stable/b'],
-            self.scanner._get_series_branches(),
+            self.scanner.get_series_branches(),
         )
 
     def test_eol_tag(self):
@@ -2455,7 +2455,7 @@ class GetSeriesBranchesTest(Base):
         self.scanner = scanner.Scanner(self.c)
         self.assertEqual(
             ['stable/a'],
-            self.scanner._get_series_branches(),
+            self.scanner.get_series_branches(),
         )
 
     def test_mix_tag_and_branch(self):
@@ -2468,5 +2468,5 @@ class GetSeriesBranchesTest(Base):
         self.scanner = scanner.Scanner(self.c)
         self.assertEqual(
             ['stable/a', 'stable/b'],
-            self.scanner._get_series_branches(),
+            self.scanner.get_series_branches(),
         )

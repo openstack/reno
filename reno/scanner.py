@@ -817,7 +817,7 @@ class Scanner(object):
         "Return true if the file exists at the given commit."
         return bool(self.get_file_at_commit(filename, sha))
 
-    def _get_series_branches(self):
+    def get_series_branches(self):
         "Get branches matching the branch_name_re config option."
         refs = self._repo.get_refs()
         LOG.debug('refs %s', list(refs.keys()))
@@ -853,7 +853,7 @@ class Scanner(object):
         if branch.startswith('origin/'):
             branch = branch[7:]
         LOG.debug('looking for the branch before %s', branch)
-        branch_names = self._get_series_branches()
+        branch_names = self.get_series_branches()
         if branch not in branch_names:
             LOG.debug('Could not find branch %r among %s',
                       branch, branch_names)
@@ -917,7 +917,7 @@ class Scanner(object):
                 return candidate
         return None
 
-    def get_notes_by_version(self):
+    def get_notes_by_version(self, branch=None):
         """Return an OrderedDict mapping versions to lists of notes files.
 
         The versions are presented in reverse chronological order.
@@ -925,13 +925,13 @@ class Scanner(object):
         Notes files are associated with the earliest version for which
         they were available, regardless of whether they changed later.
 
-        :param reporoot: Path to the root of the git repository.
-        :type reporoot: str
+        :param branch: The branch to scan. If not provided, using the branch
+            configured in ``self.conf``.
         """
 
         reporoot = self.reporoot
         notesdir = self.conf.notespath
-        branch = self.conf.branch
+        branch = branch or self.conf.branch
         earliest_version = self.conf.earliest_version
         collapse_pre_releases = self.conf.collapse_pre_releases
         stop_at_branch_base = self.conf.stop_at_branch_base
@@ -974,7 +974,7 @@ class Scanner(object):
             # On the current branch, stop at the point where the most
             # recent branch was created, if we can find one.
             LOG.debug('working on current branch without earliest_version')
-            branches = self._get_series_branches()
+            branches = self.get_series_branches()
             if branches:
                 for earlier_branch in reversed(branches):
                     LOG.debug('checking if current branch is later than %s',
