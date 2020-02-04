@@ -24,7 +24,6 @@ from distutils import cmd
 from distutils import errors
 from distutils import log
 
-import six
 
 from reno import cache
 from reno import config
@@ -108,7 +107,7 @@ class BuildReno(cmd.Command):
         if val is None:
             setattr(self, option, default)
             return default
-        elif not isinstance(val, six.string_types):
+        elif not isinstance(val, str):
             raise errors.DistutilsOptionError("'%s' must be a %s (got `%s`)"
                                               % (option, what, val))
         return val

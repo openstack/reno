@@ -17,7 +17,6 @@ import textwrap
 
 import fixtures
 import mock
-import six
 import yaml
 
 from reno import config
@@ -73,7 +72,7 @@ class TestValidate(base.TestCase):
           This is a single string.
         '''))
         print(type(note_bodies['issues']))
-        self.assertIsInstance(note_bodies['issues'], six.string_types)
+        self.assertIsInstance(note_bodies['issues'], str)
         ldr = self._make_loader(note_bodies)
         parse_results = ldr.parse_note_file('note1', None)
         self.assertIsInstance(parse_results['issues'], list)

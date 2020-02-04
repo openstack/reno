@@ -13,7 +13,6 @@
 from docutils import nodes
 from docutils.parsers import rst
 from docutils.statemachine import ViewList
-import six
 from sphinx.util import logging
 from sphinx.util.nodes import nested_parse_with_titles
 
@@ -37,7 +36,7 @@ def _format_option_help(options):
         for l in _multi_line_string(opt.help, '  '):
             yield l
         yield ''
-        if isinstance(opt.default, six.string_types) and '\n' in opt.default:
+        if isinstance(opt.default, str) and '\n' in opt.default:
             # Multi-line string
             yield '  Defaults to'
             yield ''

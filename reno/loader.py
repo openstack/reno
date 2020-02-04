@@ -14,7 +14,6 @@ import collections
 import logging
 import os.path
 
-import six
 import yaml
 
 from reno import scanner
@@ -107,7 +106,7 @@ class Loader(object):
 
         for section_name, section_content in content.items():
             if section_name == self._config.prelude_section_name:
-                if not isinstance(section_content, six.string_types):
+                if not isinstance(section_content, str):
                     LOG.warning(
                         ('The %s section of %s '
                          'does not parse as a single string. '
@@ -115,7 +114,7 @@ class Loader(object):
                         (self._config.prelude_section_name, filename),
                     )
             else:
-                if isinstance(section_content, six.string_types):
+                if isinstance(section_content, str):
                     # A single string is OK, but wrap it with a list
                     # so the rest of the code can treat the data model
                     # consistently.
@@ -129,7 +128,7 @@ class Loader(object):
                     )
                 else:
                     for item in section_content:
-                        if not isinstance(item, six.string_types):
+                        if not isinstance(item, str):
                             LOG.warning(
                                 ('The item %r in the %s section of %s '
                                  'parses as a %s instead of a string. '

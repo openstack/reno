@@ -23,11 +23,11 @@ LOG = logging.getLogger(__name__)
 def get_random_string(nbytes=8):
     """Return a fixed-length random string
 
-    :rtype: six.text_type
+    :rtype: str
     """
     try:
         # NOTE(dhellmann): Not all systems support urandom().
-        # hexlify returns six.binary_type, decode to convert to six.text_type.
+        # hexlify returns binary, decode to convert to str.
         val = binascii.hexlify(os.urandom(nbytes)).decode('utf-8')
     except Exception as e:
         print('ERROR, perhaps urandom is not supported: %s' % e)
