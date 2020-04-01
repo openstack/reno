@@ -1018,8 +1018,17 @@ class Scanner(object):
             if not scan_stop_tag:
                 earliest_version = branch_base
             else:
-                idx = versions_by_date.index(scan_stop_tag)
-                earliest_version = versions_by_date[idx - 1]
+                try:
+                    idx = versions_by_date.index(scan_stop_tag)
+                except ValueError:
+                    LOG.debug(
+                        'could not find calculated scan stop point %s '
+                        'in history of %s, so using branch base %s instead',
+                        scan_stop_tag, branch, branch_base,
+                    )
+                    earliest_version = branch_base
+                else:
+                    earliest_version = versions_by_date[idx - 1]
                 LOG.debug('using version before %s as scan stop point',
                           scan_stop_tag)
             if earliest_version and collapse_pre_releases:
