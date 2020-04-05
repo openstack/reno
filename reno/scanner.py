@@ -659,13 +659,13 @@ class Scanner(object):
                     c.commit.sha().hexdigest().encode('ascii'))
                 if tags:
                     return tags[-1]
-                else:
-                    # Naughty, naughty, branching without tagging.
-                    LOG.info(
-                        ('There is no tag on commit %s at the base of %s. '
-                         'Branch scan short-cutting is disabled.'),
-                        c.commit.sha().hexdigest(), branch)
-                    return None
+
+        # Naughty, naughty, branching without tagging.
+        LOG.info(
+            'There is no tag on commit %s at the base of %s. '
+            'Branch scan short-cutting is disabled.',
+            c.commit.sha().hexdigest(), branch,
+        )
         return None
 
     def _topo_traversal(self, branch):
