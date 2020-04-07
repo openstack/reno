@@ -1,4 +1,5 @@
 .. include:: ../../README.rst
+   :end-before: Project Meta-data
 
 EuroPython 2018 Presentation
 ============================
