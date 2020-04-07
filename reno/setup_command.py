@@ -20,6 +20,8 @@ For more information, refer to the distutils and setuptools source:
 - https://github.com/pypa/setuptools/blob/v36.0.0/setuptools/command/sdist.py
 """
 
+import typing
+
 from distutils import cmd
 from distutils import errors
 from distutils import log
@@ -102,7 +104,7 @@ class BuildReno(cmd.Command):
     # unicode, causing finalize_options to fail if invoked again. Workaround
     # for http://bugs.python.org/issue19570
     def _ensure_stringlike(self, option, what, default=None):
-        # type: (unicode, unicode, Any) -> Any
+        # type: (typing.unicode, typing.unicode, typing.Any) -> typing.Any
         val = getattr(self, option)
         if val is None:
             setattr(self, option, default)
