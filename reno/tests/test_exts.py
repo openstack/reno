@@ -100,7 +100,7 @@ class TestFormatOptionHelp(base.TestCase):
         opt = config.Opt(
             'release_tag_re',
             textwrap.dedent('''\
-            ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
+            ((?:[\\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
                                # pre-releases
             '''),
             textwrap.dedent("""\
@@ -120,7 +120,7 @@ class TestFormatOptionHelp(base.TestCase):
 
           ::
 
-            ((?:[\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
+            ((?:[\\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
                                # pre-releases
         """)
         self.assertEqual(expected, actual)

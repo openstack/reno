@@ -759,8 +759,8 @@ class Scanner(object):
                     # later, as long as we haven't already processed
                     # it.
                     first_parent = entry.commit.parents[0]
-                    if (first_parent not in todo and
-                            first_parent not in emitted):
+                    if (first_parent not in todo
+                            and first_parent not in emitted):
                         todo.appendleft(first_parent)
                     continue
 

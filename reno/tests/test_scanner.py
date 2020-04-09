@@ -68,7 +68,7 @@ class GPGKeyFixture(fixtures.Fixture):
     def setUp(self):
         super(GPGKeyFixture, self).setUp()
         tempdir = self.useFixture(fixtures.TempDir())
-        gnupg_version_re = re.compile('^gpg\s.*\s([\d+])\.([\d+])\.([\d+])')
+        gnupg_version_re = re.compile(r'^gpg\s.*\s([\d+])\.([\d+])\.([\d+])')
         gnupg_version = utils.check_output(['gpg', '--version'],
                                            cwd=tempdir.path)
         for line in gnupg_version.split('\n'):
