@@ -13,10 +13,11 @@
 # under the License.
 
 import collections
+from unittest import mock
+
 import fixtures
 import textwrap
 
-import mock
 
 from reno import cache
 from reno import config

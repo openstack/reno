@@ -14,9 +14,9 @@
 
 import logging
 import textwrap
+from unittest import mock
 
 import fixtures
-import mock
 import yaml
 
 from reno import config

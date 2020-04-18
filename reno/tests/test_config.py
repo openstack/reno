@@ -13,6 +13,7 @@
 # under the License.
 import argparse
 import os
+from unittest import mock
 
 import fixtures
 
@@ -20,8 +21,6 @@ from reno import config
 from reno import defaults
 from reno import main
 from reno.tests import base
-
-import mock
 
 
 class TestConfig(base.TestCase):

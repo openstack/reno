@@ -13,6 +13,7 @@
 # under the License.
 
 from __future__ import unicode_literals
+from unittest import mock
 
 import itertools
 import logging
@@ -25,7 +26,6 @@ import unittest
 from dulwich import diff_tree
 from dulwich import objects
 import fixtures
-import mock
 from testtools.content import text_content
 
 from reno import config
