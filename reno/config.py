@@ -64,6 +64,12 @@ _OPTIONS = [
         The template used by reno new to create a note.
         """)),
 
+    Opt('add_release_date', False,
+        textwrap.dedent("""\
+        Should the report include release date (True) based on
+        the date of objects associated with the release tag.
+        """)),
+
     Opt('release_tag_re',
         textwrap.dedent('''\
         ((?:v?[\\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
