@@ -50,16 +50,35 @@ class ReleaseNotesDirective(rst.Directive):
         'unreleased-version-title': directives.unchanged,
     }
 
-    def run(self):
-        title = ' '.join(self.content)
-        branch = self.options.get('branch')
-        reporoot_opt = self.options.get('reporoot', '.')
+    def _find_reporoot(self, reporoot_opt, relnotessubdir_opt):
+        """Find root directory of project."""
         reporoot = os.path.abspath(reporoot_opt)
         # When building on RTD.org the root directory may not be
         # the current directory, so look for it.
-        reporoot = repo.Repo.discover(reporoot).path
-        relnotessubdir = self.options.get('relnotessubdir',
-                                          defaults.RELEASE_NOTES_SUBDIR)
+        try:
+            return repo.Repo.discover(reporoot).path
+        except Exception:
+            pass
+
+        for root in ('.', '..', '../..'):
+            if os.path.exists(os.path.join(root, relnotessubdir_opt)):
+                return root
+
+        raise Exception(
+            'Could not discover root directory; tried: %s' % ', '.join([
+                os.path.abspath(root) for root in ('.', '..', '../..')
+            ])
+        )
+
+    def run(self):
+        title = ' '.join(self.content)
+        branch = self.options.get('branch')
+        relnotessubdir = self.options.get(
+            'relnotessubdir', defaults.RELEASE_NOTES_SUBDIR,
+        )
+        reporoot = self._find_reporoot(
+            self.options.get('reporoot', '.'), relnotessubdir,
+        )
         ignore_notes = [
             name.strip()
             for name in self.options.get('ignore-notes', '').split(',')

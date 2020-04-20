@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Previously, it was not possible build documentation that used the
+    ``release-notes`` Sphinx extension from tarballs. The Sphinx extension
+    will now search the following directories, relative to the working
+    directory of the ``sphinx-build`` tool, to find the release notes
+    directory: ``.``, ``..``, and ``../..``. This only applies when it is
+    not possible to discover this information using git.
