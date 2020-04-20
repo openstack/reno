@@ -9,18 +9,16 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-from __future__ import unicode_literals
-
 import os.path
 
 from docutils import nodes
 from docutils.parsers import rst
 from docutils.parsers.rst import directives
 from docutils import statemachine
+from dulwich import repo
 from sphinx.util import logging
 from sphinx.util.nodes import nested_parse_with_titles
 
-from dulwich import repo
 import reno
 from reno import config
 from reno import defaults

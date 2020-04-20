@@ -12,9 +12,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from __future__ import unicode_literals
-from unittest import mock
-
 import itertools
 import logging
 import os.path
@@ -22,6 +19,7 @@ import re
 import subprocess
 import time
 import unittest
+from unittest import mock
 
 from dulwich import diff_tree
 from dulwich import objects
