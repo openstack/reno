@@ -10,8 +10,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from datetime import datetime
-
 
 def _indent_for_list(text, prefix='  '):
     """Indent some text to make it work as a list entry.
@@ -71,13 +69,8 @@ def format_report(loader, config, versions_to_include, title=None,
         report.append('=' * len(version_title))
         report.append('')
 
-        if (config.add_release_date
-                # Currently, this only works when the Scanner is used
-                and loader._scanner is not None
-                and version in loader._scanner._repo._tags_to_dates.keys()):
-            date = datetime.fromtimestamp(
-                loader._scanner._repo._tags_to_dates[version])
-            report.append('Release Date: ' + date.strftime("%Y-%m-%d"))
+        if config.add_release_date:
+            report.append('Release Date: ' + loader.get_version_date(version))
             report.append('')
 
         # Add the preludes.

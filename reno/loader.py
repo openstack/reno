@@ -11,6 +11,7 @@
 # under the License.
 
 import collections
+from datetime import datetime
 import logging
 import os.path
 
@@ -55,6 +56,7 @@ class Loader(object):
         self._cache = None
         self._scanner = None
         self._scanner_output = None
+        self._tags_to_dates = None
         self._cache_filename = get_cache_filename(conf)
 
         self._load_data()
@@ -76,9 +78,14 @@ class Loader(object):
                     (n['version'], n['files'])
                     for n in self._cache['notes']
                 )
+                self._tags_to_dates = collections.OrderedDict(
+                    (n['version'], n['date'])
+                    for n in self._cache['dates']
+                )
         else:
             self._scanner = scanner.Scanner(self._config)
             self._scanner_output = self._scanner.get_notes_by_version()
+            self._tags_to_dates = self._scanner.get_version_dates()
 
     @property
     def versions(self):
@@ -88,6 +95,13 @@ class Loader(object):
     def __getitem__(self, version):
         "Return data about the files that should go into a given version."
         return self._scanner_output[version]
+
+    def get_version_date(self, version):
+        "Return release data for a version."
+        if version in self._tags_to_dates.keys():
+            date = datetime.fromtimestamp(self._tags_to_dates[version])
+            return date.strftime("%Y-%m-%d")
+        return "Unknown"
 
     def parse_note_file(self, filename, sha):
         """Return the data structure encoded in the note file.

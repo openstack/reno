@@ -918,6 +918,12 @@ class Scanner(object):
                 return candidate
         return None
 
+    def get_version_dates(self):
+        "Return a dict mapping versions to dates."
+        if self._repo._tags_to_dates is not None:
+            return self._repo._tags_to_dates.copy()
+        return {}
+
     def get_notes_by_version(self, branch=None):
         """Return an OrderedDict mapping versions to lists of notes files.
 

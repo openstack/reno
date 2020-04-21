@@ -59,11 +59,18 @@ class TestCache(base.TestCase):
     def _get_note_body(self, filename, sha):
         return self.note_bodies.get(filename, '')
 
+    def _get_dates(self):
+        return {'1.0.0': 1547874431}
+
     def setUp(self):
         super(TestCache, self).setUp()
         self.useFixture(
             fixtures.MockPatch('reno.scanner.Scanner.get_file_at_commit',
                                new=self._get_note_body)
+        )
+        self.useFixture(
+            fixtures.MockPatch('reno.scanner.Scanner.get_version_dates',
+                               new=self._get_dates)
         )
         self.c = config.Config('.')
 
@@ -73,6 +80,7 @@ class TestCache(base.TestCase):
         mock_get_notes.side_effect = self.scanner_output
         mock_get_branches.return_value = ['stable/1.0']
         expected = {
+            'dates': [{'version': '1.0.0', 'date': 1547874431}],
             'notes': [
                 {'version': '0.0.0',
                  'files': [('note1', 'shaA')]},
