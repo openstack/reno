@@ -31,7 +31,7 @@ def _multi_line_string(s, indent=''):
 
 def _format_option_help(options):
     "Produce RST lines for the configuration options."
-    for opt in options:
+    for opt in sorted(options, key=lambda opt: opt.name):
         yield '``{}``'.format(opt.name)
         for l in _multi_line_string(opt.help, '  '):
             yield l
