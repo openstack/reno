@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add an option, ``add_release_date``, to print the release dates for every
+    version.

@@ -391,6 +391,7 @@ class RenoRepo(repo.Repo):
     # Populated by _load_tags().
     _all_tags = None
     _shas_to_tags = None
+    _tags_to_dates = None
 
     def _get_commit_from_tag(self, tag, tag_sha):
         """Return the commit referenced by the tag and when it was tagged."""
@@ -434,9 +435,11 @@ class RenoRepo(repo.Repo):
             if k.startswith(b'refs/tags/')
         }
         self._shas_to_tags = {}
+        self._tags_to_dates = {}
         for tag, tag_sha in self._all_tags.items():
             tagged_sha, date = self._get_commit_from_tag(tag, tag_sha)
             self._shas_to_tags.setdefault(tagged_sha, []).append((tag, date))
+            self._tags_to_dates[tag] = date
 
     def get_tags_on_commit(self, sha):
         "Return the tag(s) on a commit, in application order."
