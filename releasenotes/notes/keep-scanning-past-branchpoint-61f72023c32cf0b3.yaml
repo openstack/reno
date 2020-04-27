@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    If no earliest version is provided for a branch, reno will scan commits
+    on the branch in reverse order, attempting to find a common ancestor
+    with the master branch. Once found, the last common commit - the branch
+    point - is checked for a tag. Previously, if no tag was found, reno
+    would stop scanning. This was problematic for instances where a branch
+    was not created at the tagged commit but rather some commits later.
+    Reno will now continue scanning until it finds a tag.

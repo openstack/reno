@@ -1269,9 +1269,18 @@ class BranchBaseTest(Base):
         self.repo.git('tag', '-d', '2.0.0')
         self._add_notes_file('slug4')
         self.repo.git('checkout', 'master')
-        self.assertIsNone(
-            self.scanner._get_branch_base('not-master')
+        self.assertEqual(
+            '1.0.0',
+            self.scanner._get_branch_base('not-master'),
         )
+
+    def test_no_tags(self):
+        # remove all tags from before the branch
+        self.repo.git('tag', '-d', '2.0.0')
+        self.repo.git('tag', '-d', '1.0.0')
+        self._add_notes_file('slug4')
+        self.repo.git('checkout', 'master')
+        self.assertIsNone(self.scanner._get_branch_base('not-master'))
 
 
 class BranchTest(Base):
