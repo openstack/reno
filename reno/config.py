@@ -228,7 +228,8 @@ class Config(object):
         except IOError as err:
             self._report_failure_config_file(filename, err)
         else:
-            self.override(**self._contents)
+            if self._contents:
+                self.override(**self._contents)
 
     def _report_missing_config_files(self, filenames):
         # NOTE(dhellmann): This is extracted so we can mock it for
