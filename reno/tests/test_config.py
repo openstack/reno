@@ -94,6 +94,14 @@ collapse_pre_releases: false
         config_path = self.tempdir.join('reno.yaml')
         self._test_load_file(config_path)
 
+    def test_load_file_empty(self):
+        config_path = self.tempdir.join('reno.yaml')
+        with open(config_path, 'w') as fd:
+            fd.write('# Add reno config here')
+        self.addCleanup(os.unlink, config_path)
+        c = config.Config(self.tempdir.path)
+        self.assertEqual(True, c.collapse_pre_releases)
+
     def test_get_default(self):
         d = config.Config.get_default('notesdir')
         self.assertEqual('notes', d)
