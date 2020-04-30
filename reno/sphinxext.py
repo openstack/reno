@@ -143,6 +143,6 @@ def setup(app):
     app.add_directive('release-notes', ReleaseNotesDirective)
     metadata_dict = {
         'version': reno.__version__,
-        'parallel_read_safe': False
+        'parallel_read_safe': True
     }
     return metadata_dict
