@@ -43,7 +43,7 @@ project = u'reno'
 copyright = u'2013, OpenStack Foundation'
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'native'
 
 # Do not warn about non-local image URI
 suppress_warnings = ['image.nonlocal_uri']
@@ -54,6 +54,5 @@ suppress_warnings = ['image.nonlocal_uri']
 if has_theme:
     html_theme = 'openstackdocs'
 
-repository_name = 'openstack/reno'
-bug_project = '933'
-bug_tag = 'docs'
+openstackdocs_repo_name = 'openstack/reno'
+openstackdocs_use_storyboard = True
