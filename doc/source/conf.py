@@ -12,28 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# oslosphinx uses reno and reno uses oslosphinx. Make oslosphinx for
-# reno optional to break the build cycle
-try:
-    import openstackdocstheme  # noqa
-except ImportError:
-    has_theme = False
-else:
-    has_theme = True
-
 
 # -- General configuration ----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    'openstackdocstheme',
     'sphinx.ext.autodoc',
     'reno.sphinxext',
     'reno._exts.show_reno_config',
 ]
-
-if has_theme:
-    extensions.append('openstackdocstheme')
 
 # The master toctree document.
 master_doc = 'index'
@@ -51,8 +40,7 @@ suppress_warnings = ['image.nonlocal_uri']
 
 # -- openstackdocstheme configuration -----------------------------------------
 
-if has_theme:
-    html_theme = 'openstackdocs'
+html_theme = 'openstackdocs'
 
 openstackdocs_repo_name = 'openstack/reno'
 openstackdocs_use_storyboard = True
