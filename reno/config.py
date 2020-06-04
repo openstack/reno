@@ -180,6 +180,14 @@ _OPTIONS = [
         released version. If this option is unset, the development
         version number is used (for example, ``3.0.0-3``).
         """)),
+    Opt('encoding', None,
+        textwrap.dedent("""\
+        The character encoding to use when opening note files. If not
+        specified it will be dependent on the system running reno (whatever
+        'locale.getpreferredencoding()' returns. This takes in a string
+        name that will be passed to the encoding kwarg for open(), so any
+        codec or alias from stdlib's codec module is valid.
+        """)),
 ]
 
 

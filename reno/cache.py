@@ -79,17 +79,18 @@ def write_cache_db(conf, versions_to_include,
     Return the name of the file created, if any.
 
     """
+    encoding = conf.options['encoding']
     if outfilename == '-':
         stream = sys.stdout
         close_stream = False
     elif outfilename:
-        stream = open(outfilename, 'w')
+        stream = open(outfilename, 'w', encoding=encoding)
         close_stream = True
     else:
         outfilename = loader.get_cache_filename(conf)
         if not os.path.exists(os.path.dirname(outfilename)):
             os.makedirs(os.path.dirname(outfilename))
-        stream = open(outfilename, 'w')
+        stream = open(outfilename, 'w', encoding=encoding)
         close_stream = True
     try:
         cache = build_cache_db(

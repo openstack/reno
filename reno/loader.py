@@ -58,6 +58,7 @@ class Loader(object):
         self._scanner_output = None
         self._tags_to_dates = None
         self._cache_filename = get_cache_filename(conf)
+        self._encoding = conf.options['encoding']
 
         self._load_data()
 
@@ -69,7 +70,7 @@ class Loader(object):
 
         if (not self._ignore_cache) and cache_file_exists:
             LOG.debug('loading cache file %s', self._cache_filename)
-            with open(self._cache_filename, 'r') as f:
+            with open(self._cache_filename, 'r', encoding=self._encoding) as f:
                 self._cache = yaml.safe_load(f.read())
                 # Save the cached scanner output to the same attribute
                 # it would be in if we had loaded it "live". This

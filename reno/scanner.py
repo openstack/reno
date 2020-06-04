@@ -460,7 +460,7 @@ class RenoRepo(repo.Repo):
             tree = self[tree_sha]
             return tree
 
-    def get_file_at_commit(self, filename, sha):
+    def get_file_at_commit(self, filename, sha, encoding=None):
         """Return the contents of the file.
 
         If sha is None, return the working copy of the file. If the
@@ -474,7 +474,8 @@ class RenoRepo(repo.Repo):
         if sha is None:
             # Get the copy from the working directory.
             try:
-                with open(os.path.join(self.path, filename), 'r') as f:
+                with open(os.path.join(self.path, filename), 'r',
+                          encoding=encoding) as f:
                     return f.read()
             except IOError:
                 return None
@@ -530,6 +531,7 @@ class Scanner(object):
             _get_unique_id(fn)
             for fn in self.conf.ignore_notes
         )
+        self._encoding = conf.options['encoding']
 
     def _get_ref(self, name):
         if name:
@@ -812,11 +814,13 @@ class Scanner(object):
 
     def get_file_at_commit(self, filename, sha):
         "Return the contents of the file if it exists at the commit, or None."
-        return self._repo.get_file_at_commit(filename, sha)
+        return self._repo.get_file_at_commit(filename, sha,
+                                             encoding=self._encoding)
 
     def _file_exists_at_commit(self, filename, sha):
         "Return true if the file exists at the given commit."
-        return bool(self.get_file_at_commit(filename, sha))
+        return bool(self.get_file_at_commit(filename, sha,
+                                            encoding=self._encoding))
 
     def get_series_branches(self):
         "Get branches matching the branch_name_re config option."

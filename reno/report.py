@@ -17,6 +17,7 @@ from reno import loader
 def report_cmd(args, conf):
     "Generates a release notes report"
     ldr = loader.Loader(conf)
+    encoding = conf.options['encoding']
     if args.version:
         versions = args.version
     else:
@@ -30,7 +31,7 @@ def report_cmd(args, conf):
         branch=args.branch,
     )
     if args.output:
-        with open(args.output, 'w') as f:
+        with open(args.output, 'w', encoding=encoding) as f:
             f.write(text)
     else:
         print(text)

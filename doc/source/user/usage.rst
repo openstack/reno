@@ -210,6 +210,7 @@ the most convenient way to manage the values consistently.
     template: |
               <template-used-to-create-new-notes>
               ...
+    encoding: utf8
 
 Many of the settings in the configuration file can be overridden by
 using command-line switches. For example:

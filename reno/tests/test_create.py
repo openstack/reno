@@ -17,6 +17,7 @@ from unittest import mock
 import fixtures
 import io
 
+from reno import config
 from reno import create
 from reno.tests import base
 
@@ -69,8 +70,9 @@ class TestCreate(base.TestCase):
         args.from_template = self._create_user_template('i-am-a-user-template')
         args.slug = 'theslug'
         args.edit = False
-        conf = mock.Mock()
+        conf = mock.create_autospec(config.Config)
         conf.notespath = self.tmpdir
+        conf.options = {'encoding': None}
         with mock.patch('sys.stdout', new=io.StringIO()) as fake_out:
             create.create_cmd(args, conf)
         filename = self._get_file_path_from_output(fake_out.getvalue())
@@ -83,7 +85,7 @@ class TestCreate(base.TestCase):
         args.from_template = 'some-unexistent-file.yaml'
         args.slug = 'theslug'
         args.edit = False
-        conf = mock.Mock()
+        conf = mock.create_autospec(config.Config)
         conf.notespath = self.tmpdir
         self.assertRaises(ValueError, create.create_cmd, args, conf)
 
