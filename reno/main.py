@@ -21,6 +21,7 @@ from reno import defaults
 from reno import linter
 from reno import lister
 from reno import report
+from reno import semver
 
 _query_args = [
     (('--version',),
@@ -192,6 +193,23 @@ def main(argv=sys.argv[1:]):
         help='root of the git repository',
     )
     do_linter.set_defaults(func=linter.lint_cmd)
+
+    do_semver = subparsers.add_parser(
+        'semver-next',
+        help='calculate next release version based on semver rules',
+    )
+    do_semver.add_argument(
+        'reporoot',
+        default='.',
+        nargs='?',
+        help='root of the git repository',
+    )
+    do_semver.add_argument(
+        '--branch',
+        default=config.Config.get_default('branch'),
+        help='the branch to scan, defaults to the current',
+    )
+    do_semver.set_defaults(func=semver.semver_next_cmd)
 
     args = parser.parse_args(argv)
     # no arguments, print help messaging, then exit with error(1)

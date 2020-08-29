@@ -188,6 +188,22 @@ _OPTIONS = [
         name that will be passed to the encoding kwarg for open(), so any
         codec or alias from stdlib's codec module is valid.
         """)),
+
+    Opt('semver_major', ['upgrade'],
+        textwrap.dedent("""\
+        The sections that indicate release notes triggering major version
+        updates for the next release, from X.Y.Z to X+1.0.0.
+        """)),
+    Opt('semver_minor', ['features'],
+        textwrap.dedent("""\
+        The sections that indicate release notes triggering minor version
+        updates for the next release, from X.Y.Z to X.Y+1.0.
+        """)),
+    Opt('semver_patch', ['fixes'],
+        textwrap.dedent("""\
+        The sections that indicate release notes triggering patch version
+        updates for the next release, from X.Y.Z to X.Y.Z+1.
+        """)),
 ]
 
 

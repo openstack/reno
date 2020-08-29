@@ -5,3 +5,4 @@
 pbr
 PyYAML>=3.10
 dulwich>=0.15.0  # Apache-2.0
+packaging>=20.4

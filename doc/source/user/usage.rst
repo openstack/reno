@@ -176,6 +176,14 @@ mistakes. The command exits with an error code if there are any
 mistakes, so it can be used in a build pipeline to force some
 correctness.
 
+Computing Next Release Version
+==============================
+
+Run ``reno -q semver-next`` to compute the next SemVer_ version number
+based on the types of release notes found since the last release.
+
+.. _SemVer: https://semver.org
+
 .. _configuration:
 
 Configuring Reno

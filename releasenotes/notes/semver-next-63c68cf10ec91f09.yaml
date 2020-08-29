@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add the ``semver-next`` command to calculate the next release
+    version based on the available release notes. Three new
+    configuration options (``semver_major``, ``semver_minor``, and
+    ``semver_patch``) define the sections that should cause different
+    types of version increments. See :doc:`/user/usage` for details.
