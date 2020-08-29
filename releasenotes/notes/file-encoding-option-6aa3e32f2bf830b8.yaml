@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add a new configuration option, `encoding`, to specify the
+    encoding to use when reading release notes file. See
+    :doc:`/user/usage` for more details.
