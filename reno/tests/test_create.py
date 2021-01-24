@@ -16,6 +16,7 @@ from unittest import mock
 
 import fixtures
 import io
+import os
 
 from reno import config
 from reno import create
@@ -72,7 +73,7 @@ class TestCreate(base.TestCase):
         args.edit = False
         conf = mock.create_autospec(config.Config)
         conf.notespath = self.tmpdir
-        conf.options = {'encoding': None}
+        conf.options = {'allow_subdirectories': False, 'encoding': None}
         with mock.patch('sys.stdout', new=io.StringIO()) as fake_out:
             create.create_cmd(args, conf)
         filename = self._get_file_path_from_output(fake_out.getvalue())
@@ -87,7 +88,33 @@ class TestCreate(base.TestCase):
         args.edit = False
         conf = mock.create_autospec(config.Config)
         conf.notespath = self.tmpdir
+        conf.options = {'allow_subdirectories': False, 'encoding': None}
         self.assertRaises(ValueError, create.create_cmd, args, conf)
+
+    def test_create_from_user_template_fails_because_path_separator(self):
+        args = mock.Mock()
+        args.from_template = self._create_user_template('i-am-a-user-template')
+        args.slug = 'the' + os.sep + 'slug'
+        args.edit = False
+        conf = mock.create_autospec(config.Config)
+        conf.notespath = self.tmpdir
+        conf.options = {'allow_subdirectories': False, 'encoding': None}
+        self.assertRaises(ValueError, create.create_cmd, args, conf)
+
+    def test_create_from_template_with_path_separator_allowed(self):
+        args = mock.Mock()
+        args.from_template = self._create_user_template('i-am-a-user-template')
+        args.slug = 'the' + os.sep + 'slug'
+        args.edit = False
+        conf = mock.create_autospec(config.Config)
+        conf.notespath = self.tmpdir
+        conf.options = {'allow_subdirectories': True, 'encoding': None}
+        with mock.patch('sys.stdout', new=io.StringIO()) as fake_out:
+            create.create_cmd(args, conf)
+        filename = self._get_file_path_from_output(fake_out.getvalue())
+        with open(filename, 'r') as f:
+            body = f.read()
+        self.assertEqual('i-am-a-user-template', body)
 
     def test_edit(self):
         self.useFixture(fixtures.EnvironmentVariable('EDITOR', 'myeditor'))

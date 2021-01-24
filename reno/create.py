@@ -64,6 +64,11 @@ def create_cmd(args, conf):
     # their local git tree, and so there should not be any concurrency
     # concern.
     slug = args.slug.replace(' ', '-')
+
+    if not conf.options['allow_subdirectories'] and os.sep in slug:
+        raise ValueError('Slug should not include the path separator (%s)'
+                         % os.sep)
+
     filename = _pick_note_file_name(conf.notespath, slug)
     encoding = conf.options['encoding']
     if args.from_template:
