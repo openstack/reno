@@ -300,6 +300,22 @@ class BasicTest(Base):
             results,
         )
 
+    def test_note_commit_after_double_tag(self):
+        self._make_python_package()
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0rc1')
+        self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
+        filename = self._add_notes_file()
+        self.scanner = scanner.Scanner(self.c)
+        raw_results = self.scanner.get_notes_by_version()
+        results = {
+            k: [f for (f, n) in v]
+            for (k, v) in raw_results.items()
+        }
+        self.assertEqual(
+            {'1.0.0-1': [filename]},
+            results,
+        )
+
     def test_other_commit_after_tag(self):
         filename = self._add_notes_file()
         self.repo.add_file('ignore-1.txt')

@@ -578,8 +578,18 @@ class Scanner(object):
         return self._repo.get_walker(branch_head)
 
     def _get_valid_tags_on_commit(self, sha):
-        return [tag for tag in self._repo.get_tags_on_commit(sha)
-                if self.release_tag_re.match(tag)]
+        """Return valid tags for a commit.
+
+        If multiple tags are available, the first tags are pre-release tags.
+        """
+        tags = (tag for tag in self._repo.get_tags_on_commit(sha)
+                if self.release_tag_re.match(tag))
+        # This makes sure that we order the list with pre_release_tag tags
+        # first: in case where multiple tags match a commit, the non-pre
+        # release tag will be last.
+        return sorted(
+            tags, key=lambda tag: not bool(self.pre_release_tag_re.search(tag))
+        )
 
     def _get_tags_on_branch(self, branch):
         "Return a list of tag names on the given branch."
