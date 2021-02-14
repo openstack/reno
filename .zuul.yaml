@@ -3,4 +3,3 @@
       - openstack-python3-victoria-jobs
       - openstack-cover-jobs
       - publish-openstack-docs-pti
-      - openstack-lower-constraints-jobs
