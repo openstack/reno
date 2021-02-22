@@ -31,6 +31,11 @@ _OPTIONS = [
         notes live.
         """)),
 
+    Opt('allow_subdirectories', False,
+        textwrap.dedent("""\
+        Allow creating subdirectories under the notes subdirectory.
+        """)),
+
     Opt('collapse_pre_releases', True,
         textwrap.dedent("""\
         Should pre-release versions be merged into the final release
