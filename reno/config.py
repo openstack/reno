@@ -57,6 +57,13 @@ _OPTIONS = [
         would be converted to ``liberty-eol``.
         """)),
 
+    Opt('default_branch', 'master',
+        textwrap.dedent("""\
+        The default git branch for the repository. This is the base branch that
+        is treated as the root for other branches. By default this is
+        ``master``.
+        """)),
+
     Opt('earliest_version', None,
         textwrap.dedent("""\
         The earliest version to be included. This is usually the

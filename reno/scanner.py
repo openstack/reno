@@ -662,7 +662,7 @@ class Scanner(object):
         # branch until we find something that is on both.
         master_commits = set(
             c.commit.sha().hexdigest()
-            for c in self._get_walker_for_branch('master')
+            for c in self._get_walker_for_branch(self.conf.default_branch)
         )
         for c in self._get_walker_for_branch(branch):
             if c.commit.sha().hexdigest() in master_commits:
@@ -912,7 +912,7 @@ class Scanner(object):
             # scan.
             return None
         # We need to look for the previous branch's root.
-        if branch and branch != 'master':
+        if branch and branch != self.conf.default_branch:
             previous_branch = self._get_earlier_branch(branch)
             if not previous_branch:
                 # This was the first branch, so scan the whole
