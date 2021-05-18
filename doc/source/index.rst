@@ -18,5 +18,14 @@ Contents
 
    user/index
    install/index
-   contributor/index
    releasenotes/index
+
+For Contributors
+================
+
+* If you are a new contributor to Reno please refer: :doc:`contributor/contributing`
+
+  .. toctree::
+     :hidden:
+
+     contributor/contributing
