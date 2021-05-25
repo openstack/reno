@@ -1,14 +1,19 @@
-If you would like to contribute to the development of OpenStack, start by
-following the steps in this page:
-https://docs.openstack.org/infra/manual/developers.html
+The source repository for this project can be found at:
 
-If you already have a good understanding of how the system works and your
-OpenStack accounts are set up, you can skip to the development workflow
-section of this documentation to learn how changes to OpenStack should be
-submitted for review via the Gerrit tool:
-https://docs.openstack.org/infra/manual/developers.html#development-workflow
+   https://opendev.org/openstack/reno
 
-Pull requests submitted through GitHub will be ignored.
+Pull requests submitted through GitHub are not monitored.
 
-Bugs should be filed on Storyboard, not GitHub:
-https://storyboard.openstack.org/#!/project/933
+To start contributing to OpenStack, follow the steps in the contribution guide
+to set up and use Gerrit:
+
+   https://docs.openstack.org/contributors/code-and-documentation/quick-start.html
+
+Bugs should be filed on Storyboard:
+
+   https://storyboard.openstack.org/#!/project/933
+
+For more specific information about contributing to this repository, see the
+reno contributor guide:
+
+   https://docs.openstack.org/reno/latest/contributor/contributing.html
