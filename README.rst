@@ -55,4 +55,4 @@ Project Meta-data
 * Documentation: https://docs.openstack.org/reno/latest/
 * Source: https://opendev.org/openstack/reno/
 * Bugs: https://storyboard.openstack.org/#!/project/933
-* IRC: #openstack-release on freenode
+* IRC: #openstack-release on OFTC

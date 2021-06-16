@@ -11,7 +11,7 @@ with Reno.
 
 Communication
 ~~~~~~~~~~~~~
-* IRC channel #openstack-release at FreeNode
+* IRC channel #openstack-release at OFTC
 * Mailing list (prefix subjects with ``[release]`` for faster responses)
   http://lists.openstack.org/cgi-bin/mailman/listinfo/openstack-discuss
 
