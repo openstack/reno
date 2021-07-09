@@ -55,38 +55,40 @@ class TestValidate(base.TestCase):
                 ignore_cache=False,
             )
 
-    def test_prelude_list(self):
-        note_bodies = yaml.safe_load(textwrap.dedent('''
-        prelude:
-          - This is the first comment.
-          - This is a second.
-        '''))
-        self.assertIsInstance(note_bodies['prelude'], list)
-        ldr = self._make_loader(note_bodies)
-        ldr.parse_note_file('note1', None)
-        self.assertIn('prelude', self.logger.output)
+    def test_note_with_non_prelude_string_converted_to_list(self):
+        """Test behavior when a non-prelude note is not structured as a list.
 
-    def test_non_prelude_single_string_converted_to_list(self):
-        note_bodies = yaml.safe_load(textwrap.dedent('''
+        We should silently convert it to list.
+        """
+        note_bodies = yaml.safe_load(textwrap.dedent("""
         issues: |
-          This is a single string.
-        '''))
-        print(type(note_bodies['issues']))
+          This is a single string. It should be converted to a list.
+        """))
         self.assertIsInstance(note_bodies['issues'], str)
         ldr = self._make_loader(note_bodies)
         parse_results = ldr.parse_note_file('note1', None)
         self.assertIsInstance(parse_results['issues'], list)
 
-    def test_note_with_colon_as_dict(self):
+    def test_invalid_note_with_prelude_as_list(self):
+        note_bodies = yaml.safe_load(textwrap.dedent('''
+        prelude:
+          - The prelude should not be a list.
+        '''))
+        self.assertIsInstance(note_bodies['prelude'], list)
+        ldr = self._make_loader(note_bodies)
+        ldr.parse_note_file('note1', None)
+        self.assertIn('does not parse as a single string', self.logger.output)
+
+    def test_invalid_note_with_colon_as_dict(self):
         note_bodies = yaml.safe_load(textwrap.dedent('''
         issues:
-          - This is the first issue.
-          - dict: This is parsed as a dictionary.
+          - This line is fine.
+          - dict: But this is parsed as a mapping (dictionary), which is bad.
         '''))
         self.assertIsInstance(note_bodies['issues'][-1], dict)
         ldr = self._make_loader(note_bodies)
         ldr.parse_note_file('note1', None)
-        self.assertIn('dict', self.logger.output)
+        self.assertIn('instead of a string', self.logger.output)
 
     def test_invalid_note_with_missing_key(self):
         """Test behavior when note is not structured as a mapping.

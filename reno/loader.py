@@ -134,10 +134,9 @@ class Loader(object):
             if section_name == self._config.prelude_section_name:
                 if not isinstance(section_content, str):
                     LOG.warning(
-                        ('The %s section of %s '
-                         'does not parse as a single string. '
-                         'Is the YAML input escaped properly?') %
-                        (self._config.prelude_section_name, filename),
+                        'The %s section of %s does not parse as a single '
+                        'string. Is the YAML input escaped properly?',
+                        section_name, filename,
                     )
             else:
                 if isinstance(section_content, str):
@@ -147,21 +146,20 @@ class Loader(object):
                     section_content = [section_content]
                 elif not isinstance(section_content, list):
                     LOG.warning(
-                        ('The %s section of %s '
-                         'does not parse as a string or list of strings. '
-                         'Is the YAML input escaped properly?') % (
-                             section_name, filename),
+                        'The %s section of %s does not parse as a string or '
+                        'list of strings. Is the YAML input escaped properly?',
+                        section_name, filename,
                     )
                 else:
                     for item in section_content:
                         if not isinstance(item, str):
                             LOG.warning(
-                                ('The item %r in the %s section of %s '
-                                 'parses as a %s instead of a string. '
-                                 'Is the YAML input escaped properly?'
-                                 ) % (item, section_name,
-                                      filename, type(item)),
+                                'The item %r in the %s section of %s parses '
+                                'as a %s instead of a string. '
+                                'Is the YAML input escaped properly?',
+                                item, section_name, filename, type(item),
                             )
+
             cleaned_content[section_name] = section_content
 
         return cleaned_content
