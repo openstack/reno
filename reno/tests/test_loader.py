@@ -90,6 +90,20 @@ class TestValidate(base.TestCase):
         ldr.parse_note_file('note1', None)
         self.assertIn('instead of a string', self.logger.output)
 
+    def test_invalid_note_with_unrecognized_key(self):
+        """Test behavior when note contains an unrecognized section."""
+        note_bodies = yaml.safe_load(textwrap.dedent('''
+        foobar:
+        - |
+          This is an issue but we're using an unrecognized section key.
+        '''))
+        self.assertIsInstance(note_bodies, dict)
+        ldr = self._make_loader(note_bodies)
+        ldr.parse_note_file('note1', None)
+        self.assertIn(
+            'The foobar section of note1 is not a recognized section.',
+            self.logger.output)
+
     def test_invalid_note_with_missing_key(self):
         """Test behavior when note is not structured as a mapping.
 

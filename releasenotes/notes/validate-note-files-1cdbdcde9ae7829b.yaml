@@ -2,4 +2,4 @@
 features:
   - |
     Release note file validation is improved. Files missing section information
-    will now be correctly handled and rejected.
+    will now be correctly handled and rejected, as will invalid sections.
