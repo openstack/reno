@@ -119,6 +119,17 @@ class Loader(object):
 
         cleaned_content = {}
 
+        if not isinstance(content, dict):
+            LOG.warning(
+                '%s does not appear to be structured as a YAML mapping. '
+                'Did you forget a top-level key?',
+                filename,
+            )
+            raise ValueError(
+                f'{filename} does not appear to be structured as a YAML '
+                f'mapping. Did you forget a top-level key?'
+            )
+
         for section_name, section_content in content.items():
             if section_name == self._config.prelude_section_name:
                 if not isinstance(section_content, str):

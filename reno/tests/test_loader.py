@@ -87,3 +87,19 @@ class TestValidate(base.TestCase):
         ldr = self._make_loader(note_bodies)
         ldr.parse_note_file('note1', None)
         self.assertIn('dict', self.logger.output)
+
+    def test_invalid_note_with_missing_key(self):
+        """Test behavior when note is not structured as a mapping.
+
+        This one should be an error since we can't correct the input.
+        """
+        note_bodies = yaml.safe_load(textwrap.dedent('''
+        - |
+          This is an issue but we're missing the top-level 'issues' key.
+        '''))
+        self.assertIsInstance(note_bodies, list)
+        ldr = self._make_loader(note_bodies)
+        self.assertRaises(ValueError, ldr.parse_note_file, 'note1', None)
+        self.assertIn(
+            'does not appear to be structured as a YAML mapping',
+            self.logger.output)
