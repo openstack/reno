@@ -533,6 +533,16 @@ class Scanner(object):
         )
         self._encoding = conf.options['encoding']
 
+    def close(self):
+        """Close any files opened by this scanner."""
+        self._repo.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def _get_ref(self, name):
         if name:
             candidates = [

@@ -65,8 +65,8 @@ class TestValidate(base.TestCase):
           This is a single string. It should be converted to a list.
         """))
         self.assertIsInstance(note_bodies['issues'], str)
-        ldr = self._make_loader(note_bodies)
-        parse_results = ldr.parse_note_file('note1', None)
+        with self._make_loader(note_bodies) as ldr:
+            parse_results = ldr.parse_note_file('note1', None)
         self.assertIsInstance(parse_results['issues'], list)
 
     def test_invalid_note_with_prelude_as_list(self):
@@ -75,8 +75,8 @@ class TestValidate(base.TestCase):
           - The prelude should not be a list.
         '''))
         self.assertIsInstance(note_bodies['prelude'], list)
-        ldr = self._make_loader(note_bodies)
-        ldr.parse_note_file('note1', None)
+        with self._make_loader(note_bodies) as ldr:
+            ldr.parse_note_file('note1', None)
         self.assertIn('does not parse as a single string', self.logger.output)
 
     def test_invalid_note_with_colon_as_dict(self):
@@ -86,8 +86,8 @@ class TestValidate(base.TestCase):
           - dict: But this is parsed as a mapping (dictionary), which is bad.
         '''))
         self.assertIsInstance(note_bodies['issues'][-1], dict)
-        ldr = self._make_loader(note_bodies)
-        ldr.parse_note_file('note1', None)
+        with self._make_loader(note_bodies) as ldr:
+            ldr.parse_note_file('note1', None)
         self.assertIn('instead of a string', self.logger.output)
 
     def test_invalid_note_with_unrecognized_key(self):
@@ -98,8 +98,8 @@ class TestValidate(base.TestCase):
           This is an issue but we're using an unrecognized section key.
         '''))
         self.assertIsInstance(note_bodies, dict)
-        ldr = self._make_loader(note_bodies)
-        ldr.parse_note_file('note1', None)
+        with self._make_loader(note_bodies) as ldr:
+            ldr.parse_note_file('note1', None)
         self.assertIn(
             'The foobar section of note1 is not a recognized section.',
             self.logger.output)
@@ -114,8 +114,8 @@ class TestValidate(base.TestCase):
           This is an issue but we're missing the top-level 'issues' key.
         '''))
         self.assertIsInstance(note_bodies, list)
-        ldr = self._make_loader(note_bodies)
-        self.assertRaises(ValueError, ldr.parse_note_file, 'note1', None)
+        with self._make_loader(note_bodies) as ldr:
+            self.assertRaises(ValueError, ldr.parse_note_file, 'note1', None)
         self.assertIn(
             'does not appear to be structured as a YAML mapping',
             self.logger.output)

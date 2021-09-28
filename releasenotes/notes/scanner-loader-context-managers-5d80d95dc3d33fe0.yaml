@@ -1,0 +1,31 @@
+---
+fixes:
+  - |
+    Instances of ``reno.scanner.Scanner`` and ``reno.loader.Loader`` will now
+    corectly close all open files related to the scanned Git repo when the
+    ``close()`` method is called. Alternatively, these classes may be used as
+    a context manager. Previously, Python would attempt to close these files
+    itself, resulting in a ``ResourceWarning`` warning being emitted.
+features:
+  - |
+    The ``reno.scanner.Scanner`` and ``reno.loader.Loader`` classes can now
+    be used as context managers. For example::
+
+        import reno.scannner
+
+        with reno.scanner.Scanner(...) as scanner:
+            pass
+
+    This will ensure any open files pertaining to the scanned Git repo are
+    correctly closed, avoiding ``ResourceWarning`` instances otherwise seen.
+
+    A ``close()`` method is also provided for both, allowing use outside of
+    context managers. For example::
+
+        import reno.loader
+
+        loader = reno.loader.Loader(...)
+        try:
+            pass
+        finally:
+            loader.close()

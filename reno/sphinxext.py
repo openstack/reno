@@ -111,22 +111,23 @@ class ReleaseNotesDirective(rst.Directive):
                  os.path.join(conf.reporoot, notesdir),
                  branch or 'current branch'))
 
-        ldr = loader.Loader(conf)
-        if version_opt is not None:
-            versions = [
-                v.strip()
-                for v in version_opt.split(',')
-            ]
-        else:
-            versions = ldr.versions
-        LOG.info('got versions %s' % (versions,))
-        text = formatter.format_report(
-            ldr,
-            conf,
-            versions,
-            title=title,
-            branch=branch,
-        )
+        with loader.Loader(conf) as ldr:
+            if version_opt is not None:
+                versions = [
+                    v.strip()
+                    for v in version_opt.split(',')
+                ]
+            else:
+                versions = ldr.versions
+            LOG.info('got versions %s' % (versions,))
+            text = formatter.format_report(
+                ldr,
+                conf,
+                versions,
+                title=title,
+                branch=branch,
+            )
+
         source_name = '<%s %s>' % (__name__, branch or 'current branch')
         result = statemachine.ViewList()
         for line_num, line in enumerate(text.splitlines(), 1):

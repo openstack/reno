@@ -49,6 +49,13 @@ class TestFormatterBase(base.TestCase):
                 ignore_cache=False,
             )
 
+    def tearDown(self):
+        # we don't need to worry about closing this after since we're not
+        # actually using a real Git repo here (see the mock above), but we'll
+        # do so to enforce the contract
+        self.ldr.close()
+        super().tearDown()
+
 
 class TestFormatter(TestFormatterBase):
 

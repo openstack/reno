@@ -30,8 +30,7 @@ def get_cache_filename(conf):
 class Loader(object):
     "Load the release notes for a given repository."
 
-    def __init__(self, conf,
-                 ignore_cache=False):
+    def __init__(self, conf, ignore_cache=False):
         """Initialize a Loader.
 
         The versions are presented in reverse chronological order.
@@ -70,23 +69,36 @@ class Loader(object):
 
         if (not self._ignore_cache) and cache_file_exists:
             LOG.debug('loading cache file %s', self._cache_filename)
+
             with open(self._cache_filename, 'r', encoding=self._encoding) as f:
                 self._cache = yaml.safe_load(f.read())
-                # Save the cached scanner output to the same attribute
-                # it would be in if we had loaded it "live". This
-                # simplifies some of the logic in the other methods.
-                self._scanner_output = collections.OrderedDict(
-                    (n['version'], n['files'])
-                    for n in self._cache['notes']
-                )
-                self._tags_to_dates = collections.OrderedDict(
-                    (n['version'], n['date'])
-                    for n in self._cache['dates']
-                )
+
+            # Save the cached scanner output to the same attribute
+            # it would be in if we had loaded it "live". This
+            # simplifies some of the logic in the other methods.
+            self._scanner_output = collections.OrderedDict(
+                (n['version'], n['files'])
+                for n in self._cache['notes']
+            )
+            self._tags_to_dates = collections.OrderedDict(
+                (n['version'], n['date'])
+                for n in self._cache['dates']
+            )
         else:
             self._scanner = scanner.Scanner(self._config)
             self._scanner_output = self._scanner.get_notes_by_version()
             self._tags_to_dates = self._scanner.get_version_dates()
+
+    def close(self):
+        """Close any files opened by this loader."""
+        if self._scanner is not None:
+            self._scanner.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     @property
     def versions(self):

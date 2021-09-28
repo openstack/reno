@@ -127,13 +127,15 @@ class BuildReno(cmd.Command):
         )
         log.info('wrote cache file to %s', cache_filename)
 
-        ldr = loader.Loader(conf)
-        text = formatter.format_report(
-            ldr,
-            conf,
-            ldr.versions,
-            title=self.distribution.metadata.name,
-        )
+        with loader.Loader(conf) as ldr:
+            text = formatter.format_report(
+                ldr,
+                conf,
+                ldr.versions,
+                title=self.distribution.metadata.name,
+            )
+
         with open(self.output_file, 'w') as f:
             f.write(text)
+
         log.info('wrote release notes to %s', self.output_file)

@@ -21,50 +21,48 @@ from reno import scanner
 
 
 def build_cache_db(conf, versions_to_include):
-    s = scanner.Scanner(conf)
+    with scanner.Scanner(conf) as s:
+        branches = [conf.branch]
+        if not conf.branch:  # if no branch requested, scan all
+            branches += s.get_series_branches()
 
-    branches = [conf.branch]
-    if not conf.branch:  # if no branch requested, scan all
-        branches += s.get_series_branches()
+        notes = collections.OrderedDict()
+        for branch in branches:
+            notes.update(s.get_notes_by_version(branch))
 
-    notes = collections.OrderedDict()
-    for branch in branches:
-        notes.update(s.get_notes_by_version(branch))
+        # Default to including all versions returned by the scanner.
+        if not versions_to_include:
+            versions_to_include = list(notes.keys())
 
-    # Default to including all versions returned by the scanner.
-    if not versions_to_include:
-        versions_to_include = list(notes.keys())
+        # Build a cache data structure including the file contents as well
+        # as the basic data returned by the scanner.
+        file_contents = {}
+        for version in versions_to_include:
+            for filename, sha in notes[version]:
+                body = s.get_file_at_commit(filename, sha)
+                # We want to save the contents of the file, which is YAML,
+                # inside another YAML file. That looks terribly ugly with
+                # all of the escapes needed to format it properly as
+                # embedded YAML, so parse the input and convert it to a
+                # data structure that can be serialized cleanly.
+                y = yaml.safe_load(body)
+                file_contents[filename] = y
 
-    # Build a cache data structure including the file contents as well
-    # as the basic data returned by the scanner.
-    file_contents = {}
-    for version in versions_to_include:
-        for filename, sha in notes[version]:
-            body = s.get_file_at_commit(filename, sha)
-            # We want to save the contents of the file, which is YAML,
-            # inside another YAML file. That looks terribly ugly with
-            # all of the escapes needed to format it properly as
-            # embedded YAML, so parse the input and convert it to a
-            # data structure that can be serialized cleanly.
-            y = yaml.safe_load(body)
-            file_contents[filename] = y
-
-    cache = {
-        'notes': [
-            {'version': k, 'files': v}
-            for k, v in notes.items()
-        ],
-        'dates': [
-            {'version': k, 'date': v}
-            for k, v in s.get_version_dates().items()
-        ],
-        'file-contents': file_contents,
-    }
-    return cache
+        cache = {
+            'notes': [
+                {'version': k, 'files': v}
+                for k, v in notes.items()
+            ],
+            'dates': [
+                {'version': k, 'date': v}
+                for k, v in s.get_version_dates().items()
+            ],
+            'file-contents': file_contents,
+        }
+        return cache
 
 
-def write_cache_db(conf, versions_to_include,
-                   outfilename=None):
+def write_cache_db(conf, versions_to_include, outfilename=None):
     """Create a cache database file for the release notes data.
 
     Build the cache database from scanning the project history and

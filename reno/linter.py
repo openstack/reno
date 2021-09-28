@@ -27,22 +27,24 @@ def lint_cmd(args, conf):
     notes = glob.glob(os.path.join(notesdir, '*.yaml'))
 
     error = 0
-    load = loader.Loader(conf, ignore_cache=True)
     allowed_section_names = [conf.prelude_section_name] + \
                             [s[0] for s in conf.sections]
 
     uids = {}
-    for f in notes:
-        LOG.debug('examining %s', f)
-        uid = scanner._get_unique_id(f)
-        uids.setdefault(uid, []).append(f)
+    with loader.Loader(conf, ignore_cache=True) as ldr:
+        for f in notes:
+            LOG.debug('examining %s', f)
+            uid = scanner._get_unique_id(f)
+            uids.setdefault(uid, []).append(f)
 
-        content = load.parse_note_file(f, None)
-        for section_name in content.keys():
-            if section_name not in allowed_section_names:
-                LOG.warning('unrecognized section name %s in %s',
-                            section_name, f)
-                error = 1
+            content = ldr.parse_note_file(f, None)
+            for section_name in content.keys():
+                if section_name not in allowed_section_names:
+                    LOG.warning(
+                        'unrecognized section name %s in %s',
+                        section_name, f,
+                    )
+                    error = 1
 
     for uid, names in sorted(uids.items()):
         if len(names) > 1:
