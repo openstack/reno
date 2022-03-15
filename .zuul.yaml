@@ -1,5 +1,5 @@
 - project:
     templates:
-      - openstack-python3-victoria-jobs
+      - openstack-python3-jobs
       - openstack-cover-jobs
       - publish-openstack-docs-pti
