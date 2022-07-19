@@ -73,6 +73,7 @@ class Loader(object):
             with open(self._cache_filename, 'r', encoding=self._encoding) as f:
                 self._cache = yaml.safe_load(f.read())
 
+        if self._cache:
             # Save the cached scanner output to the same attribute
             # it would be in if we had loaded it "live". This
             # simplifies some of the logic in the other methods.
