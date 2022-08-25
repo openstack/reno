@@ -28,8 +28,8 @@ extensions = [
 master_doc = 'index'
 
 # General information about the project.
-project = u'reno'
-copyright = u'2013, OpenStack Foundation'
+project = 'reno'
+copyright = '2013, OpenStack Foundation'
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'native'
