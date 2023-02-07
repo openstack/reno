@@ -106,7 +106,7 @@ def format_report(loader, config, versions_to_include, title=None,
                     section.title, version_title, title, branch))
                 report.append('')
                 report.append(section.title)
-                report.append('-' * len(section.title))
+                report.append(section.header_underline())
                 report.append('')
                 for n, fn, sha in notes:
                     if show_source:

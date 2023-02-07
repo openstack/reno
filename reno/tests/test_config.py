@@ -16,6 +16,7 @@ import os
 from unittest import mock
 
 import fixtures
+from testtools import ExpectedException
 
 from reno import config
 from reno.config import Section
@@ -73,6 +74,39 @@ collapse_pre_releases: false
         actual = c.options
         expected = expected_options(notesdir='value2')
         self.assertEqual(expected, actual)
+
+    def test_override_sections_with_subsections(self):
+        c = config.Config(self.tempdir.path)
+        c.override(
+            sections=[
+                ["features", "Features"],
+                ["features_sub", "Sub", 2],
+                ["features_subsub", "Subsub", 3],
+                ["bugs", "Bugs"],
+                ["bugs_sub", "Sub", 2],
+                ["documentation", "Documentation", 1]
+            ],
+        )
+        actual = c.options
+        expected = expected_options(
+            sections=[
+                Section("features", "Features", section_level=1),
+                Section("features_sub", "Sub", section_level=2),
+                Section("features_subsub", "Subsub", section_level=3),
+                Section("bugs", "Bugs", section_level=1),
+                Section("bugs_sub", "Sub", section_level=2),
+                Section("documentation", "Documentation", section_level=1),
+            ]
+        )
+        self.assertEqual(expected, actual)
+
+        # Also check data validation.
+        with ExpectedException(ValueError):
+            c.override(sections=[["features"]])
+        with ExpectedException(ValueError):
+            c.override(sections=[["features", "Features", 0]])
+        with ExpectedException(ValueError):
+            c.override(sections=[["features", "Features", 5]])
 
     def test_load_file_not_present(self):
         missing = 'reno.config.Config._report_missing_config_files'

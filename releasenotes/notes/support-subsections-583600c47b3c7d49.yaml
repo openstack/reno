@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Reno now allows specifying subsections, which will appear under
+    their top-level sections like "Features". This allows you to group
+    related changes together better.
+
+    To enable, set the ``sections`` value in config. Add subsections directly
+    underneath their top-level section, with the number ``2`` or ``3`` after
+    to indicate its nesting level. For example,
+    ``["features_command_line", "Command Line", 2]``. Then, in your release note
+    files, use the ID of the subsection, e.g. ``features_command_line``.

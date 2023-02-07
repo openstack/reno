@@ -21,6 +21,12 @@ features:
 fixes:
   - Use YAML lists to add multiple items to the same section.
   - Another fix could be listed here.
+fixes_command_line:
+  - |
+    This is a subsection. It requires setting `sections` in
+    config with an entry underneath `['fixes', 'Bug Fixes']` like
+    `['fixes_command_line', 'Command Line', 2]`. The `2` at the end
+    indicates that the entry is a subsection header.
 other:
   - |
     This bullet item includes a paragraph and a nested list,
