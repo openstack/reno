@@ -127,13 +127,26 @@ class GitRepoFixture(fixtures.Fixture):
 
     def __init__(self, reporoot):
         self.reporoot = reporoot
+
+        git_version_re = re.compile(r'^git version (\d+)\.(\d+)')
+        git_version_raw = utils.check_output(['git', '--version'])
+        git_version_match = git_version_re.match(git_version_raw)
+        self.git_version = (
+            int(git_version_match.group(1)),
+            int(git_version_match.group(2)),
+        )
+
         super(GitRepoFixture, self).__init__()
 
     def setUp(self):
         super(GitRepoFixture, self).setUp()
         self.useFixture(GPGKeyFixture())
         os.makedirs(self.reporoot)
-        self.git('init', '.')
+        if self.git_version > (2, 27):
+            # The branch defaults to `main` on modern Git.
+            self.git('init', '.', '--initial-branch', 'master')
+        else:
+            self.git('init', '.')
         self.git('config', '--local', 'user.email', 'example@example.com')
         self.git('config', '--local', 'user.name', 'reno developer')
         self.git('config', '--local', 'user.signingkey',
