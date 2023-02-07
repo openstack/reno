@@ -18,9 +18,24 @@ from unittest import mock
 import fixtures
 
 from reno import config
+from reno.config import Section
 from reno import defaults
 from reno import main
 from reno.tests import base
+
+
+def expected_options(**overrides):
+    """The default config options, along with any overrides set via kwargs."""
+    result = {
+        o.name: (
+            Section.from_raw_yaml(o.default)
+            if o.name == "sections"
+            else o.default
+        )
+        for o in config._OPTIONS
+    }
+    result.update(**overrides)
+    return result
 
 
 class TestConfig(base.TestCase):
@@ -36,11 +51,7 @@ collapse_pre_releases: false
     def test_defaults(self):
         c = config.Config(self.tempdir.path)
         actual = c.options
-        expected = {
-            o.name: o.default
-            for o in config._OPTIONS
-        }
-        self.assertEqual(expected, actual)
+        self.assertEqual(expected_options(), actual)
 
     def test_override(self):
         c = config.Config(self.tempdir.path)
@@ -48,11 +59,7 @@ collapse_pre_releases: false
             collapse_pre_releases=False,
         )
         actual = c.options
-        expected = {
-            o.name: o.default
-            for o in config._OPTIONS
-        }
-        expected['collapse_pre_releases'] = False
+        expected = expected_options(collapse_pre_releases=False)
         self.assertEqual(expected, actual)
 
     def test_override_multiple(self):
@@ -64,11 +71,7 @@ collapse_pre_releases: false
             notesdir='value2',
         )
         actual = c.options
-        expected = {
-            o.name: o.default
-            for o in config._OPTIONS
-        }
-        expected['notesdir'] = 'value2'
+        expected = expected_options(notesdir='value2')
         self.assertEqual(expected, actual)
 
     def test_load_file_not_present(self):
@@ -127,22 +130,14 @@ collapse_pre_releases: false
             o.name: getattr(c, o.name)
             for o in config._OPTIONS
         }
-        expected = {
-            o.name: o.default
-            for o in config._OPTIONS
-        }
-        self.assertEqual(expected, actual)
+        self.assertEqual(expected_options(), actual)
 
     def test_override_from_parsed_args_boolean_false(self):
         c = self._run_override_from_parsed_args([
             '--no-collapse-pre-releases',
         ])
         actual = c.options
-        expected = {
-            o.name: o.default
-            for o in config._OPTIONS
-        }
-        expected['collapse_pre_releases'] = False
+        expected = expected_options(collapse_pre_releases=False)
         self.assertEqual(expected, actual)
 
     def test_override_from_parsed_args_boolean_true(self):
@@ -150,11 +145,7 @@ collapse_pre_releases: false
             '--collapse-pre-releases',
         ])
         actual = c.options
-        expected = {
-            o.name: o.default
-            for o in config._OPTIONS
-        }
-        expected['collapse_pre_releases'] = True
+        expected = expected_options(collapse_pre_releases=True)
         self.assertEqual(expected, actual)
 
     def test_override_from_parsed_args_string(self):
@@ -162,11 +153,7 @@ collapse_pre_releases: false
             '--earliest-version', '1.2.3',
         ])
         actual = c.options
-        expected = {
-            o.name: o.default
-            for o in config._OPTIONS
-        }
-        expected['earliest_version'] = '1.2.3'
+        expected = expected_options(earliest_version='1.2.3')
         self.assertEqual(expected, actual)
 
     def test_override_from_parsed_args_ignore_non_options(self):

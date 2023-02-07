@@ -10,10 +10,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import collections
 import logging
 import os.path
 import textwrap
+from typing import Any
+from typing import List
+from typing import NamedTuple
 
 import yaml
 
@@ -22,7 +24,20 @@ from reno import defaults
 LOG = logging.getLogger(__name__)
 
 
-Opt = collections.namedtuple('Opt', 'name default help')
+class Opt(NamedTuple):
+    name: str
+    default: Any
+    help: str
+
+
+class Section(NamedTuple):
+    name: str
+    title: str
+
+    @classmethod
+    def from_raw_yaml(cls, val: List[List[str]]) -> List["Section"]:
+        return [Section(*entry) for entry in val]
+
 
 _OPTIONS = [
     Opt('notesdir', defaults.NOTES_SUBDIR,
@@ -219,13 +234,13 @@ _OPTIONS = [
 ]
 
 
-class Config(object):
+class Config:
 
     _OPTS = {o.name: o for o in _OPTIONS}
 
     @classmethod
     def get_default(cls, opt):
-        "Return the default for an option."
+        """Return the default for an option."""
         try:
             return cls._OPTS[opt].default
         except KeyError:
@@ -301,12 +316,14 @@ class Config(object):
         # Replace prelude section name if it has been changed.
         self._rename_prelude_section(**kwds)
 
-        for n, v in kwds.items():
-            if n not in self._OPTS:
+        for name, val in kwds.items():
+            if name not in self._OPTS:
                 LOG.warning('ignoring unknown configuration value %r = %r',
-                            n, v)
+                            name, val)
             else:
-                setattr(self, n, v)
+                if name == "sections":
+                    val = Section.from_raw_yaml(val)
+                setattr(self, name, val)
 
     def override_from_parsed_args(self, parsed_args):
         """Set the values of the configuration options from parsed CLI args.

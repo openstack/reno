@@ -94,19 +94,19 @@ def format_report(loader, config, versions_to_include, title=None,
             report.append('')
 
         # Add other sections.
-        for section_name, section_title in config.sections:
+        for section in config.sections:
             notes = [
                 (n, fn, sha)
                 for fn, sha in notefiles
-                if file_contents[fn].get(section_name)
-                for n in file_contents[fn].get(section_name, [])
+                if file_contents[fn].get(section.name)
+                for n in file_contents[fn].get(section.name, [])
             ]
             if notes:
                 report.append(_section_anchor(
-                    section_title, version_title, title, branch))
+                    section.title, version_title, title, branch))
                 report.append('')
-                report.append(section_title)
-                report.append('-' * len(section_title))
+                report.append(section.title)
+                report.append('-' * len(section.title))
                 report.append('')
                 for n, fn, sha in notes:
                     if show_source:
