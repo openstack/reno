@@ -133,6 +133,23 @@ _OPTIONS = [
         to "stable/".
         """)),
 
+    Opt('branch_sort_re', 'stable/([0-9].*)',
+        textwrap.dedent("""\
+        By default branches are sorted alphabetically, except
+        for branches matching this pattern, those will be sorted
+        with branch_sort_prefix inserted in order to accomodate
+        the way OpenStack stable branches are named and sorted.
+        """)),
+
+    Opt('branch_sort_prefix', 'stable/zzz',
+        textwrap.dedent("""\
+        The prefix to add to names of branches matched
+        by branch_sort_re. This allows OpenStack branches
+        to be sorted according to the current release
+        naming scheme. Set to "stable/" in order to
+        restore plain alphabetic ordering.
+        """)),
+
     Opt('sections',
         [
             ['features', 'New Features'],

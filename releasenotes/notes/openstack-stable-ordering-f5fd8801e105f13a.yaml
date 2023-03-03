@@ -1,0 +1,16 @@
+---
+features:
+  - |
+    The default sort order for branch names has been modified in order
+    to accomodate the way OpenStack stable branches are named. Branches
+    that match the pattern ``stable/[0-9].*`` will be sorted as
+    ``stable/zzz[0-9].*``. This ensures that the new numerical branch
+    names like ``stable/2023.1`` will be sorted after the older stable
+    branches like ``stable/zed``. Two new variables have been added to
+    control the behaviour, ``branch_sort_re`` and ``branch_sort_prefix``.
+    See their help text for more information.
+upgrade:
+  - |
+    The default sort order for branch names has been modified in order
+    to accomodate the way OpenStack stable branches are named. See the
+    "Features" section for more information.

@@ -527,6 +527,11 @@ class Scanner(object):
             self.conf.closed_branch_tag_re,
             flags=re.VERBOSE | re.UNICODE,
         )
+        self.branch_sort_prefix = self.conf.branch_sort_prefix
+        self.branch_sort_re = re.compile(
+            self.conf.branch_sort_re,
+            flags=re.VERBOSE | re.UNICODE,
+        )
         self._ignore_uids = set(
             _get_unique_id(fn)
             for fn in self.conf.ignore_notes
@@ -842,6 +847,12 @@ class Scanner(object):
         return bool(self.get_file_at_commit(filename, sha,
                                             encoding=self._encoding))
 
+    def _branch_sort_key(self, name):
+        match = self.branch_sort_re.search(name)
+        if match:
+            return self.branch_sort_prefix + match.group(1)
+        return name
+
     def get_series_branches(self):
         "Get branches matching the branch_name_re config option."
         refs = self._repo.get_refs()
@@ -868,7 +879,7 @@ class Scanner(object):
                 LOG.debug('closed branch tag %s becomes %s',
                           r.rpartition('/')[-1], name)
                 branch_names.add(name)
-        return list(sorted(branch_names))
+        return list(sorted(branch_names, key=self._branch_sort_key))
 
     def _get_earlier_branch(self, branch):
         "Return the name of the branch created before the given branch."
