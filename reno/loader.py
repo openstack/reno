@@ -143,6 +143,9 @@ class Loader(object):
                 f'mapping. Did you forget a top-level key?'
             )
 
+        valid_section_names = {
+            section.name for section in self._config.sections
+        }
         for section_name, section_content in content.items():
             if section_name == self._config.prelude_section_name:
                 if not isinstance(section_content, str):
@@ -152,14 +155,14 @@ class Loader(object):
                         section_name, filename,
                     )
             else:
-                if section_name not in dict(self._config.sections):
+                if section_name not in valid_section_names:
                     # TODO(stephenfin): Make this an error in a future release
                     LOG.warning(
                         'The %s section of %s is not a recognized section. '
                         'It should be one of: %s. '
                         'This will be an error in a future release.',
                         section_name, filename,
-                        ', '.join(dict(self._config.sections)),
+                        ', '.join(valid_section_names),
                     )
                 if isinstance(section_content, str):
                     # A single string is OK, but wrap it with a list

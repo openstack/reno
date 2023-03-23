@@ -21,14 +21,14 @@ LOG = logging.getLogger(__name__)
 
 
 def lint_cmd(args, conf):
-    "Check some common mistakes"
+    """Check some common mistakes"""
     LOG.debug('starting lint')
     notesdir = os.path.join(conf.reporoot, conf.notespath)
     notes = glob.glob(os.path.join(notesdir, '*.yaml'))
 
     error = 0
     allowed_section_names = [conf.prelude_section_name] + \
-                            [s[0] for s in conf.sections]
+                            [s.name for s in conf.sections]
 
     uids = {}
     with loader.Loader(conf, ignore_cache=True) as ldr:
