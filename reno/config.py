@@ -16,6 +16,7 @@ import textwrap
 from typing import Any
 from typing import List
 from typing import NamedTuple
+from typing import Union
 
 import yaml
 
@@ -33,10 +34,47 @@ class Opt(NamedTuple):
 class Section(NamedTuple):
     name: str
     title: str
+    section_level: int  # 1 represents top-level; higher values are subsctions
 
     @classmethod
-    def from_raw_yaml(cls, val: List[List[str]]) -> List["Section"]:
-        return [Section(*entry) for entry in val]
+    def from_raw_yaml(
+        cls, val: List[List[Union[str, int]]]
+    ) -> List["Section"]:
+        result = []
+        for entry in val:
+            if len(entry) == 2:
+                section_level = 1
+            elif len(entry) == 3:
+                section_level = entry[2]
+                if (
+                    not isinstance(section_level, int)
+                    or section_level < 1
+                    or section_level > 3
+                ):
+                    raise ValueError(
+                        "The third argument for each entry in the `sections` "
+                        "option config must be an integer between 1 and 3."
+                        f"Invalid entry: {entry}"
+                    )
+            else:
+                raise ValueError(
+                    "Each entry in the `sections` option config must be a "
+                    f"list with 2 or 3 values. Invalid entry: {entry}"
+                )
+            result.append(
+                Section(
+                    name=entry[0], title=entry[1], section_level=section_level
+                )
+            )
+        return result
+
+    def header_underline(self) -> str:
+        symbol = {
+            1: "-",
+            2: "^",
+            3: "~",
+        }[self.section_level]
+        return symbol * len(self.title)
 
 
 _OPTIONS = [
@@ -181,6 +219,20 @@ _OPTIONS = [
         release notes, in the order in which the final report will
         be generated. A prelude section will always be automatically
         inserted before the first element of this list.
+
+        You can optionally include a number from 1 to 3 at the
+        end of the list to mark the entry as a subsection. By default,
+        each section has the number 1, which represents a top-level
+        section. Use 2 and 3 for subsections and subsubsections.
+        For example, ``['features', 'New Features', 1]``,
+        ``['features_command_line', 'Command Line', 2]``,
+        and ``['features_command_line_ios', 'iOS', 3]``. The order of this
+        option matters; define subsections right after their ancestor
+        sections.
+
+        Warning: you should check that ``semver_major``, ``semver_minor``,
+        and ``semver_patch`` includes the relevant section names,
+        including subsections.
         """)),
 
     Opt('prelude_section_name', defaults.PRELUDE_SECTION_NAME,

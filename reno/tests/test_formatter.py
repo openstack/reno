@@ -132,6 +132,9 @@ class TestFormatterCustomSections(TestFormatterBase):
             'api': [
                 'This is the API change for the first feature.',
             ],
+            'features_subsubsection': [
+                'This is a subsubsection feature.',
+            ],
         },
         'note3': {
             'api': [
@@ -140,14 +143,19 @@ class TestFormatterCustomSections(TestFormatterBase):
             'features': [
                 'This is the second feature.',
             ],
+            'features_subsection': [
+                'This is a subsection feature.',
+            ],
         },
     }
 
     def setUp(self):
         super(TestFormatterCustomSections, self).setUp()
         self.c.override(sections=[
-            ['api', 'API Changes'],
             ['features', 'New Features'],
+            ['features_subsection', 'Subsection', 2],
+            ['features_subsubsection', 'Subsubsection', 3],
+            ['api', 'API Changes'],
         ])
 
     def test_custom_section_order(self):
@@ -160,10 +168,37 @@ class TestFormatterCustomSections(TestFormatterBase):
         prelude_pos = result.index('This is the prelude.')
         api_pos = result.index('API Changes')
         features_pos = result.index('New Features')
-        expected = [prelude_pos, api_pos, features_pos]
-        actual = list(sorted([prelude_pos, features_pos, api_pos]))
+        features_subsection_pos = result.index('Subsection')
+        features_subsubsection_pos = result.index('Subsubsection')
+        expected = [
+            prelude_pos,
+            features_pos,
+            features_subsection_pos,
+            features_subsubsection_pos,
+            api_pos,
+        ]
+        actual = sorted(expected)
         self.assertEqual(expected, actual)
         self.assertIn('.. _relnotes_1.0.0_API Changes:', result)
+
+    def test_header_underlines(self):
+        result = formatter.format_report(
+            loader=self.ldr,
+            config=self.c,
+            versions_to_include=self.versions,
+            title=None,
+        ).splitlines()
+
+        def assert_header(header: str, char: str) -> None:
+            pos = next(
+                i for i, line in enumerate(result) if line.strip() == header
+            )
+            expected = char * len(header)
+            self.assertEqual(result[pos + 1].strip(), expected)
+
+        assert_header("New Features", "-")
+        assert_header("Subsection", "^")
+        assert_header("Subsubsection", "~")
 
 
 class TestFormatterCustomUnreleaseTitle(TestFormatterBase):
