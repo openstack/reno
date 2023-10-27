@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Remove noisy log statement for deleted release notes. These look like:
+
+      unable to find release notes file associated with unique id '34cd623294a30d83', skipping

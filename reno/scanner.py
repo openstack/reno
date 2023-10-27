@@ -15,7 +15,6 @@ import fnmatch
 import logging
 import os.path
 import re
-import sys
 
 from dulwich import diff_tree
 from dulwich import index as d_index
@@ -1225,7 +1224,6 @@ class Scanner(object):
                 msg = ('unable to find release notes file associated '
                        'with unique id %r, skipping') % uniqueid
                 LOG.debug(msg)
-                print(msg, file=sys.stderr)
 
         # Combine pre-releases into the final release, if we are told to
         # and the final release exists.
