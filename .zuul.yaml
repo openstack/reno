@@ -3,9 +3,3 @@
       - openstack-python3-jobs
       - openstack-cover-jobs
       - publish-openstack-docs-pti
-    check:
-      jobs:
-        - openstack-tox-py36
-    gate:
-      jobs:
-        - openstack-tox-py36
