@@ -555,6 +555,9 @@ class Scanner(object):
                 'refs/tags/' + name,
                 # If a stable branch was removed, look for its EOL tag.
                 'refs/tags/' + (name.rpartition('/')[-1] + '-eol'),
+                # If a stable branch was moved to unmaintained, look
+                # for its EOM tag. EOL will have precedence if exists.
+                'refs/tags/' + (name.rpartition('/')[-1] + '-eom'),
                 # If someone is using the "short" name for a branch
                 # without a local tracking branch, look to see if the
                 # name exists on the 'origin' remote.

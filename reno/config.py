@@ -167,7 +167,7 @@ _OPTIONS = [
         "base" of a branch. Other branches are ignored.
         """)),
 
-    Opt('closed_branch_tag_re', '(.+)-eol',
+    Opt('closed_branch_tag_re', '(.+)-eo[lm]',
         textwrap.dedent("""\
         The pattern for names for tags that replace closed
         branches that are relevant when scanning history to

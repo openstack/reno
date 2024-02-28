@@ -1874,6 +1874,8 @@ class GetRefTest(Base):
         self.repo.git('tag', '-s', '-m', 'first tag', '1.0.0')
         self.repo.git('branch', 'stable/foo')
         self.repo.git('tag', 'bar-eol')
+        self.repo.git('tag', 'bar-eom')
+        self.repo.git('tag', 'baz-eom')
         self.scanner = scanner.Scanner(self.c)
 
     def tearDown(self):
@@ -1892,6 +1894,11 @@ class GetRefTest(Base):
 
     def test_eol_tag_from_branch(self):
         ref = self.scanner._get_ref('stable/bar')
+        expected = self.scanner._repo.head()
+        self.assertEqual(expected, ref)
+
+    def test_eom_tag_from_branch(self):
+        ref = self.scanner._get_ref('stable/baz')
         expected = self.scanner._repo.head()
         self.assertEqual(expected, ref)
 
