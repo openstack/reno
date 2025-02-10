@@ -20,8 +20,6 @@ For more information, refer to the distutils and setuptools source:
 - https://github.com/pypa/setuptools/blob/v36.0.0/setuptools/command/sdist.py
 """
 
-import typing
-
 from distutils import cmd
 from distutils import errors
 from distutils import log
