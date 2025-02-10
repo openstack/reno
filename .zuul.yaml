@@ -3,3 +3,7 @@
       - openstack-python3-jobs
       - openstack-cover-jobs
       - publish-openstack-docs-pti
+    check:
+      jobs:
+        - openstack-tox-py313:
+            voting: false
