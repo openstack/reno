@@ -94,6 +94,8 @@ def format_report(loader, config, versions_to_include, title=None,
             report.append('')
 
         # Add other sections.
+        section_reported = {section: False for section in config.sections}
+        parent_section = config.parent_section
         for section in config.sections:
             notes = [
                 (n, fn, sha)
@@ -102,6 +104,11 @@ def format_report(loader, config, versions_to_include, title=None,
                 for n in file_contents[fn].get(section.name, [])
             ]
             if notes:
+                report.extend(
+                    get_parent_section_headers(
+                        section, section_reported, parent_section, version_title, title, branch
+                    )
+                )
                 report.append(_section_anchor(
                     section.title, version_title, title, branch))
                 report.append('')
@@ -115,3 +122,29 @@ def format_report(loader, config, versions_to_include, title=None,
                 report.append('')
 
     return '\n'.join(report)
+
+
+def get_parent_section_headers(
+    starting_section,
+    section_reported,
+    parent_section,
+    version_title,
+    title,
+    branch,
+):
+    """Given a section, follow the hierarchy up to each parent and ensure
+    it has been reported."""
+    sections_to_report = []
+    current_section = starting_section
+    while current_section and not section_reported[current_section]:
+        sections_to_report.append(_section_anchor(current_section.title, version_title, title, branch))
+        section_reported[current_section] = True
+        current_section = parent_section.get(section)
+    headers = []
+    for section in reversed(sections_to_report):
+        headers.append(section)
+        headers.append('')
+        headers.append(section.title)
+        headers.append(section.header_underline())
+        headers.append('')
+    return headers

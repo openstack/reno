@@ -201,6 +201,55 @@ class TestFormatterCustomSections(TestFormatterBase):
         assert_header("Subsubsection", "~")
 
 
+class TestFormatterSubSections(TestFormatterBase):
+    note_bodies = {
+        'note1': {
+            'prelude': 'This is the prelude.',
+        },
+        'note2': {
+            'features_subsubsection': [
+                'This is a subsubsection feature.',
+            ],
+        },
+        'note3': {
+            'features_subsection': [
+                'This is a subsection feature.',
+            ],
+        },
+    }
+
+    def setUp(self):
+        super(TestFormatterCustomSections, self).setUp()
+        self.c.override(sections=[
+            ['features', 'New Features'],
+            ['features_subsection', 'Subsection', 2],
+            ['features_subsubsection', 'Subsubsection', 3],
+            ['api', 'API Changes'],
+        ])
+
+    def test_custom_section_order(self):
+        result = formatter.format_report(
+            loader=self.ldr,
+            config=self.c,
+            versions_to_include=self.versions,
+            title=None,
+        )
+        prelude_pos = result.index('This is the prelude.')
+        api_pos = result.index('API Changes')
+        features_pos = result.index('New Features')
+        features_subsection_pos = result.index('Subsection')
+        features_subsubsection_pos = result.index('Subsubsection')
+        expected = [
+            prelude_pos,
+            features_pos,
+            features_subsection_pos,
+            features_subsubsection_pos,
+            api_pos,
+        ]
+        actual = sorted(expected)
+        self.assertEqual(expected, actual)
+
+
 class TestFormatterCustomUnreleaseTitle(TestFormatterBase):
 
     note_bodies = {

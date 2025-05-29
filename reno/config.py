@@ -442,6 +442,22 @@ class Config:
         }
         return options
 
+    @property
+    def parent_section(self):
+        """Get a lookup for the parent section of each section."""
+        parent_section = {section: None for section in self.sections}
+        last_section_at_level = {1: None, 2: None}
+        for section in self.sections:
+            if section.section_level == 1:
+                last_section_at_level[1] = section
+                last_section_at_level[2] = None
+            elif section.section_level == 2:
+                parent_section[section] = last_section_at_level[1]
+                last_section_at_level[2] = section
+            elif section.section_level == 3:
+                parent_section[section] = last_section_at_level[2] or last_section_at_level[1]
+        return parent_section
+
 # def parse_config_into(parsed_arguments):
 
 #         """Parse the user config onto the namespace arguments.

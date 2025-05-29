@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed issue where section headings were not printed in the report if notes were only attached
+    to subsections.

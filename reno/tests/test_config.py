@@ -207,6 +207,16 @@ class TestConfigProperties(base.TestCase):
         # Temporary directory to store our config
         self.tempdir = self.useFixture(fixtures.TempDir())
         self.c = config.Config('releasenotes')
+        self.c.override(
+            sections=[
+                ["features", "Features"],
+                ["features_sub", "Sub", 2],
+                ["features_subsub", "Subsub", 3],
+                ["bugs", "Bugs"],
+                ["bugs_sub", "Sub", 2],
+                ["documentation", "Documentation", 1]
+            ],
+        )
 
     def test_reporoot(self):
         self.c.reporoot = 'blah//'
@@ -239,3 +249,11 @@ class TestConfigProperties(base.TestCase):
                         template='i-am-a-template')
         self.assertEqual('fake_prelude_name', self.c.prelude_section_name)
         self.assertEqual('i-am-a-template', self.c.template)
+
+    def test_parent_section(self):
+        section_by_name = {section.name: section for section in self.c.sections}
+        self.assertEqual(section_by_name['features'], self.c.parent_section('features_sub'))
+        self.assertEqual(section_by_name['features_sub'], self.c.parent_section('features_subsub'))
+        self.assertEqual(section_by_name['bugs'], self.c.parent_section('bugs_sub'))
+        for section_name in ['features', 'bugs', 'documentation']:
+            self.assertIsNone(self.c.parent_section(section_name))
