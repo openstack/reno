@@ -78,7 +78,7 @@ def main(argv=sys.argv[1:]):
         '-q', '--quiet',
         dest='verbosity',
         action='store_const',
-        const=logging.WARN,
+        const=logging.WARNING,
         help='produce less output',
     )
     parser.add_argument(
