@@ -13,12 +13,23 @@
 # under the License.
 
 import logging
+import warnings
 
 import pbr.version
 
 
-__version__ = pbr.version.VersionInfo(
-    'reno').version_string()
+def __getattr__(name: str) -> str:
+    if name == '__version__':
+        warnings.warn(
+            "Accessing reno.__version__ is deprecated and will be "
+            "removed in a future release. Use importlib.metadata instead: "
+            "importlib.metadata.version('reno')",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return pbr.version.VersionInfo('reno').version_string()
+    raise AttributeError(f"module 'reno' has no attribute {name!r}")
+
 
 # Configure a null logger so that if reno is used as a library by an
 # application that does not configure logging there are no warnings.
