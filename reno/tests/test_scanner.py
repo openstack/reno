@@ -79,6 +79,19 @@ class GPGKeyFixture(fixtures.Fixture):
         else:
             if gnupg_version is None:
                 gnupg_version = (0, 0, 0)
+
+        # Set GNUPGHOME to a dedicated temp directory to isolate from the
+        # system gpg-agent and other parallel test workers. GnuPG 2.4+ defaults
+        # to keyboxd (daemon-based key storage) which fails without a running
+        # daemon; pre-creating pubring.kbx forces the legacy file-based keybox.
+        gnupg_home = tempdir.path + '/.gnupg'
+        os.makedirs(gnupg_home, mode=0o700)
+        if gnupg_version >= (2, 4, 0):
+            open(os.path.join(gnupg_home, 'pubring.kbx'), 'w').close()
+        self.useFixture(
+            fixtures.EnvironmentVariable('GNUPGHOME', gnupg_home)
+        )
+
         config_file = tempdir.path + '/key-config'
         f = open(config_file, 'wt')
         try:
