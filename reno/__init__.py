@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -12,10 +10,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import importlib.metadata
 import logging
 import warnings
-
-import pbr.version
 
 
 def __getattr__(name: str) -> str:
@@ -27,7 +24,7 @@ def __getattr__(name: str) -> str:
             DeprecationWarning,
             stacklevel=2,
         )
-        return pbr.version.VersionInfo('reno').version_string()
+        return importlib.metadata.version('reno')
     raise AttributeError(f"module 'reno' has no attribute {name!r}")
 
 
