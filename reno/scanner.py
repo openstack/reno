@@ -96,28 +96,32 @@ def _changes_in_subdir(
 
     parents = walk_entry._get_parents(commit)
 
+    def _parent_tree(sha: bytes) -> objects.Tree:
+        parent_commit = repo[sha]
+        assert isinstance(parent_commit, objects.Commit)
+        tree = repo[parent_commit.tree]
+        assert isinstance(tree, objects.Tree)
+        return tree
+
     if not parents:
         changes_func: Any = diff_tree.tree_changes
         parent_subtree: Any = None
     elif len(parents) == 1:
         changes_func = diff_tree.tree_changes
-        parent_tree = repo[repo[parents[0]].tree]  # type: ignore[attr-defined]
-        parent_subtree = repo._get_subtree(parent_tree, subdir)  # type: ignore[arg-type]
+        parent_subtree = repo._get_subtree(_parent_tree(parents[0]), subdir)
         if parent_subtree:
             parent_subtree = parent_subtree.sha().hexdigest().encode('ascii')
     else:
         changes_func = diff_tree.tree_changes_for_merge
         parent_subtree = [
-            repo._get_subtree(repo[repo[p].tree], subdir)  # type: ignore[attr-defined,arg-type]
-            for p in parents
+            repo._get_subtree(_parent_tree(p), subdir) for p in parents
         ]
         parent_subtree = [
             p.sha().hexdigest().encode('ascii') for p in parent_subtree if p
         ]
-    subdir_tree = repo._get_subtree(
-        repo[commit.tree],  # type: ignore[arg-type]
-        subdir,
-    )
+    commit_tree = repo[commit.tree]
+    assert isinstance(commit_tree, objects.Tree)
+    subdir_tree = repo._get_subtree(commit_tree, subdir)
     if subdir_tree:
         commit_subtree = subdir_tree.sha().hexdigest().encode('ascii')
     else:
@@ -496,8 +500,9 @@ class RenoRepo(repo.Repo):
             # not present. Return the sentinel value.
             return None
         else:
-            tree = self[tree_sha]  # type: ignore[assignment]
-            return tree
+            obj = self[tree_sha]
+            assert isinstance(obj, objects.Tree)
+            return obj
 
     def get_file_at_commit(
         self,
@@ -532,13 +537,15 @@ class RenoRepo(repo.Repo):
         if hasattr(sha, 'encode'):
             sha = sha.encode('ascii')
         commit = self[sha]
-        tree = self[commit.tree]  # type: ignore[attr-defined]
+        assert isinstance(commit, objects.Commit)
+        tree = self[commit.tree]
+        assert isinstance(tree, objects.Tree)
         try:
             if os.path.sep == '\\':
                 # Dulwich doesn't handle Windows paths, we need to take care of
                 # it ourselves
                 filename = filename.replace('\\', '/')
-            _, blob_sha = tree.lookup_path(  # type: ignore[attr-defined]
+            _, blob_sha = tree.lookup_path(
                 self.get_object, filename.encode('utf-8')
             )
         except KeyError:
@@ -547,7 +554,8 @@ class RenoRepo(repo.Repo):
             return None
         else:
             blob = self[blob_sha]
-            return blob.data  # type: ignore[attr-defined,no-any-return]
+            assert isinstance(blob, objects.Blob)
+            return blob.data
 
 
 class Scanner:
@@ -841,7 +849,7 @@ class Scanner:
                     # Make it look like the current entry was emitted
                     # so the bookkeeping for children works properly
                     # and we can continue past the merge.
-                    emitted.add(sha)
+                    emitted.add(objects.ObjectID(sha))
                     # Now set up the first parent so it is processed
                     # later, as long as we haven't already processed
                     # it.
@@ -871,7 +879,7 @@ class Scanner:
             if not unprocessed_children:
                 # All children have been processed. Remember that we have
                 # processed this node and then emit the entry.
-                emitted.add(sha)
+                emitted.add(objects.ObjectID(sha))
                 yield entry
 
                 # Now put the parents on the stack from left to right
