@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -25,7 +23,6 @@ from reno.tests import base
 
 
 class TestValidate(base.TestCase):
-
     scanner_output = {
         '0.0.0': [('note', 'shaA')],
     }
@@ -33,7 +30,7 @@ class TestValidate(base.TestCase):
     versions = ['0.0.0']
 
     def setUp(self):
-        super(TestValidate, self).setUp()
+        super().setUp()
         self.logger = self.useFixture(
             fixtures.FakeLogger(
                 format='%(message)s',
@@ -60,31 +57,37 @@ class TestValidate(base.TestCase):
 
         We should silently convert it to list.
         """
-        note_bodies = yaml.safe_load(textwrap.dedent("""
+        note_bodies = yaml.safe_load(
+            textwrap.dedent("""
         issues: |
           This is a single string. It should be converted to a list.
-        """))
+        """)
+        )
         self.assertIsInstance(note_bodies['issues'], str)
         with self._make_loader(note_bodies) as ldr:
             parse_results = ldr.parse_note_file('note1', None)
         self.assertIsInstance(parse_results['issues'], list)
 
     def test_invalid_note_with_prelude_as_list(self):
-        note_bodies = yaml.safe_load(textwrap.dedent('''
+        note_bodies = yaml.safe_load(
+            textwrap.dedent('''
         prelude:
           - The prelude should not be a list.
-        '''))
+        ''')
+        )
         self.assertIsInstance(note_bodies['prelude'], list)
         with self._make_loader(note_bodies) as ldr:
             ldr.parse_note_file('note1', None)
         self.assertIn('does not parse as a single string', self.logger.output)
 
     def test_invalid_note_with_colon_as_dict(self):
-        note_bodies = yaml.safe_load(textwrap.dedent('''
+        note_bodies = yaml.safe_load(
+            textwrap.dedent('''
         issues:
           - This line is fine.
           - dict: But this is parsed as a mapping (dictionary), which is bad.
-        '''))
+        ''')
+        )
         self.assertIsInstance(note_bodies['issues'][-1], dict)
         with self._make_loader(note_bodies) as ldr:
             ldr.parse_note_file('note1', None)
@@ -92,30 +95,36 @@ class TestValidate(base.TestCase):
 
     def test_invalid_note_with_unrecognized_key(self):
         """Test behavior when note contains an unrecognized section."""
-        note_bodies = yaml.safe_load(textwrap.dedent('''
+        note_bodies = yaml.safe_load(
+            textwrap.dedent('''
         foobar:
         - |
           This is an issue but we're using an unrecognized section key.
-        '''))
+        ''')
+        )
         self.assertIsInstance(note_bodies, dict)
         with self._make_loader(note_bodies) as ldr:
             ldr.parse_note_file('note1', None)
         self.assertIn(
             'The foobar section of note1 is not a recognized section.',
-            self.logger.output)
+            self.logger.output,
+        )
 
     def test_invalid_note_with_missing_key(self):
         """Test behavior when note is not structured as a mapping.
 
         This one should be an error since we can't correct the input.
         """
-        note_bodies = yaml.safe_load(textwrap.dedent('''
+        note_bodies = yaml.safe_load(
+            textwrap.dedent('''
         - |
           This is an issue but we're missing the top-level 'issues' key.
-        '''))
+        ''')
+        )
         self.assertIsInstance(note_bodies, list)
         with self._make_loader(note_bodies) as ldr:
             self.assertRaises(ValueError, ldr.parse_note_file, 'note1', None)
         self.assertIn(
             'does not appear to be structured as a YAML mapping',
-            self.logger.output)
+            self.logger.output,
+        )

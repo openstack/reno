@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 
 
 def _parse_version(v):
-    parts = v.split('.') + ['0', '0', '0']
+    parts = [*v.split('.'), '0', '0', '0']
     result = []
     for p in parts[:3]:
         try:
@@ -38,7 +38,7 @@ def _parse_version(v):
 
 def _get_unique_id(filename):
     base = os.path.basename(filename)
-    root, ext = os.path.splitext(base)
+    root, _ = os.path.splitext(base)
     uniqueid = root[-16:]
     if '-' in uniqueid:
         # This is an older file with the UUID at the beginning
@@ -103,13 +103,10 @@ def _changes_in_subdir(repo, walk_entry, subdir):
     else:
         changes_func = diff_tree.tree_changes_for_merge
         parent_subtree = [
-            repo._get_subtree(repo[repo[p].tree], subdir)
-            for p in parents
+            repo._get_subtree(repo[repo[p].tree], subdir) for p in parents
         ]
         parent_subtree = [
-            p.sha().hexdigest().encode('ascii')
-            for p in parent_subtree
-            if p
+            p.sha().hexdigest().encode('ascii') for p in parent_subtree if p
         ]
     subdir_tree = repo._get_subtree(repo[commit.tree], subdir)
     if subdir_tree:
@@ -121,7 +118,7 @@ def _changes_in_subdir(repo, walk_entry, subdir):
     return changes_func(store, parent_subtree, commit_subtree)
 
 
-class _ChangeAggregator(object):
+class _ChangeAggregator:
     """Collapse a series of changes based on uniqueness for file uids.
 
     The list of TreeChange instances describe changes between the old
@@ -187,7 +184,7 @@ class _ChangeAggregator(object):
                     else:
                         LOG.debug('ignoring')
                 else:
-                    raise ValueError('unhandled change type: {!r}'.format(c))
+                    raise ValueError(f'unhandled change type: {c!r}')
 
         results = []
         for uid, changes in sorted(by_uid.items()):
@@ -198,21 +195,22 @@ class _ChangeAggregator(object):
                 if types == self._rename_op:
                     # A rename, combine the data from the add and
                     # delete entries.
-                    added = [
+                    added = next(
                         c for c in changes if c[0] == diff_tree.CHANGE_ADD
-                    ][0]
-                    deled = [
+                    )
+                    deled = next(
                         c for c in changes if c[0] == diff_tree.CHANGE_DELETE
-                    ][0]
+                    )
                     results.append(
-                        (uid, diff_tree.CHANGE_RENAME, deled[1]) + added[1:]
+                        (uid, diff_tree.CHANGE_RENAME, deled[1], *added[1:])
                     )
                 elif types == self._modify_op:
                     # Merge commit with modifications to the same files in
                     # different commits.
                     for c in changes:
-                        results.append((uid, diff_tree.CHANGE_MODIFY,
-                                        c[1], sha))
+                        results.append(
+                            (uid, diff_tree.CHANGE_MODIFY, c[1], sha)
+                        )
                 elif types == self._delete_op:
                     # There were multiple files in one commit using the
                     # same UID but different slugs. Treat them as
@@ -227,21 +225,21 @@ class _ChangeAggregator(object):
                     # same UID but different slugs. Warn the user about
                     # this case and then ignore the files. We allow delete
                     # (see above) to ensure they can be cleaned up.
-                    msg = ('%s: found several files in one commit (%s)'
-                           ' with the same UID: %s' %
-                           (uid, sha, [c[1] for c in changes]))
+                    msg = (
+                        '%s: found several files in one commit (%s)'
+                        ' with the same UID: %s'
+                        % (uid, sha, [c[1] for c in changes])
+                    )
                     if uid not in self._deleted_bad_uids:
                         raise ValueError(msg)
                     else:
                         LOG.info(msg)
                 else:
-                    raise ValueError('Unrecognized changes: {!r}'.format(
-                        changes))
+                    raise ValueError(f'Unrecognized changes: {changes!r}')
         return results
 
 
-class _ChangeTracker(object):
-
+class _ChangeTracker:
     def __init__(self):
         # Track the versions we have seen and the earliest version for
         # which we have seen a given note's unique id.
@@ -265,18 +263,26 @@ class _ChangeTracker(object):
         # history in reverse order so "early" items come
         # later.
         if uniqueid in self.earliest_seen:
-            LOG.debug('%s: resetting earliest reference from %s to %s for %s',
-                      uniqueid, self.earliest_seen[uniqueid], version, sha)
+            LOG.debug(
+                '%s: resetting earliest reference from %s to %s for %s',
+                uniqueid,
+                self.earliest_seen[uniqueid],
+                version,
+                sha,
+            )
         else:
-            LOG.debug('%s: setting earliest reference to %s for %s',
-                      uniqueid, version, sha)
+            LOG.debug(
+                '%s: setting earliest reference to %s for %s',
+                uniqueid,
+                version,
+                sha,
+            )
         self.earliest_seen[uniqueid] = version
 
     def add(self, filename, sha, version):
         uniqueid = _get_unique_id(filename)
         self._common(uniqueid, sha, version)
-        LOG.info('%s: adding %s from %s',
-                 uniqueid, filename, version)
+        LOG.info('%s: adding %s from %s', uniqueid, filename, version)
 
         # If we have recorded that a UID was deleted, that
         # means that was the last change made to the file and
@@ -297,7 +303,9 @@ class _ChangeTracker(object):
             self.last_name_by_id[uniqueid] = (filename, sha)
             LOG.info(
                 '%s: copying data for %s from commit %s',
-                uniqueid, filename, sha,
+                uniqueid,
+                filename,
+                sha,
             )
             del self.seen_but_not_added[uniqueid]
         elif uniqueid not in self.last_name_by_id:
@@ -307,7 +315,9 @@ class _ChangeTracker(object):
             self.last_name_by_id[uniqueid] = (filename, sha)
             LOG.debug(
                 '%s: new %s in commit %s',
-                uniqueid, filename, sha,
+                uniqueid,
+                filename,
+                sha,
             )
         else:
             LOG.debug(
@@ -344,7 +354,9 @@ class _ChangeTracker(object):
             to_update[uniqueid] = (filename, sha)
             LOG.info(
                 '%s: update to %s in commit %s',
-                uniqueid, filename, sha,
+                uniqueid,
+                filename,
+                sha,
             )
         else:
             LOG.debug(
@@ -374,7 +386,8 @@ class _ChangeTracker(object):
             self.uniqueids_deleted.add(uniqueid)
             LOG.info(
                 '%s: note deleted in %s',
-                uniqueid, sha,
+                uniqueid,
+                sha,
             )
         else:
             LOG.debug(
@@ -384,7 +397,6 @@ class _ChangeTracker(object):
 
 
 class RenoRepo(repo.Repo):
-
     # Populated by _load_tags().
     _all_tags = None
     _shas_to_tags = None
@@ -419,9 +431,8 @@ class RenoRepo(repo.Repo):
             date = tag_obj.commit_time
         else:
             raise ValueError(
-                ('Unrecognized tag object {!r} with '
-                 'tag {} and SHA {!r}: {}').format(
-                    tag_obj, tag, tag_sha, type(tag_obj))
+                f'Unrecognized tag object {tag_obj!r} with tag {tag} and '
+                f'SHA {tag_sha!r}: {type(tag_obj)}'
             )
         return tagged_sha, date
 
@@ -449,8 +460,9 @@ class RenoRepo(repo.Repo):
     def _get_subtree(self, tree, path):
         "Given a tree SHA and a path, return the SHA of the subtree."
         try:
-            mode, tree_sha = tree.lookup_path(self.get_object,
-                                              path.encode('utf-8'))
+            _, tree_sha = tree.lookup_path(
+                self.get_object, path.encode('utf-8')
+            )
         except KeyError:
             # Some part of the path wasn't found, so the subtree is
             # not present. Return the sentinel value.
@@ -473,10 +485,11 @@ class RenoRepo(repo.Repo):
         if sha is None:
             # Get the copy from the working directory.
             try:
-                with open(os.path.join(self.path, filename), 'r',
-                          encoding=encoding) as f:
+                with open(
+                    os.path.join(self.path, filename), encoding=encoding
+                ) as f:
                     return f.read()
-            except IOError:
+            except OSError:
                 return None
         # Get the tree associated with the commit identified by the
         # input SHA, then look through the items in the tree to find
@@ -492,8 +505,9 @@ class RenoRepo(repo.Repo):
                 # Dulwich doesn't handle Windows paths, we need to take care of
                 # it ourselves
                 filename = filename.replace('\\', '/')
-            mode, blob_sha = tree.lookup_path(self.get_object,
-                                              filename.encode('utf-8'))
+            _, blob_sha = tree.lookup_path(
+                self.get_object, filename.encode('utf-8')
+            )
         except KeyError:
             # Some part of the filename wasn't found, so the file is
             # not present. Return the sentinel value.
@@ -503,8 +517,7 @@ class RenoRepo(repo.Repo):
             return blob.data
 
 
-class Scanner(object):
-
+class Scanner:
     def __init__(self, conf):
         self.conf = conf
         self.reporoot = self.conf.reporoot
@@ -532,8 +545,7 @@ class Scanner(object):
             flags=re.VERBOSE | re.UNICODE,
         )
         self._ignore_uids = set(
-            _get_unique_id(fn)
-            for fn in self.conf.ignore_notes
+            _get_unique_id(fn) for fn in self.conf.ignore_notes
         )
         self._encoding = conf.options['encoding']
 
@@ -573,7 +585,7 @@ class Scanner(object):
             if name.startswith('origin/'):
                 candidates.append('refs/heads/' + name.partition('/')[-1])
             for ref in candidates:
-                LOG.debug('looking for ref {!r} as {!r}'.format(name, ref))
+                LOG.debug(f'looking for ref {name!r} as {ref!r}')
                 key = ref.encode('utf-8')
                 if key in self._repo.refs:
                     sha = self._repo.refs[key]
@@ -583,11 +595,10 @@ class Scanner(object):
                         # signed tags point to the signature and we
                         # need to dereference it to get to the commit.
                         sha = o.object[1]
-                    LOG.info('found ref {!r} as {!r} at {}'.format(
-                        name, ref, sha))
+                    LOG.info(f'found ref {name!r} as {ref!r} at {sha}')
                     return sha
             # If we end up here we didn't find any of the candidates.
-            raise ValueError('Unknown reference {!r}'.format(name))
+            raise ValueError(f'Unknown reference {name!r}')
         return self._repo.refs[b'HEAD']
 
     def _get_walker_for_branch(self, branch):
@@ -599,8 +610,11 @@ class Scanner(object):
 
         If multiple tags are available, the first tags are pre-release tags.
         """
-        tags = (tag for tag in self._repo.get_tags_on_commit(sha)
-                if self.release_tag_re.match(tag))
+        tags = (
+            tag
+            for tag in self._repo.get_tags_on_commit(sha)
+            if self.release_tag_re.match(tag)
+        )
         # This makes sure that we order the list with pre_release_tag tags
         # first: in case where multiple tags match a commit, the non-pre
         # release tag will be last.
@@ -634,7 +648,7 @@ class Scanner(object):
             tags = self._get_valid_tags_on_commit(sha)
             if tags:
                 if count:
-                    val = '{}-{}'.format(tags[-1], count)
+                    val = f'{tags[-1]}-{count}'
                 else:
                     val = tags[-1]
                 return val
@@ -655,10 +669,9 @@ class Scanner(object):
                 end = pre_release_match.end('pre_release')
             except IndexError:
                 raise ValueError(
-                    ("The pre-release tag regular expression, {!r}, is missing"
-                     " a group named 'pre_release'.").format(
-                        self.pre_release_tag_re.pattern
-                    )
+                    f"The pre-release tag regular expression, "
+                    f"{self.pre_release_tag_re.pattern!r}, is missing "
+                    "a group named 'pre_release'."
                 )
             else:
                 stripped_tag = tag[:start] + tag[end:]
@@ -686,7 +699,8 @@ class Scanner(object):
                 # We got to this commit via the branch, but it is also
                 # on master, so this is the base.
                 tags = self._get_valid_tags_on_commit(
-                    c.commit.sha().hexdigest().encode('ascii'))
+                    c.commit.sha().hexdigest().encode('ascii')
+                )
                 if tags:
                     return tags[-1]
 
@@ -694,7 +708,8 @@ class Scanner(object):
         LOG.info(
             'There is no tag on commit %s at the base of %s. '
             'Branch scan short-cutting is disabled.',
-            c.commit.sha().hexdigest(), branch,
+            c.commit.sha().hexdigest(),
+            branch,
         )
         return None
 
@@ -771,7 +786,9 @@ class Scanner(object):
                         LOG.debug(
                             'treating %s as a null-merge because '
                             'parent %s has tag(s) %s',
-                            sha, p, t,
+                            sha,
+                            p,
+                            t,
                         )
                         null_merge = True
                         break
@@ -789,8 +806,10 @@ class Scanner(object):
                     # later, as long as we haven't already processed
                     # it.
                     first_parent = entry.commit.parents[0]
-                    if (first_parent not in todo
-                            and first_parent not in emitted):
+                    if (
+                        first_parent not in todo
+                        and first_parent not in emitted
+                    ):
                         todo.appendleft(first_parent)
                     continue
 
@@ -806,9 +825,7 @@ class Scanner(object):
             # lead us back to the origin of the branch through the
             # mainline.
             unprocessed_children = [
-                c
-                for c in children.get(sha, set())
-                if c not in emitted
+                c for c in children.get(sha, set()) if c not in emitted
             ]
 
             if not unprocessed_children:
@@ -841,13 +858,15 @@ class Scanner(object):
 
     def get_file_at_commit(self, filename, sha):
         "Return the contents of the file if it exists at the commit, or None."
-        return self._repo.get_file_at_commit(filename, sha,
-                                             encoding=self._encoding)
+        return self._repo.get_file_at_commit(
+            filename, sha, encoding=self._encoding
+        )
 
     def _file_exists_at_commit(self, filename, sha):
         "Return true if the file exists at the given commit."
-        return bool(self.get_file_at_commit(filename, sha,
-                                            encoding=self._encoding))
+        return bool(
+            self.get_file_at_commit(filename, sha, encoding=self._encoding)
+        )
 
     def _branch_sort_key(self, name):
         match = self.branch_sort_re.search(name)
@@ -878,8 +897,11 @@ class Scanner(object):
             match = self.closed_branch_tag_re.search(name)
             if match:
                 name = self.branch_name_prefix + match.group(1)
-                LOG.debug('closed branch tag %s becomes %s',
-                          r.rpartition('/')[-1], name)
+                LOG.debug(
+                    'closed branch tag %s becomes %s',
+                    r.rpartition('/')[-1],
+                    name,
+                )
                 branch_names.add(name)
         return list(sorted(branch_names, key=self._branch_sort_key))
 
@@ -893,8 +915,9 @@ class Scanner(object):
         LOG.debug('looking for the branch before %s', branch)
         branch_names = self.get_series_branches()
         if branch not in branch_names:
-            LOG.debug('Could not find branch %r among %s',
-                      branch, branch_names)
+            LOG.debug(
+                'Could not find branch %r among %s', branch, branch_names
+            )
             return None
         LOG.debug('found branches %s', branch_names)
         current = branch_names.index(branch)
@@ -906,8 +929,9 @@ class Scanner(object):
         LOG.debug('found earlier branch %s', previous)
         return previous
 
-    def _find_scan_stop_point(self, earliest_version, versions_by_date,
-                              collapse_pre_releases, branch):
+    def _find_scan_stop_point(
+        self, earliest_version, versions_by_date, collapse_pre_releases, branch
+    ):
         """Return the version to use to stop the scan.
 
         Use the list of versions_by_date to get the tag with a
@@ -981,9 +1005,12 @@ class Scanner(object):
         stop_at_branch_base = self.conf.stop_at_branch_base
 
         LOG.info(
-            ('scanning %s/%s '
-             '(branch=%s earliest_version=%s collapse_pre_releases=%s)'),
-            reporoot.rstrip('/'), notesdir.lstrip('/'),
+            (
+                'scanning %s/%s '
+                '(branch=%s earliest_version=%s collapse_pre_releases=%s)'
+            ),
+            reporoot.rstrip('/'),
+            notesdir.lstrip('/'),
             branch or '*current*',
             earliest_version,
             collapse_pre_releases,
@@ -1003,14 +1030,15 @@ class Scanner(object):
         LOG.debug('versions by date %r' % (versions_by_date,))
         if earliest_version and earliest_version not in versions_by_date:
             raise ValueError(
-                'earliest-version set to unknown revision {!r}'.format(
-                    earliest_version))
+                f'earliest-version set to unknown revision '
+                f'{earliest_version!r}'
+            )
 
         # If the user has told us where to stop, use that as the
         # default.
         scan_stop_tag = self._find_scan_stop_point(
-            earliest_version, versions_by_date,
-            collapse_pre_releases, branch)
+            earliest_version, versions_by_date, collapse_pre_releases, branch
+        )
 
         # If the user has not told us where to stop, try to work it
         # out for ourselves.
@@ -1021,14 +1049,17 @@ class Scanner(object):
             branches = self.get_series_branches()
             if branches:
                 for earlier_branch in reversed(branches):
-                    LOG.debug('checking if current branch is later than %s',
-                              earlier_branch)
+                    LOG.debug(
+                        'checking if current branch is later than %s',
+                        earlier_branch,
+                    )
                     scan_stop_tag = self._get_branch_base(earlier_branch)
                     if scan_stop_tag in versions_by_date:
                         LOG.info(
                             'looking at %s at base of %s to '
                             'stop scanning the current branch',
-                            scan_stop_tag, earlier_branch
+                            scan_stop_tag,
+                            earlier_branch,
                         )
                         break
                 else:
@@ -1057,8 +1088,8 @@ class Scanner(object):
             branch_base = self._get_branch_base(branch)
             LOG.debug('branch base %s', branch_base)
             scan_stop_tag = self._find_scan_stop_point(
-                branch_base, versions_by_date,
-                collapse_pre_releases, branch)
+                branch_base, versions_by_date, collapse_pre_releases, branch
+            )
             if not scan_stop_tag:
                 earliest_version = branch_base
             else:
@@ -1068,13 +1099,16 @@ class Scanner(object):
                     LOG.debug(
                         'could not find calculated scan stop point %s '
                         'in history of %s, so using branch base %s instead',
-                        scan_stop_tag, branch, branch_base,
+                        scan_stop_tag,
+                        branch,
+                        branch_base,
                     )
                     earliest_version = branch_base
                 else:
                     earliest_version = versions_by_date[idx - 1]
-                LOG.debug('using version before %s as scan stop point',
-                          scan_stop_tag)
+                LOG.debug(
+                    'using version before %s as scan stop point', scan_stop_tag
+                )
             if earliest_version and collapse_pre_releases:
                 if self.pre_release_tag_re.search(earliest_version):
                     # The earliest version won't actually be the pre-release
@@ -1145,7 +1179,6 @@ class Scanner(object):
 
         # Process the git commit history.
         for counter, entry in enumerate(self._topo_traversal(branch), 1):
-
             sha = entry.commit.id
             tags_on_commit = self._get_valid_tags_on_commit(sha)
 
@@ -1158,8 +1191,12 @@ class Scanner(object):
                 tags = [current_version]
             else:
                 current_version = tags_on_commit[-1]
-                LOG.info('%06d %s updating current version to %s',
-                         counter, sha, current_version)
+                LOG.info(
+                    '%06d %s updating current version to %s',
+                    counter,
+                    sha,
+                    current_version,
+                )
 
             # Look for changes to notes files in this commit. The
             # change has only the basename of the path file, so we
@@ -1170,42 +1207,46 @@ class Scanner(object):
                 uniqueid = change[0]
 
                 if uniqueid in self._ignore_uids:
-                    LOG.info('ignoring %s based on configuration setting',
-                             uniqueid)
+                    LOG.info(
+                        'ignoring %s based on configuration setting', uniqueid
+                    )
                     continue
 
                 c_type = change[1]
 
                 if c_type == diff_tree.CHANGE_ADD:
-                    path, blob_sha = change[-2:]
+                    path, _ = change[-2:]
                     fullpath = os.path.join(notesdir, path)
                     tracker.add(fullpath, sha, current_version)
 
                 elif c_type == diff_tree.CHANGE_DELETE:
-                    path, blob_sha = change[-2:]
+                    path, _ = change[-2:]
                     fullpath = os.path.join(notesdir, path)
                     tracker.delete(fullpath, sha, current_version)
 
                 elif c_type == diff_tree.CHANGE_RENAME:
-                    path, blob_sha = change[-2:]
+                    path, _ = change[-2:]
                     fullpath = os.path.join(notesdir, path)
                     tracker.rename(fullpath, sha, current_version)
 
                 elif c_type == diff_tree.CHANGE_MODIFY:
-                    path, blob_sha = change[-2:]
+                    path, _ = change[-2:]
                     fullpath = os.path.join(notesdir, path)
                     tracker.modify(fullpath, sha, current_version)
 
                 else:
-                    raise ValueError(
-                        'unknown change instructions {!r}'.format(change)
-                    )
+                    raise ValueError(f'unknown change instructions {change!r}')
 
             if scan_stop_tag and scan_stop_tag in tags:
                 LOG.info(
-                    ('reached end of branch after %d commits at %s '
-                     'with tags %s'),
-                    counter, sha, tags)
+                    (
+                        'reached end of branch after %d commits at %s '
+                        'with tags %s'
+                    ),
+                    counter,
+                    sha,
+                    tags,
+                )
                 break
 
         # Invert earliest_seen to make a list of notes files for each
@@ -1218,14 +1259,17 @@ class Scanner(object):
         for uniqueid, version in tracker.earliest_seen.items():
             try:
                 base, sha = tracker.last_name_by_id[uniqueid]
-                LOG.debug('%s: sorting %s into version %s',
-                          uniqueid, base, version)
+                LOG.debug(
+                    '%s: sorting %s into version %s', uniqueid, base, version
+                )
                 files_and_tags[version].append((base, sha))
             except KeyError:
                 # Unable to find the file again, skip it to avoid breaking
                 # the build.
-                msg = ('unable to find release notes file associated '
-                       'with unique id %r, skipping') % uniqueid
+                msg = (
+                    'unable to find release notes file associated '
+                    'with unique id %r, skipping'
+                ) % uniqueid
                 LOG.debug(msg)
 
         # Combine pre-releases into the final release, if we are told to
@@ -1258,8 +1302,9 @@ class Scanner(object):
                     files_and_tags[canonical_ver] = []
                 files_and_tags[canonical_ver].extend(collapsing[ov])
 
-        LOG.debug('files_and_tags %s',
-                  {k: len(v) for k, v in files_and_tags.items()})
+        LOG.debug(
+            'files_and_tags %s', {k: len(v) for k, v in files_and_tags.items()}
+        )
         # Only return the parts of files_and_tags that actually have
         # filenames associated with the versions.
         LOG.debug('trimming')
@@ -1286,6 +1331,7 @@ class Scanner(object):
 
         LOG.debug(
             'found %d versions and %d files',
-            len(trimmed.keys()), sum(len(ov) for ov in trimmed.values()),
+            len(trimmed.keys()),
+            sum(len(ov) for ov in trimmed.values()),
         )
         return trimmed

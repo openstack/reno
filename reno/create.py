@@ -48,10 +48,9 @@ def _edit_file(filename):
 def _get_user_template(template_file, encoding=None):
     if not os.path.exists(template_file):
         raise ValueError(
-            'The provided template file %s doesn\'t '
-            'exist' % template_file,
+            'The provided template file %s doesn\'t exist' % template_file,
         )
-    with open(template_file, 'r', encoding=encoding) as f:
+    with open(template_file, encoding=encoding) as f:
         return f.read()
 
 
@@ -66,8 +65,9 @@ def create_cmd(args, conf):
     slug = args.slug.replace(' ', '-')
 
     if not conf.options['allow_subdirectories'] and os.sep in slug:
-        raise ValueError('Slug should not include the path separator (%s)'
-                         % os.sep)
+        raise ValueError(
+            'Slug should not include the path separator (%s)' % os.sep
+        )
 
     filename = _pick_note_file_name(conf.notespath, slug)
     encoding = conf.options['encoding']
@@ -77,7 +77,9 @@ def create_cmd(args, conf):
         template = conf.template
     _make_note_file(filename, template, encoding=encoding)
     if args.edit and not _edit_file(filename):
-        print('Was unable to edit the new note. EDITOR environment variable '
-              'is missing!')
+        print(
+            'Was unable to edit the new note. EDITOR environment variable '
+            'is missing!'
+        )
     print('Created new notes file in %s' % filename)
     return

@@ -24,37 +24,69 @@ from reno import report
 from reno import semver
 
 _query_args = [
-    (('--version',),
-     dict(default=[],
-          action='append',
-          help='the version(s) to include, defaults to all')),
-    (('--branch',),
-     dict(default=config.Config.get_default('branch'),
-          help='the branch to scan, defaults to the current')),
-    (('--collapse-pre-releases',),
-     dict(action='store_true',
-          default=None,
-          help='combine pre-releases with their final release')),
-    (('--no-collapse-pre-releases',),
-     dict(action='store_false',
-          dest='collapse_pre_releases',
-          help='show pre-releases separately')),
-    (('--earliest-version',),
-     dict(default=None,
-          help='stop when this version is reached in the history')),
-    (('--ignore-cache',),
-     dict(default=None,
-          action='store_true',
-          help='if there is a cache file present, do not use it')),
-    (('--stop-at-branch-base',),
-     dict(action='store_true',
-          default=None,
-          dest='stop_at_branch_base',
-          help='stop scanning when the branch meets master')),
-    (('--no-stop-at-branch-base',),
-     dict(action='store_false',
-          dest='stop_at_branch_base',
-          help='do not stop scanning when the branch meets master')),
+    (
+        ('--version',),
+        dict(
+            default=[],
+            action='append',
+            help='the version(s) to include, defaults to all',
+        ),
+    ),
+    (
+        ('--branch',),
+        dict(
+            default=config.Config.get_default('branch'),
+            help='the branch to scan, defaults to the current',
+        ),
+    ),
+    (
+        ('--collapse-pre-releases',),
+        dict(
+            action='store_true',
+            default=None,
+            help='combine pre-releases with their final release',
+        ),
+    ),
+    (
+        ('--no-collapse-pre-releases',),
+        dict(
+            action='store_false',
+            dest='collapse_pre_releases',
+            help='show pre-releases separately',
+        ),
+    ),
+    (
+        ('--earliest-version',),
+        dict(
+            default=None,
+            help='stop when this version is reached in the history',
+        ),
+    ),
+    (
+        ('--ignore-cache',),
+        dict(
+            default=None,
+            action='store_true',
+            help='if there is a cache file present, do not use it',
+        ),
+    ),
+    (
+        ('--stop-at-branch-base',),
+        dict(
+            action='store_true',
+            default=None,
+            dest='stop_at_branch_base',
+            help='stop scanning when the branch meets master',
+        ),
+    ),
+    (
+        ('--no-stop-at-branch-base',),
+        dict(
+            action='store_false',
+            dest='stop_at_branch_base',
+            help='do not stop scanning when the branch meets master',
+        ),
+    ),
 ]
 
 
@@ -67,7 +99,8 @@ def _build_query_arg_group(parser):
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-v', '--verbose',
+        '-v',
+        '--verbose',
         dest='verbosity',
         default=logging.INFO,
         help='produce more output',
@@ -75,14 +108,16 @@ def main(argv=sys.argv[1:]):
         const=logging.DEBUG,
     )
     parser.add_argument(
-        '-q', '--quiet',
+        '-q',
+        '--quiet',
         dest='verbosity',
         action='store_const',
         const=logging.WARNING,
         help='produce less output',
     )
     parser.add_argument(
-        '--rel-notes-dir', '-d',
+        '--rel-notes-dir',
+        '-d',
         dest='relnotesdir',
         default=defaults.RELEASE_NOTES_SUBDIR,
         help='location of release notes YAML files',
@@ -143,7 +178,8 @@ def main(argv=sys.argv[1:]):
         help='root of the git repository',
     )
     do_report.add_argument(
-        '--output', '-o',
+        '--output',
+        '-o',
         default=None,
         help='output filename, defaults to stdout',
     )
@@ -173,11 +209,14 @@ def main(argv=sys.argv[1:]):
         help='root of the git repository',
     )
     do_cache.add_argument(
-        '--output', '-o',
+        '--output',
+        '-o',
         default=None,
-        help=('output filename, '
-              'defaults to the cache file within the notesdir, '
-              'use "-" for stdout'),
+        help=(
+            'output filename, '
+            'defaults to the cache file within the notesdir, '
+            'use "-" for stdout'
+        ),
     )
     _build_query_arg_group(do_cache)
     do_cache.set_defaults(func=cache.cache_cmd)

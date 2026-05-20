@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 2010-2011 OpenStack Foundation
 # Copyright (c) 2013 Hewlett-Packard Development Company, L.P.
 #
@@ -20,11 +18,10 @@ import testtools
 
 
 class TestCase(testtools.TestCase):
-
     """Test case base class for all unit tests."""
 
     def setUp(self):
-        super(TestCase, self).setUp()
+        super().setUp()
         self._stdout_fixture = fixtures.StringStream('stdout')
         self.stdout = self.useFixture(self._stdout_fixture).stream
         self.useFixture(fixtures.MonkeyPatch('sys.stdout', self.stdout))

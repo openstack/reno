@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -19,7 +17,6 @@ from reno import utils
 
 
 class TestGetRandomString(base.TestCase):
-
     @mock.patch('random.randrange')
     @mock.patch('os.urandom')
     def test_no_urandom(self, urandom, randrange):

@@ -49,10 +49,7 @@ def build_cache_db(conf, versions_to_include):
                 file_contents[filename] = y
 
         cache = {
-            'notes': [
-                {'version': k, 'files': v}
-                for k, v in notes.items()
-            ],
+            'notes': [{'version': k, 'files': v} for k, v in notes.items()],
             'dates': [
                 {'version': k, 'date': v}
                 for k, v in s.get_version_dates().items()

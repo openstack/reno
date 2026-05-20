@@ -14,9 +14,7 @@ import logging
 import os.path
 import textwrap
 from typing import Any
-from typing import List
 from typing import NamedTuple
-from typing import Union
 
 import yaml
 
@@ -37,9 +35,7 @@ class Section(NamedTuple):
     section_level: int  # 1 represents top-level; higher values are subsctions
 
     @classmethod
-    def from_raw_yaml(
-        cls, val: List[List[Union[str, int]]]
-    ) -> List["Section"]:
+    def from_raw_yaml(cls, val: list[list[str | int]]) -> list["Section"]:
         result = []
         for entry in val:
             if len(entry) == 2:
@@ -78,64 +74,83 @@ class Section(NamedTuple):
 
 
 _OPTIONS = [
-    Opt('notesdir', defaults.NOTES_SUBDIR,
+    Opt(
+        'notesdir',
+        defaults.NOTES_SUBDIR,
         textwrap.dedent("""\
         The notes subdirectory within the relnotesdir where the
         notes live.
-        """)),
-
-    Opt('allow_subdirectories', False,
+        """),
+    ),
+    Opt(
+        'allow_subdirectories',
+        False,
         textwrap.dedent("""\
         Allow creating subdirectories under the notes subdirectory.
-        """)),
-
-    Opt('collapse_pre_releases', True,
+        """),
+    ),
+    Opt(
+        'collapse_pre_releases',
+        True,
         textwrap.dedent("""\
         Should pre-release versions be merged into the final release
         of the same number (1.0.0.0a1 notes appear under 1.0.0).
-        """)),
-
-    Opt('stop_at_branch_base', True,
+        """),
+    ),
+    Opt(
+        'stop_at_branch_base',
+        True,
         textwrap.dedent("""\
         Should the scanner stop at the base of a branch (True) or go
         ahead and scan the entire history (False)?
-        """)),
-
-    Opt('branch', None,
+        """),
+    ),
+    Opt(
+        'branch',
+        None,
         textwrap.dedent("""\
         The git branch to scan. Defaults to the "current" branch
         checked out. If a stable branch is specified but does not
         exist, reno attempts to automatically convert that to an
         "end-of-life" tag. For example, ``origin/stable/liberty``
         would be converted to ``liberty-eol``.
-        """)),
-
-    Opt('default_branch', 'master',
+        """),
+    ),
+    Opt(
+        'default_branch',
+        'master',
         textwrap.dedent("""\
         The default git branch for the repository. This is the base branch that
         is treated as the root for other branches. By default this is
         ``master``.
-        """)),
-
-    Opt('earliest_version', None,
+        """),
+    ),
+    Opt(
+        'earliest_version',
+        None,
         textwrap.dedent("""\
         The earliest version to be included. This is usually the
         lowest version number, and is meant to be the oldest
         version. If unset, all versions will be scanned.
-        """)),
-
-    Opt('template', defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME),
+        """),
+    ),
+    Opt(
+        'template',
+        defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME),
         textwrap.dedent("""\
         The template used by reno new to create a note.
-        """)),
-
-    Opt('add_release_date', False,
+        """),
+    ),
+    Opt(
+        'add_release_date',
+        False,
         textwrap.dedent("""\
         Should the report include release date (True) based on
         the date of objects associated with the release tag.
-        """)),
-
-    Opt('release_tag_re',
+        """),
+    ),
+    Opt(
+        'release_tag_re',
         textwrap.dedent('''\
         ((?:v?[\\d.ab]|rc)+)  # digits, a, b, and rc cover regular and
                            # pre-releases
@@ -144,9 +159,10 @@ _OPTIONS = [
         The regex pattern used to match the repo tags representing a
         valid release version. The pattern is compiled with the
         verbose and unicode flags enabled.
-        """)),
-
-    Opt('pre_release_tag_re',
+        """),
+    ),
+    Opt(
+        'pre_release_tag_re',
         textwrap.dedent('''\
         (?P<pre_release>\\.v?\\d+(?:[ab]|rc)+\\d*)$
         '''),
@@ -158,24 +174,30 @@ _OPTIONS = [
         pre-release part of the tag and any separator, e.g for
         pre-release version '12.0.0.0rc1' the default pattern will
         identify '.0rc1' as the value of the group 'pre_release'.
-        """)),
-
-    Opt('branch_name_re', 'stable/.+',
+        """),
+    ),
+    Opt(
+        'branch_name_re',
+        'stable/.+',
         textwrap.dedent("""\
         The pattern for names for branches that are relevant when
         scanning history to determine where to stop, to find the
         "base" of a branch. Other branches are ignored.
-        """)),
-
-    Opt('closed_branch_tag_re', '(.+)-eo[lm]',
+        """),
+    ),
+    Opt(
+        'closed_branch_tag_re',
+        '(.+)-eo[lm]',
         textwrap.dedent("""\
         The pattern for names for tags that replace closed
         branches that are relevant when scanning history to
         determine where to stop, to find the "base" of a
         branch. Other tags are ignored.
-        """)),
-
-    Opt('branch_name_prefix', 'stable/',
+        """),
+    ),
+    Opt(
+        'branch_name_prefix',
+        'stable/',
         textwrap.dedent("""\
         The prefix to add to tags for closed branches
         to restore the old branch name to allow sorting
@@ -184,26 +206,31 @@ _OPTIONS = [
         "stable/mitaka" by removing the "-eol" suffix
         via closed_branch_tag_re and setting the prefix
         to "stable/".
-        """)),
-
-    Opt('branch_sort_re', 'stable/([0-9].*)',
+        """),
+    ),
+    Opt(
+        'branch_sort_re',
+        'stable/([0-9].*)',
         textwrap.dedent("""\
         By default branches are sorted alphabetically, except
         for branches matching this pattern, those will be sorted
         with branch_sort_prefix inserted in order to accomodate
         the way OpenStack stable branches are named and sorted.
-        """)),
-
-    Opt('branch_sort_prefix', 'stable/zzz',
+        """),
+    ),
+    Opt(
+        'branch_sort_prefix',
+        'stable/zzz',
         textwrap.dedent("""\
         The prefix to add to names of branches matched
         by branch_sort_re. This allows OpenStack branches
         to be sorted according to the current release
         naming scheme. Set to "stable/" in order to
         restore plain alphabetic ordering.
-        """)),
-
-    Opt('sections',
+        """),
+    ),
+    Opt(
+        'sections',
         [
             ['features', 'New Features'],
             ['issues', 'Known Issues'],
@@ -233,18 +260,22 @@ _OPTIONS = [
         Warning: you should check that ``semver_major``, ``semver_minor``,
         and ``semver_patch`` includes the relevant section names,
         including subsections.
-        """)),
-
-    Opt('prelude_section_name', defaults.PRELUDE_SECTION_NAME,
+        """),
+    ),
+    Opt(
+        'prelude_section_name',
+        defaults.PRELUDE_SECTION_NAME,
         textwrap.dedent("""\
         The name of the prelude section in the note template. This
         allows users to rename the section to, for example,
         'release_summary' or 'project_wide_general_announcements',
         which is displayed in titlecase in the report after
         replacing underscores with spaces.
-        """)),
-
-    Opt('ignore_null_merges', True,
+        """),
+    ),
+    Opt(
+        'ignore_null_merges',
+        True,
         textwrap.dedent("""\
         When this option is set to True, any merge commits with no
         changes and in which the second or later parent is tagged
@@ -256,9 +287,11 @@ _OPTIONS = [
         confuses the regular traversal because it makes that stable
         branch appear to be part of master and/or the later stable
         branch. This option allows us to ignore those.
-        """)),
-
-    Opt('ignore_notes', [],
+        """),
+    ),
+    Opt(
+        'ignore_notes',
+        [],
         textwrap.dedent("""\
         Note files to be ignored. It's useful to be able to ignore a
         file if it is edited on the wrong branch. Notes should be
@@ -268,43 +301,56 @@ _OPTIONS = [
         apply to all branches. To ignore a note in the HTML build, use
         the ``ignore-notes`` parameter to the ``release-notes`` sphinx
         directive.
-        """)),
-
-    Opt('unreleased_version_title', '',
+        """),
+    ),
+    Opt(
+        'unreleased_version_title',
+        '',
         textwrap.dedent("""\
         The title to use for any notes that do not appear in a
         released version. If this option is unset, the development
         version number is used (for example, ``3.0.0-3``).
-        """)),
-    Opt('encoding', None,
+        """),
+    ),
+    Opt(
+        'encoding',
+        None,
         textwrap.dedent("""\
         The character encoding to use when opening note files. If not
         specified it will be dependent on the system running reno (whatever
         'locale.getpreferredencoding()' returns. This takes in a string
         name that will be passed to the encoding kwarg for open(), so any
         codec or alias from stdlib's codec module is valid.
-        """)),
-
-    Opt('semver_major', ['upgrade'],
+        """),
+    ),
+    Opt(
+        'semver_major',
+        ['upgrade'],
         textwrap.dedent("""\
         The sections that indicate release notes triggering major version
         updates for the next release, from X.Y.Z to X+1.0.0.
-        """)),
-    Opt('semver_minor', ['features'],
+        """),
+    ),
+    Opt(
+        'semver_minor',
+        ['features'],
         textwrap.dedent("""\
         The sections that indicate release notes triggering minor version
         updates for the next release, from X.Y.Z to X.Y+1.0.
-        """)),
-    Opt('semver_patch', ['fixes'],
+        """),
+    ),
+    Opt(
+        'semver_patch',
+        ['fixes'],
         textwrap.dedent("""\
         The sections that indicate release notes triggering patch version
         updates for the next release, from X.Y.Z to X.Y.Z+1.
-        """)),
+        """),
+    ),
 ]
 
 
 class Config:
-
     _OPTS = {o.name: o for o in _OPTIONS}
 
     @classmethod
@@ -337,7 +383,8 @@ class Config:
     def _load_file(self):
         filenames = [
             os.path.join(self.reporoot, self.relnotesdir, 'config.yaml'),
-            os.path.join(self.reporoot, 'reno.yaml')]
+            os.path.join(self.reporoot, 'reno.yaml'),
+        ]
 
         for filename in filenames:
             LOG.debug('looking for configuration file %s', filename)
@@ -348,10 +395,10 @@ class Config:
             return
 
         try:
-            with open(filename, 'r') as fd:
+            with open(filename) as fd:
                 self._contents = yaml.safe_load(fd)
             LOG.info('loaded configuration file %s', filename)
-        except IOError as err:
+        except OSError as err:
             self._report_failure_config_file(filename, err)
         else:
             if self._contents:
@@ -387,8 +434,9 @@ class Config:
 
         for name, val in kwds.items():
             if name not in self._OPTS:
-                LOG.warning('ignoring unknown configuration value %r = %r',
-                            name, val)
+                LOG.warning(
+                    'ignoring unknown configuration value %r = %r', name, val
+                )
             else:
                 if name == "sections":
                     val = Section.from_raw_yaml(val)
@@ -436,11 +484,9 @@ class Config:
 
         Returns the actual configuration options after overrides.
         """
-        options = {
-            o.name: getattr(self, o.name)
-            for o in _OPTIONS
-        }
+        options = {o.name: getattr(self, o.name) for o in _OPTIONS}
         return options
+
 
 # def parse_config_into(parsed_arguments):
 

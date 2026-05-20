@@ -29,7 +29,6 @@ LOG = logging.getLogger(__name__)
 
 
 class ReleaseNotesDirective(rst.Directive):
-
     has_content = True
 
     # FIXME(dhellmann): We should be able to build this information
@@ -55,7 +54,7 @@ class ReleaseNotesDirective(rst.Directive):
         # the current directory, so look for it.
         try:
             return repo.Repo.discover(reporoot).path
-        except Exception:
+        except Exception:  # noqa: S110
             pass
 
         for root in ('.', '..', '../..'):
@@ -63,19 +62,22 @@ class ReleaseNotesDirective(rst.Directive):
                 return root
 
         raise Exception(
-            'Could not discover root directory; tried: %s' % ', '.join([
-                os.path.abspath(root) for root in ('.', '..', '../..')
-            ])
+            'Could not discover root directory; tried: %s'
+            % ', '.join(
+                [os.path.abspath(root) for root in ('.', '..', '../..')]
+            )
         )
 
     def run(self):
         title = ' '.join(self.content)
         branch = self.options.get('branch')
         relnotessubdir = self.options.get(
-            'relnotessubdir', defaults.RELEASE_NOTES_SUBDIR,
+            'relnotessubdir',
+            defaults.RELEASE_NOTES_SUBDIR,
         )
         reporoot = self._find_reporoot(
-            self.options.get('reporoot', '.'), relnotessubdir,
+            self.options.get('reporoot', '.'),
+            relnotessubdir,
         )
         ignore_notes = [
             name.strip()
@@ -92,13 +94,15 @@ class ReleaseNotesDirective(rst.Directive):
         opt_overrides['collapse_pre_releases'] = True
         # Only stop at the branch base if we have not been told
         # explicitly which versions to include.
-        opt_overrides['stop_at_branch_base'] = (version_opt is None)
+        opt_overrides['stop_at_branch_base'] = version_opt is None
         if 'earliest-version' in self.options:
             opt_overrides['earliest_version'] = self.options.get(
-                'earliest-version')
+                'earliest-version'
+            )
         if 'unreleased-version-title' in self.options:
             opt_overrides['unreleased_version_title'] = self.options.get(
-                'unreleased-version-title')
+                'unreleased-version-title'
+            )
 
         if branch:
             opt_overrides['branch'] = branch
@@ -107,16 +111,17 @@ class ReleaseNotesDirective(rst.Directive):
         conf.override(**opt_overrides)
 
         notesdir = os.path.join(relnotessubdir, conf.notesdir)
-        LOG.info('scanning %s for %s release notes' % (
-                 os.path.join(conf.reporoot, notesdir),
-                 branch or 'current branch'))
+        LOG.info(
+            'scanning %s for %s release notes'
+            % (
+                os.path.join(conf.reporoot, notesdir),
+                branch or 'current branch',
+            )
+        )
 
         with loader.Loader(conf) as ldr:
             if version_opt is not None:
-                versions = [
-                    v.strip()
-                    for v in version_opt.split(',')
-                ]
+                versions = [v.strip() for v in version_opt.split(',')]
             else:
                 versions = ldr.versions
             LOG.info('got versions %s' % (versions,))
@@ -142,8 +147,5 @@ class ReleaseNotesDirective(rst.Directive):
 
 def setup(app):
     app.add_directive('release-notes', ReleaseNotesDirective)
-    metadata_dict = {
-        'version': reno.__version__,
-        'parallel_read_safe': True
-    }
+    metadata_dict = {'version': reno.__version__, 'parallel_read_safe': True}
     return metadata_dict

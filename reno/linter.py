@@ -27,8 +27,9 @@ def lint_cmd(args, conf):
     notes = glob.glob(os.path.join(notesdir, '*.yaml'))
 
     error = 0
-    allowed_section_names = [conf.prelude_section_name] + \
-                            [s.name for s in conf.sections]
+    allowed_section_names = [conf.prelude_section_name] + [
+        s.name for s in conf.sections
+    ]
 
     uids = {}
     with loader.Loader(conf, ignore_cache=True) as ldr:
@@ -42,7 +43,8 @@ def lint_cmd(args, conf):
                 if section_name not in allowed_section_names:
                     LOG.warning(
                         'unrecognized section name %s in %s',
-                        section_name, f,
+                        section_name,
+                        f,
                     )
                     error = 1
 

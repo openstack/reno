@@ -72,21 +72,30 @@ def compute_next_version(conf):
 
                 for section in conf.semver_major:
                     if notes.get(section, []):
-                        LOG.debug('found breaking change in %r section of %s',
-                                  section, filename)
-                        return '{}.0.0'.format(base_version.major + 1)
+                        LOG.debug(
+                            'found breaking change in %r section of %s',
+                            section,
+                            filename,
+                        )
+                        return f'{base_version.major + 1}.0.0'
 
                 for section in conf.semver_minor:
                     if notes.get(section, []):
-                        LOG.debug('found feature in %r section of %s',
-                                  section, filename)
+                        LOG.debug(
+                            'found feature in %r section of %s',
+                            section,
+                            filename,
+                        )
                         inc_minor = True
                         break
 
                 for section in conf.semver_patch:
                     if notes.get(section, []):
-                        LOG.debug('found bugfix in %r section of %s',
-                                  section, filename)
+                        LOG.debug(
+                            'found bugfix in %r section of %s',
+                            section,
+                            filename,
+                        )
                         inc_patch = True
                         break
 
@@ -101,7 +110,7 @@ def compute_next_version(conf):
         minor += 1
         patch = 0
 
-    return '{}.{}.{}'.format(major, minor, patch)
+    return f'{major}.{minor}.{patch}'
 
 
 def semver_next_cmd(args, conf):

@@ -25,16 +25,16 @@ def _multi_line_string(s, indent=''):
     output_lines = s.splitlines()
     if not output_lines[0].strip():
         output_lines = output_lines[1:]
-    for l in output_lines:
-        yield indent + l
+    for x in output_lines:
+        yield indent + x
 
 
 def _format_option_help(options):
     "Produce RST lines for the configuration options."
     for opt in sorted(options, key=lambda opt: opt.name):
-        yield '``{}``'.format(opt.name)
-        for l in _multi_line_string(opt.help, '  '):
-            yield l
+        yield f'``{opt.name}``'
+        for x in _multi_line_string(opt.help, '  '):
+            yield x
         yield ''
         if isinstance(opt.default, str) and '\n' in opt.default:
             # Multi-line string
@@ -42,15 +42,14 @@ def _format_option_help(options):
             yield ''
             yield '  ::'
             yield ''
-            for l in _multi_line_string(opt.default, '    '):
-                yield l
+            for x in _multi_line_string(opt.default, '    '):
+                yield x
         else:
-            yield '  Defaults to ``{!r}``'.format(opt.default)
+            yield f'  Defaults to ``{opt.default!r}``'
         yield ''
 
 
 class ShowConfigDirective(rst.Directive):
-
     option_spec = {}
 
     has_content = True

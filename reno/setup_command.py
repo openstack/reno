@@ -74,12 +74,19 @@ class BuildReno(cmd.Command):
     configuration can be included in ``setup.py`` or ``setup.cfg`` instead of
     being specified from the command-line.
     """
+
     description = 'Build reno release notes'
     user_options = [
-        ('repo-root=', None, 'the root directory of the Git repository; '
-         'defaults to "."'),
-        ('rel-notes-dir=', None, 'the parent directory; defaults to '
-         '"releasenotes"'),
+        (
+            'repo-root=',
+            None,
+            'the root directory of the Git repository; defaults to "."',
+        ),
+        (
+            'rel-notes-dir=',
+            None,
+            'the parent directory; defaults to "releasenotes"',
+        ),
         ('output-file=', None, 'the filename of the release notes file'),
     ]
 
@@ -108,8 +115,9 @@ class BuildReno(cmd.Command):
             setattr(self, option, default)
             return default
         elif not isinstance(val, str):
-            raise errors.DistutilsOptionError("'%s' must be a %s (got `%s`)"
-                                              % (option, what, val))
+            raise errors.DistutilsOptionError(
+                "'%s' must be a %s (got `%s`)" % (option, what, val)
+            )
         return val
 
     def run(self):

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -20,16 +18,17 @@ from reno.tests import base
 
 
 class TestMultiLineString(base.TestCase):
-
     def test_no_indent(self):
         input = textwrap.dedent("""\
         The notes subdirectory within the relnotesdir where the
         notes live.
         """)
-        expected = '\n'.join([
-            'The notes subdirectory within the relnotesdir where the',
-            'notes live.',
-        ])
+        expected = '\n'.join(
+            [
+                'The notes subdirectory within the relnotesdir where the',
+                'notes live.',
+            ]
+        )
         actual = '\n'.join(show_reno_config._multi_line_string(input))
         self.assertEqual(expected, actual)
 
@@ -38,10 +37,12 @@ class TestMultiLineString(base.TestCase):
         The notes subdirectory within the relnotesdir where the
         notes live.
         """)
-        expected = '\n'.join([
-            '  The notes subdirectory within the relnotesdir where the',
-            '  notes live.',
-        ])
+        expected = '\n'.join(
+            [
+                '  The notes subdirectory within the relnotesdir where the',
+                '  notes live.',
+            ]
+        )
         actual = '\n'.join(show_reno_config._multi_line_string(input, '  '))
         self.assertEqual(expected, actual)
 
@@ -50,19 +51,21 @@ class TestMultiLineString(base.TestCase):
         The notes subdirectory within the relnotesdir where the
         notes live.
         """)
-        expected = '\n'.join([
-            '  The notes subdirectory within the relnotesdir where the',
-            '  notes live.',
-        ])
+        expected = '\n'.join(
+            [
+                '  The notes subdirectory within the relnotesdir where the',
+                '  notes live.',
+            ]
+        )
         actual = '\n'.join(show_reno_config._multi_line_string(input, '  '))
         self.assertEqual(expected, actual)
 
 
 class TestFormatOptionHelp(base.TestCase):
-
     def test_simple_default(self):
         opt = config.Opt(
-            'notesdir', 'path/to/notes',
+            'notesdir',
+            'path/to/notes',
             textwrap.dedent("""\
             The notes subdirectory within the relnotesdir where the
             notes live.
@@ -80,7 +83,8 @@ class TestFormatOptionHelp(base.TestCase):
 
     def test_bool_default(self):
         opt = config.Opt(
-            'collapse_pre_releases', True,
+            'collapse_pre_releases',
+            True,
             textwrap.dedent("""\
             Should pre-release versions be merged into the final release
             of the same number (1.0.0.0a1 notes appear under 1.0.0).

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -21,7 +19,6 @@ from reno.tests import base
 
 
 class TestFormatterBase(base.TestCase):
-
     scanner_output = {
         '0.0.0': [('note1', 'shaA')],
         '1.0.0': [('note2', 'shaB'), ('note3', 'shaC')],
@@ -33,13 +30,11 @@ class TestFormatterBase(base.TestCase):
         return self.note_bodies.get(filename, '')
 
     def setUp(self):
-        super(TestFormatterBase, self).setUp()
+        super().setUp()
 
         def _load(ldr):
             ldr._scanner_output = self.scanner_output
-            ldr._cache = {
-                'file-contents': self.note_bodies
-            }
+            ldr._cache = {'file-contents': self.note_bodies}
 
         self.c = config.Config('reporoot')
 
@@ -58,7 +53,6 @@ class TestFormatterBase(base.TestCase):
 
 
 class TestFormatter(TestFormatterBase):
-
     note_bodies = {
         'note1': {
             'prelude': 'This is the prelude.',
@@ -150,13 +144,15 @@ class TestFormatterCustomSections(TestFormatterBase):
     }
 
     def setUp(self):
-        super(TestFormatterCustomSections, self).setUp()
-        self.c.override(sections=[
-            ['features', 'New Features'],
-            ['features_subsection', 'Subsection', 2],
-            ['features_subsubsection', 'Subsubsection', 3],
-            ['api', 'API Changes'],
-        ])
+        super().setUp()
+        self.c.override(
+            sections=[
+                ['features', 'New Features'],
+                ['features_subsection', 'Subsection', 2],
+                ['features_subsubsection', 'Subsubsection', 3],
+                ['api', 'API Changes'],
+            ]
+        )
 
     def test_custom_section_order(self):
         result = formatter.format_report(
@@ -202,7 +198,6 @@ class TestFormatterCustomSections(TestFormatterBase):
 
 
 class TestFormatterCustomUnreleaseTitle(TestFormatterBase):
-
     note_bodies = {
         'note1': {
             'prelude': 'This is the prelude.',
@@ -239,7 +234,6 @@ class TestFormatterCustomUnreleaseTitle(TestFormatterBase):
 
 
 class TestFormatterAnchors(TestFormatterBase):
-
     note_bodies = {
         'note1': {
             'prelude': 'This is the prelude.',
@@ -292,12 +286,13 @@ class TestFormatterAnchors(TestFormatterBase):
             branch='stable/queens',
         )
         self.assertIn('.. _This is the title_0.0.0_stable_queens:', result)
-        self.assertIn('.. _This is the title_0.0.0_stable_queens_Prelude:',
-                      result)
+        self.assertIn(
+            '.. _This is the title_0.0.0_stable_queens_Prelude:', result
+        )
         self.assertIn('.. _This is the title_1.0.0_stable_queens:', result)
         self.assertIn(
-            '.. _This is the title_1.0.0_stable_queens_Known Issues:',
-            result)
+            '.. _This is the title_1.0.0_stable_queens_Known Issues:', result
+        )
 
     def test_with_branch(self):
         result = formatter.format_report(

@@ -23,11 +23,12 @@ LOG = logging.getLogger(__name__)
 
 
 def get_cache_filename(conf):
-    return os.path.normpath(os.path.join(
-        conf.reporoot, conf.notespath, 'reno.cache'))
+    return os.path.normpath(
+        os.path.join(conf.reporoot, conf.notespath, 'reno.cache')
+    )
 
 
-class Loader(object):
+class Loader:
     "Load the release notes for a given repository."
 
     def __init__(self, conf, ignore_cache=False):
@@ -70,7 +71,7 @@ class Loader(object):
         if (not self._ignore_cache) and cache_file_exists:
             LOG.debug('loading cache file %s', self._cache_filename)
 
-            with open(self._cache_filename, 'r', encoding=self._encoding) as f:
+            with open(self._cache_filename, encoding=self._encoding) as f:
                 self._cache = yaml.safe_load(f.read())
 
         if self._cache:
@@ -78,12 +79,10 @@ class Loader(object):
             # it would be in if we had loaded it "live". This
             # simplifies some of the logic in the other methods.
             self._scanner_output = collections.OrderedDict(
-                (n['version'], n['files'])
-                for n in self._cache['notes']
+                (n['version'], n['files']) for n in self._cache['notes']
             )
             self._tags_to_dates = collections.OrderedDict(
-                (n['version'], n['date'])
-                for n in self._cache['dates']
+                (n['version'], n['date']) for n in self._cache['dates']
             )
         else:
             self._scanner = scanner.Scanner(self._config)
@@ -152,7 +151,8 @@ class Loader(object):
                     LOG.warning(
                         'The %s section of %s does not parse as a single '
                         'string. Is the YAML input escaped properly?',
-                        section_name, filename,
+                        section_name,
+                        filename,
                     )
             else:
                 if section_name not in valid_section_names:
@@ -161,7 +161,8 @@ class Loader(object):
                         'The %s section of %s is not a recognized section. '
                         'It should be one of: %s. '
                         'This will be an error in a future release.',
-                        section_name, filename,
+                        section_name,
+                        filename,
                         ', '.join(valid_section_names),
                     )
                 if isinstance(section_content, str):
@@ -173,7 +174,8 @@ class Loader(object):
                     LOG.warning(
                         'The %s section of %s does not parse as a string or '
                         'list of strings. Is the YAML input escaped properly?',
-                        section_name, filename,
+                        section_name,
+                        filename,
                     )
                 else:
                     for item in section_content:
@@ -182,7 +184,10 @@ class Loader(object):
                                 'The item %r in the %s section of %s parses '
                                 'as a %s instead of a string. '
                                 'Is the YAML input escaped properly?',
-                                item, section_name, filename, type(item),
+                                item,
+                                section_name,
+                                filename,
+                                type(item),
                             )
 
             cleaned_content[section_name] = section_content

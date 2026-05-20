@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -25,15 +23,18 @@ from reno.tests import base
 
 
 class TestCache(base.TestCase):
-
     scanner_output = [
-        collections.OrderedDict([  # master
-            ('0.0.0', [('note1', 'shaA')]),
-            ('1.0.0', [('note2', 'shaB'), ('note3', 'shaC')]),
-        ]),
-        collections.OrderedDict([  # stable/1.0
-            ('1.0.1', [('note4', 'shaD')]),
-        ]),
+        collections.OrderedDict(
+            [  # master
+                ('0.0.0', [('note1', 'shaA')]),
+                ('1.0.0', [('note2', 'shaB'), ('note3', 'shaC')]),
+            ]
+        ),
+        collections.OrderedDict(
+            [  # stable/1.0
+                ('1.0.1', [('note4', 'shaD')]),
+            ]
+        ),
     ]
 
     note_bodies = {
@@ -63,14 +64,17 @@ class TestCache(base.TestCase):
         return {'1.0.0': 1547874431}
 
     def setUp(self):
-        super(TestCache, self).setUp()
+        super().setUp()
         self.useFixture(
-            fixtures.MockPatch('reno.scanner.Scanner.get_file_at_commit',
-                               new=self._get_note_body)
+            fixtures.MockPatch(
+                'reno.scanner.Scanner.get_file_at_commit',
+                new=self._get_note_body,
+            )
         )
         self.useFixture(
-            fixtures.MockPatch('reno.scanner.Scanner.get_version_dates',
-                               new=self._get_dates)
+            fixtures.MockPatch(
+                'reno.scanner.Scanner.get_version_dates', new=self._get_dates
+            )
         )
         self.c = config.Config('.')
 
@@ -82,12 +86,12 @@ class TestCache(base.TestCase):
         expected = {
             'dates': [{'version': '1.0.0', 'date': 1547874431}],
             'notes': [
-                {'version': '0.0.0',
-                 'files': [('note1', 'shaA')]},
-                {'version': '1.0.0',
-                 'files': [('note2', 'shaB'), ('note3', 'shaC')]},
-                {'version': '1.0.1',
-                 'files': [('note4', 'shaD')]},
+                {'version': '0.0.0', 'files': [('note1', 'shaA')]},
+                {
+                    'version': '1.0.0',
+                    'files': [('note2', 'shaB'), ('note3', 'shaC')],
+                },
+                {'version': '1.0.1', 'files': [('note4', 'shaD')]},
             ],
             'file-contents': {
                 'note1': {
@@ -114,6 +118,7 @@ class TestCache(base.TestCase):
         )
 
         mock_get_branches.assert_called_once()
-        mock_get_notes.assert_has_calls([
-            mock.call(None), mock.call('stable/1.0')])
+        mock_get_notes.assert_has_calls(
+            [mock.call(None), mock.call('stable/1.0')]
+        )
         self.assertEqual(expected, db)

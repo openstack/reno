@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -45,7 +43,7 @@ collapse_pre_releases: false
 """
 
     def setUp(self):
-        super(TestConfig, self).setUp()
+        super().setUp()
         # Temporary directory to store our config
         self.tempdir = self.useFixture(fixtures.TempDir())
 
@@ -84,7 +82,7 @@ collapse_pre_releases: false
                 ["features_subsub", "Subsub", 3],
                 ["bugs", "Bugs"],
                 ["bugs_sub", "Sub", 2],
-                ["documentation", "Documentation", 1]
+                ["documentation", "Documentation", 1],
             ],
         )
         actual = c.options
@@ -160,32 +158,36 @@ collapse_pre_releases: false
 
     def test_override_from_parsed_args_empty(self):
         c = self._run_override_from_parsed_args([])
-        actual = {
-            o.name: getattr(c, o.name)
-            for o in config._OPTIONS
-        }
+        actual = {o.name: getattr(c, o.name) for o in config._OPTIONS}
         self.assertEqual(expected_options(), actual)
 
     def test_override_from_parsed_args_boolean_false(self):
-        c = self._run_override_from_parsed_args([
-            '--no-collapse-pre-releases',
-        ])
+        c = self._run_override_from_parsed_args(
+            [
+                '--no-collapse-pre-releases',
+            ]
+        )
         actual = c.options
         expected = expected_options(collapse_pre_releases=False)
         self.assertEqual(expected, actual)
 
     def test_override_from_parsed_args_boolean_true(self):
-        c = self._run_override_from_parsed_args([
-            '--collapse-pre-releases',
-        ])
+        c = self._run_override_from_parsed_args(
+            [
+                '--collapse-pre-releases',
+            ]
+        )
         actual = c.options
         expected = expected_options(collapse_pre_releases=True)
         self.assertEqual(expected, actual)
 
     def test_override_from_parsed_args_string(self):
-        c = self._run_override_from_parsed_args([
-            '--earliest-version', '1.2.3',
-        ])
+        c = self._run_override_from_parsed_args(
+            [
+                '--earliest-version',
+                '1.2.3',
+            ]
+        )
         actual = c.options
         expected = expected_options(earliest_version='1.2.3')
         self.assertEqual(expected, actual)
@@ -201,9 +203,8 @@ collapse_pre_releases: false
 
 
 class TestConfigProperties(base.TestCase):
-
     def setUp(self):
-        super(TestConfigProperties, self).setUp()
+        super().setUp()
         # Temporary directory to store our config
         self.tempdir = self.useFixture(fixtures.TempDir())
         self.c = config.Config('releasenotes')
@@ -235,7 +236,9 @@ class TestConfigProperties(base.TestCase):
     def test_prelude_and_template_override(self):
         template = defaults.TEMPLATE.format(defaults.PRELUDE_SECTION_NAME)
         self.assertEqual(template, self.c.template)
-        self.c.override(prelude_section_name='fake_prelude_name',
-                        template='i-am-a-template')
+        self.c.override(
+            prelude_section_name='fake_prelude_name',
+            template='i-am-a-template',
+        )
         self.assertEqual('fake_prelude_name', self.c.prelude_section_name)
         self.assertEqual('i-am-a-template', self.c.template)

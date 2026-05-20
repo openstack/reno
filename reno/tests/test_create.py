@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -24,7 +22,6 @@ from reno.tests import base
 
 
 class TestPickFileName(base.TestCase):
-
     @mock.patch('os.path.exists')
     def test_not_random_enough(self, exists):
         exists.return_value = True
@@ -44,9 +41,8 @@ class TestPickFileName(base.TestCase):
 
 
 class TestCreate(base.TestCase):
-
     def setUp(self):
-        super(TestCreate, self).setUp()
+        super().setUp()
         self.tmpdir = self.useFixture(fixtures.TempDir()).path
 
     def _create_user_template(self, contents):
@@ -57,12 +53,12 @@ class TestCreate(base.TestCase):
 
     def _get_file_path_from_output(self, output):
         # Get the last consecutive word from the output and remove the newline
-        return output[output.rfind(" ") + 1:-1]
+        return output[output.rfind(" ") + 1 : -1]
 
     def test_create_from_template(self):
         filename = create._pick_note_file_name(self.tmpdir, 'theslug')
         create._make_note_file(filename, 'i-am-a-template')
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             body = f.read()
         self.assertEqual('i-am-a-template', body)
 
@@ -77,7 +73,7 @@ class TestCreate(base.TestCase):
         with mock.patch('sys.stdout', new=io.StringIO()) as fake_out:
             create.create_cmd(args, conf)
         filename = self._get_file_path_from_output(fake_out.getvalue())
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             body = f.read()
         self.assertEqual('i-am-a-user-template', body)
 
@@ -112,7 +108,7 @@ class TestCreate(base.TestCase):
         with mock.patch('sys.stdout', new=io.StringIO()) as fake_out:
             create.create_cmd(args, conf)
         filename = self._get_file_path_from_output(fake_out.getvalue())
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             body = f.read()
         self.assertEqual('i-am-a-user-template', body)
 

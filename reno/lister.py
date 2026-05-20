@@ -31,6 +31,6 @@ def list_cmd(args, conf):
             print(version)
             for n, sha in notefiles:
                 if n.startswith(reporoot):
-                    n = n[len(reporoot):]
+                    n = n[len(reporoot) :]
                 print('\t%s (%s)' % (n, sha))
     return
