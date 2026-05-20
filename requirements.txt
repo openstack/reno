@@ -3,5 +3,5 @@
 # process, which may cause wedges in the gate later.
 
 PyYAML>=5.3.1
-dulwich>=0.15.0  # Apache-2.0
+dulwich>=1.0.0  # Apache-2.0
 packaging>=20.4

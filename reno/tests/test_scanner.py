@@ -65,16 +65,14 @@ class GPGKeyFixture(fixtures.Fixture):
         super().setUp()
         tempdir = self.useFixture(fixtures.TempDir())
         gnupg_version_re = re.compile(r'^gpg\s.*\s([\d+])\.([\d+])\.([\d+])')
-        gnupg_version = utils.check_output(
+        for line in utils.check_output(
             ['gpg', '--version'], cwd=tempdir.path
-        )
-        for line in gnupg_version.split('\n'):
-            gnupg_version = gnupg_version_re.match(line)
-            if gnupg_version:
+        ).split('\n'):
+            if (match := gnupg_version_re.match(line)) is not None:
                 gnupg_version = (
-                    int(gnupg_version.group(1)),
-                    int(gnupg_version.group(2)),
-                    int(gnupg_version.group(3)),
+                    int(match.group(1)),
+                    int(match.group(2)),
+                    int(match.group(3)),
                 )
                 break
         else:
@@ -111,6 +109,7 @@ class GPGKeyFixture(fixtures.Fixture):
             """)
         finally:
             f.close()
+
         # Note that --quick-random (--debug-quick-random in GnuPG 2.x)
         # does not have a corresponding preferences file setting and
         # must be passed explicitly on the command line instead
@@ -781,8 +780,7 @@ class FileContentsTest(Base):
         self.repo.commit('edit note file')
         with scanner.RenoRepo(self.reporoot) as r:
             head = r.head()
-            parent = r.get_parents(head)[0]
-            parent = parent.decode('ascii')
+            parent = r.get_parents(head)[0].decode('ascii')
             contents = r.get_file_at_commit(f1, parent)
         self.assertEqual(
             b'initial-contents',
@@ -1996,11 +1994,13 @@ class AggregateChangesTest(Base):
         changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_ADD,
-                old=objects.TreeEntry(path=None, mode=None, sha=None),
+                old=objects.TreeEntry(
+                    path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                ),
                 new=objects.TreeEntry(
                     path=name.encode('utf-8'),
-                    mode='0222',
-                    sha='not-a-hash',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'not-a-hash'),
                 ),
             )
         ]
@@ -2018,11 +2018,13 @@ class AggregateChangesTest(Base):
         changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_ADD,
-                old=objects.TreeEntry(path=None, mode=None, sha=None),
+                old=objects.TreeEntry(
+                    path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                ),
                 new=objects.TreeEntry(
                     path=name.encode('utf-8'),
-                    mode='0222',
-                    sha='not-a-hash',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'not-a-hash'),
                 ),
             )
         ]
@@ -2046,11 +2048,13 @@ class AggregateChangesTest(Base):
             changes.append(
                 diff_tree.TreeChange(
                     type=diff_tree.CHANGE_ADD,
-                    old=objects.TreeEntry(path=None, mode=None, sha=None),
+                    old=objects.TreeEntry(
+                        path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                    ),
                     new=objects.TreeEntry(
                         path=name.encode('utf-8'),
-                        mode='0222',
-                        sha='not-a-hash',
+                        mode=0o222,
+                        sha=objects.ObjectID(b'not-a-hash'),
                     ),
                 )
             )
@@ -2077,11 +2081,13 @@ class AggregateChangesTest(Base):
             changes.append(
                 diff_tree.TreeChange(
                     type=diff_tree.CHANGE_ADD,
-                    old=objects.TreeEntry(path=None, mode=None, sha=None),
+                    old=objects.TreeEntry(
+                        path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                    ),
                     new=objects.TreeEntry(
                         path=name.encode('utf-8'),
-                        mode='0222',
-                        sha='not-a-hash',
+                        mode=0o222,
+                        sha=objects.ObjectID(b'not-a-hash'),
                     ),
                 )
             )
@@ -2107,10 +2113,12 @@ class AggregateChangesTest(Base):
                 type=diff_tree.CHANGE_DELETE,
                 old=objects.TreeEntry(
                     path=name.encode('utf-8'),
-                    mode='0222',
-                    sha='not-a-hash',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'not-a-hash'),
                 ),
-                new=objects.TreeEntry(path=None, mode=None, sha=None),
+                new=objects.TreeEntry(
+                    path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                ),
             )
         ]
         results = list(self.aggregator.aggregate_changes(entry, changes))
@@ -2134,10 +2142,12 @@ class AggregateChangesTest(Base):
                     type=diff_tree.CHANGE_DELETE,
                     old=objects.TreeEntry(
                         path=name.encode('utf-8'),
-                        mode='0222',
-                        sha='not-a-hash',
+                        mode=0o222,
+                        sha=objects.ObjectID(b'not-a-hash'),
                     ),
-                    new=objects.TreeEntry(path=None, mode=None, sha=None),
+                    new=objects.TreeEntry(
+                        path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                    ),
                 )
             )
             expected.append(('%016x' % n, 'delete', name, 'commit-id'))
@@ -2154,13 +2164,13 @@ class AggregateChangesTest(Base):
                 type=diff_tree.CHANGE_MODIFY,
                 old=objects.TreeEntry(
                     path=name.encode('utf-8'),
-                    mode='0222',
-                    sha='old-sha',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'old-sha'),
                 ),
                 new=objects.TreeEntry(
                     path=name.encode('utf-8'),
-                    mode='0222',
-                    sha='new-sha',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'new-sha'),
                 ),
             )
         ]
@@ -2179,21 +2189,25 @@ class AggregateChangesTest(Base):
         changes = [
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_ADD,
-                old=objects.TreeEntry(path=None, mode=None, sha=None),
+                old=objects.TreeEntry(
+                    path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                ),
                 new=objects.TreeEntry(
                     path=new_name.encode('utf-8'),
-                    mode='0222',
-                    sha='new-hash',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'new-hash'),
                 ),
             ),
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_DELETE,
                 old=objects.TreeEntry(
                     path=old_name.encode('utf-8'),
-                    mode='0222',
-                    sha='old-hash',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'old-hash'),
                 ),
-                new=objects.TreeEntry(path=None, mode=None, sha=None),
+                new=objects.TreeEntry(
+                    path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                ),
             ),
         ]
         results = list(self.aggregator.aggregate_changes(entry, changes))
@@ -2213,18 +2227,22 @@ class AggregateChangesTest(Base):
                 type=diff_tree.CHANGE_DELETE,
                 old=objects.TreeEntry(
                     path=old_name.encode('utf-8'),
-                    mode='0222',
-                    sha='old-hash',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'old-hash'),
                 ),
-                new=objects.TreeEntry(path=None, mode=None, sha=None),
+                new=objects.TreeEntry(
+                    path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                ),
             ),
             diff_tree.TreeChange(
                 type=diff_tree.CHANGE_ADD,
-                old=objects.TreeEntry(path=None, mode=None, sha=None),
+                old=objects.TreeEntry(
+                    path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                ),
                 new=objects.TreeEntry(
                     path=new_name.encode('utf-8'),
-                    mode='0222',
-                    sha='new-hash',
+                    mode=0o222,
+                    sha=objects.ObjectID(b'new-hash'),
                 ),
             ),
         ]
@@ -2250,28 +2268,36 @@ class AggregateChangesTest(Base):
             [
                 diff_tree.TreeChange(
                     type='modify',
-                    old=diff_tree.TreeEntry(
+                    old=objects.TreeEntry(
                         path=old_name.encode('utf-8'),
                         mode=33188,
-                        sha=b'8247dfdd116fd0e3cc4ba32328e4a3eafd227de6',
+                        sha=objects.ObjectID(
+                            b'8247dfdd116fd0e3cc4ba32328e4a3eafd227de6'
+                        ),
                     ),
-                    new=diff_tree.TreeEntry(
+                    new=objects.TreeEntry(
                         path=old_name.encode('utf-8'),
                         mode=33188,
-                        sha=b'611f3663f54afb1f018a6a8680b6488da50ac340',
+                        sha=objects.ObjectID(
+                            b'611f3663f54afb1f018a6a8680b6488da50ac340'
+                        ),
                     ),
                 ),
                 diff_tree.TreeChange(
                     type='modify',
-                    old=diff_tree.TreeEntry(
+                    old=objects.TreeEntry(
                         path=old_name.encode('utf-8'),
                         mode=33188,
-                        sha=b'ecb7788066eefa9dc8f110b56360efe7b1140b84',
+                        sha=objects.ObjectID(
+                            b'ecb7788066eefa9dc8f110b56360efe7b1140b84'
+                        ),
                     ),
-                    new=diff_tree.TreeEntry(
+                    new=objects.TreeEntry(
                         path=old_name.encode('utf-8'),
                         mode=33188,
-                        sha=b'611f3663f54afb1f018a6a8680b6488da50ac340',
+                        sha=objects.ObjectID(
+                            b'611f3663f54afb1f018a6a8680b6488da50ac340'
+                        ),
                     ),
                 ),
             ]

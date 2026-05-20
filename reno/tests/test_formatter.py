@@ -23,8 +23,8 @@ class TestFormatterBase(base.TestCase):
         '0.0.0': [('note1', 'shaA')],
         '1.0.0': [('note2', 'shaB'), ('note3', 'shaC')],
     }
-
     versions = ['0.0.0', '1.0.0']
+    note_bodies: dict[str, dict[str, str | list[str] | None]]
 
     def _get_note_body(self, reporoot, filename, sha):
         return self.note_bodies.get(filename, '')
