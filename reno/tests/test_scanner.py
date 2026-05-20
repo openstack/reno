@@ -66,7 +66,7 @@ class GPGKeyFixture(fixtures.Fixture):
         tempdir = self.useFixture(fixtures.TempDir())
         gnupg_version_re = re.compile(r'^gpg\s.*\s([\d+])\.([\d+])\.([\d+])')
         for line in utils.check_output(
-            ['gpg', '--version'], cwd=tempdir.path
+            *['gpg', '--version'], cwd=tempdir.path
         ).split('\n'):
             if (match := gnupg_version_re.match(line)) is not None:
                 gnupg_version = (
@@ -139,8 +139,9 @@ class GitRepoFixture(fixtures.Fixture):
         self.reporoot = reporoot
 
         git_version_re = re.compile(r'^git version (\d+)\.(\d+)')
-        git_version_raw = utils.check_output(['git', '--version'])
+        git_version_raw = utils.check_output(*['git', '--version'])
         git_version_match = git_version_re.match(git_version_raw)
+        assert git_version_match is not None
         self.git_version = (
             int(git_version_match.group(1)),
             int(git_version_match.group(2)),
@@ -164,7 +165,7 @@ class GitRepoFixture(fixtures.Fixture):
     def git(self, *args):
         self.logger.debug('$ git %s', ' '.join(args))
         output = utils.check_output(
-            ['git', *args],
+            *['git', *args],
             cwd=self.reporoot,
         )
         self.logger.debug(output)
@@ -1540,32 +1541,32 @@ class BranchTest(Base):
         # Create a second repository by cloning the first.
         print(
             utils.check_output(
-                ['git', 'clone', self.reporoot, 'reporoot2'],
+                *['git', 'clone', self.reporoot, 'reporoot2'],
                 cwd=self.temp_dir,
             )
         )
         reporoot2 = os.path.join(self.temp_dir, 'reporoot2')
         print(
             utils.check_output(
-                ['git', 'remote', 'update'],
+                *['git', 'remote', 'update'],
                 cwd=reporoot2,
             )
         )
         print(
             utils.check_output(
-                ['git', 'remote', '-v'],
+                *['git', 'remote', '-v'],
                 cwd=reporoot2,
             )
         )
         print(
             utils.check_output(
-                ['find', '.git/refs'],
+                *['find', '.git/refs'],
                 cwd=reporoot2,
             )
         )
         print(
             utils.check_output(
-                ['git', 'branch', '-a'],
+                *['git', 'branch', '-a'],
                 cwd=reporoot2,
             )
         )
@@ -1586,32 +1587,32 @@ class BranchTest(Base):
         # Create a second repository by cloning the first.
         print(
             utils.check_output(
-                ['git', 'clone', self.reporoot, 'reporoot2'],
+                *['git', 'clone', self.reporoot, 'reporoot2'],
                 cwd=self.temp_dir,
             )
         )
         reporoot2 = os.path.join(self.temp_dir, 'reporoot2')
         print(
             utils.check_output(
-                ['git', 'remote', 'update'],
+                *['git', 'remote', 'update'],
                 cwd=reporoot2,
             )
         )
         print(
             utils.check_output(
-                ['git', 'remote', '-v'],
+                *['git', 'remote', '-v'],
                 cwd=reporoot2,
             )
         )
         print(
             utils.check_output(
-                ['find', '.git/refs'],
+                *['find', '.git/refs'],
                 cwd=reporoot2,
             )
         )
         print(
             utils.check_output(
-                ['git', 'branch', '-a'],
+                *['git', 'branch', '-a'],
                 cwd=reporoot2,
             )
         )

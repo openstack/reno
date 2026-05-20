@@ -10,23 +10,30 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import argparse
 import collections
 import os
 import sys
+from typing import Any
 
 import yaml
 
+from reno import config as reno_config
 from reno import loader
 from reno import scanner
 
 
-def build_cache_db(conf, versions_to_include):
+def build_cache_db(
+    conf: reno_config.Config, versions_to_include: list[str]
+) -> dict[str, Any]:
     with scanner.Scanner(conf) as s:
         branches = [conf.branch]
         if not conf.branch:  # if no branch requested, scan all
             branches += s.get_series_branches()
 
-        notes = collections.OrderedDict()
+        notes: collections.OrderedDict[str, list[Any]] = (
+            collections.OrderedDict()
+        )
         for branch in branches:
             notes.update(s.get_notes_by_version(branch))
 
@@ -40,11 +47,7 @@ def build_cache_db(conf, versions_to_include):
         for version in versions_to_include:
             for filename, sha in notes[version]:
                 body = s.get_file_at_commit(filename, sha)
-                # We want to save the contents of the file, which is YAML,
-                # inside another YAML file. That looks terribly ugly with
-                # all of the escapes needed to format it properly as
-                # embedded YAML, so parse the input and convert it to a
-                # data structure that can be serialized cleanly.
+                assert body is not None
                 y = yaml.safe_load(body)
                 file_contents[filename] = y
 
@@ -59,7 +62,11 @@ def build_cache_db(conf, versions_to_include):
         return cache
 
 
-def write_cache_db(conf, versions_to_include, outfilename=None):
+def write_cache_db(
+    conf: reno_config.Config,
+    versions_to_include: list[str],
+    outfilename: str | None = None,
+) -> str | None:
     """Create a cache database file for the release notes data.
 
     Build the cache database from scanning the project history and
@@ -105,7 +112,7 @@ def write_cache_db(conf, versions_to_include, outfilename=None):
     return outfilename
 
 
-def cache_cmd(args, conf):
+def cache_cmd(args: argparse.Namespace, conf: reno_config.Config) -> None:
     "Generates a release notes cache"
     write_cache_db(
         conf=conf,

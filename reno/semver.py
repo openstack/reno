@@ -10,16 +10,18 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import argparse
 import logging
 
 from packaging import version
 
+from reno import config as reno_config
 from reno import loader
 
 LOG = logging.getLogger(__name__)
 
 
-def compute_next_version(conf):
+def compute_next_version(conf: reno_config.Config) -> str:
     "Compute the next semantic version based on the available release notes."
     LOG.debug('starting semver-next')
     with loader.Loader(conf, ignore_cache=True) as ldr:
@@ -113,7 +115,7 @@ def compute_next_version(conf):
     return f'{major}.{minor}.{patch}'
 
 
-def semver_next_cmd(args, conf):
+def semver_next_cmd(args: argparse.Namespace, conf: reno_config.Config) -> int:
     "Calculate next semantic version number"
     print(compute_next_version(conf))
     return 0

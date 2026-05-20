@@ -20,7 +20,7 @@ import subprocess
 LOG = logging.getLogger(__name__)
 
 
-def get_random_string(nbytes=8):
+def get_random_string(nbytes: int = 8) -> str:
     """Return a fixed-length random string
 
     :rtype: str
@@ -35,19 +35,27 @@ def get_random_string(nbytes=8):
     return val
 
 
-def check_output(*args, **kwds):
+def check_output(*args: str, cwd: str | None = None) -> str:
     """Unicode-aware wrapper for subprocess.check_output"""
     process = subprocess.Popen(
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, *args, **kwds
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=cwd,
     )
     output, errors = process.communicate()
     retcode = process.poll()
     if errors:
-        LOG.debug('ran: %s', ' '.join(*args))
+        LOG.debug('ran: %s', ' '.join(args))
         LOG.debug('returned: %s', retcode)
         LOG.debug('error output: %s', errors.rstrip())
         LOG.debug('regular output: %s', output.rstrip())
     if retcode:
         LOG.debug('raising error')
-        raise subprocess.CalledProcessError(retcode, args, output=output)
+        raise subprocess.CalledProcessError(
+            retcode,
+            args,
+            output=output,
+        )
+    assert output is not None
     return output.decode('utf-8')

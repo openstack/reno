@@ -10,11 +10,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import argparse
+
+from reno import config as reno_config
 from reno import formatter
 from reno import loader
 
 
-def report_cmd(args, conf):
+def report_cmd(args: argparse.Namespace, conf: reno_config.Config) -> None:
     "Generates a release notes report"
     encoding = conf.options['encoding']
 

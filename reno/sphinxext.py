@@ -10,12 +10,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 import os.path
+from typing import Any
 
 from docutils import nodes
 from docutils.parsers import rst
 from docutils.parsers.rst import directives
 from docutils import statemachine
 from dulwich import repo
+import sphinx.application
 from sphinx.util import logging
 from sphinx.util.nodes import nested_parse_with_titles
 
@@ -47,7 +49,9 @@ class ReleaseNotesDirective(rst.Directive):
         'unreleased-version-title': directives.unchanged,
     }
 
-    def _find_reporoot(self, reporoot_opt, relnotessubdir_opt):
+    def _find_reporoot(
+        self, reporoot_opt: str, relnotessubdir_opt: str
+    ) -> str:
         """Find root directory of project."""
         reporoot = os.path.abspath(reporoot_opt)
         # When building on RTD.org the root directory may not be
@@ -68,7 +72,7 @@ class ReleaseNotesDirective(rst.Directive):
             )
         )
 
-    def run(self):
+    def run(self) -> list[nodes.Node]:
         title = ' '.join(self.content)
         branch = self.options.get('branch')
         relnotessubdir = self.options.get(
@@ -134,7 +138,7 @@ class ReleaseNotesDirective(rst.Directive):
             )
 
         source_name = '<%s %s>' % (__name__, branch or 'current branch')
-        result = statemachine.ViewList()
+        result: statemachine.ViewList[str] = statemachine.ViewList()
         for line_num, line in enumerate(text.splitlines(), 1):
             LOG.debug('%4d: %s', line_num, line)
             result.append(line, source_name, line_num)
@@ -145,7 +149,7 @@ class ReleaseNotesDirective(rst.Directive):
         return node.children
 
 
-def setup(app):
+def setup(app: sphinx.application.Sphinx) -> dict[str, Any]:
     app.add_directive('release-notes', ReleaseNotesDirective)
     metadata_dict = {'version': reno.__version__, 'parallel_read_safe': True}
     return metadata_dict

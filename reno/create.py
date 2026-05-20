@@ -10,13 +10,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import argparse
 import os
 import subprocess
 
+from reno import config as reno_config
 from reno import utils
 
 
-def _pick_note_file_name(notesdir, slug):
+def _pick_note_file_name(notesdir: str, slug: str) -> str:
     "Pick a unique name in notesdir."
     for i in range(50):
         newid = utils.get_random_string()
@@ -30,7 +32,9 @@ def _pick_note_file_name(notesdir, slug):
         )
 
 
-def _make_note_file(filename, template, encoding=None):
+def _make_note_file(
+    filename: str, template: str, encoding: str | None = None
+) -> None:
     notesdir = os.path.dirname(filename)
     if not os.path.exists(notesdir):
         os.makedirs(notesdir)
@@ -38,14 +42,14 @@ def _make_note_file(filename, template, encoding=None):
         f.write(template)
 
 
-def _edit_file(filename):
+def _edit_file(filename: str) -> bool:
     if 'EDITOR' not in os.environ:
         return False
     subprocess.call([os.environ['EDITOR'], filename])
     return True
 
 
-def _get_user_template(template_file, encoding=None):
+def _get_user_template(template_file: str, encoding: str | None = None) -> str:
     if not os.path.exists(template_file):
         raise ValueError(
             'The provided template file %s doesn\'t exist' % template_file,
@@ -54,7 +58,7 @@ def _get_user_template(template_file, encoding=None):
         return f.read()
 
 
-def create_cmd(args, conf):
+def create_cmd(args: argparse.Namespace, conf: reno_config.Config) -> None:
     "Create a new release note file from the template."
     # NOTE(dhellmann): There is a short race window where we might try
     # to pick a name that does not exist, then overwrite the file if

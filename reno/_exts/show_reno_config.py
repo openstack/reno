@@ -10,9 +10,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections.abc
+
 from docutils import nodes
 from docutils.parsers import rst
 from docutils.statemachine import ViewList
+import sphinx.application
 from sphinx.util import logging
 from sphinx.util.nodes import nested_parse_with_titles
 
@@ -21,7 +24,9 @@ from reno import config
 LOG = logging.getLogger(__name__)
 
 
-def _multi_line_string(s, indent=''):
+def _multi_line_string(
+    s: str, indent: str = ''
+) -> collections.abc.Generator[str, None, None]:
     output_lines = s.splitlines()
     if not output_lines[0].strip():
         output_lines = output_lines[1:]
@@ -29,7 +34,9 @@ def _multi_line_string(s, indent=''):
         yield indent + x
 
 
-def _format_option_help(options):
+def _format_option_help(
+    options: list[config.Opt],
+) -> collections.abc.Generator[str, None, None]:
     "Produce RST lines for the configuration options."
     for opt in sorted(options, key=lambda opt: opt.name):
         yield f'``{opt.name}``'
@@ -51,11 +58,10 @@ def _format_option_help(options):
 
 class ShowConfigDirective(rst.Directive):
     option_spec = {}
-
     has_content = True
 
-    def run(self):
-        result = ViewList()
+    def run(self) -> list[nodes.Node]:
+        result: ViewList[str] = ViewList()
         source_name = '<' + __name__ + '>'
         for line in _format_option_help(config._OPTIONS):
             LOG.info(line)
@@ -68,5 +74,5 @@ class ShowConfigDirective(rst.Directive):
         return node.children
 
 
-def setup(app):
+def setup(app: sphinx.application.Sphinx) -> None:
     app.add_directive('show-reno-config', ShowConfigDirective)

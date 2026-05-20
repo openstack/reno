@@ -10,14 +10,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import argparse
 import logging
 
+from reno import config as reno_config
 from reno import loader
 
 LOG = logging.getLogger(__name__)
 
 
-def list_cmd(args, conf):
+def list_cmd(args: argparse.Namespace, conf: reno_config.Config) -> None:
     "List notes files based on query arguments"
     LOG.debug('starting list')
     reporoot = conf.reporoot

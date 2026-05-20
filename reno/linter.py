@@ -10,17 +10,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import argparse
 import glob
 import logging
 import os.path
 
+from reno import config as reno_config
 from reno import loader
 from reno import scanner
 
 LOG = logging.getLogger(__name__)
 
 
-def lint_cmd(args, conf):
+def lint_cmd(args: argparse.Namespace, conf: reno_config.Config) -> int:
     """Check some common mistakes"""
     LOG.debug('starting lint')
     notesdir = os.path.join(conf.reporoot, conf.notespath)
@@ -31,7 +33,7 @@ def lint_cmd(args, conf):
         s.name for s in conf.sections
     ]
 
-    uids = {}
+    uids: dict[str, list[str]] = {}
     with loader.Loader(conf, ignore_cache=True) as ldr:
         for f in notes:
             LOG.debug('examining %s', f)

@@ -90,13 +90,13 @@ _query_args = [
 ]
 
 
-def _build_query_arg_group(parser):
+def _build_query_arg_group(parser: argparse.ArgumentParser) -> None:
     group = parser.add_argument_group('query')
     for args, kwds in _query_args:
         group.add_argument(*args, **kwds)
 
 
-def main(argv=sys.argv[1:]):
+def main(argv: list[str] = sys.argv[1:]) -> int | None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-v',
@@ -264,4 +264,5 @@ def main(argv=sys.argv[1:]):
     conf = config.Config(args.reporoot, args.relnotesdir)
     conf.override_from_parsed_args(args)
 
-    return args.func(args, conf)
+    result: int | None = args.func(args, conf)
+    return result

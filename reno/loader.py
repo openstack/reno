@@ -14,15 +14,17 @@ import collections
 from datetime import datetime
 import logging
 import os.path
+from typing import Any
 
 import yaml
 
+from reno import config as reno_config
 from reno import scanner
 
 LOG = logging.getLogger(__name__)
 
 
-def get_cache_filename(conf):
+def get_cache_filename(conf: reno_config.Config) -> str:
     return os.path.normpath(
         os.path.join(conf.reporoot, conf.notespath, 'reno.cache')
     )
@@ -31,7 +33,9 @@ def get_cache_filename(conf):
 class Loader:
     "Load the release notes for a given repository."
 
-    def __init__(self, conf, ignore_cache=False):
+    def __init__(
+        self, conf: reno_config.Config, ignore_cache: bool = False
+    ) -> None:
         """Initialize a Loader.
 
         The versions are presented in reverse chronological order.
@@ -53,16 +57,18 @@ class Loader:
         self._collapse_pre_releases = conf.collapse_pre_releases
         self._earliest_version = conf.earliest_version
 
-        self._cache = None
-        self._scanner = None
-        self._scanner_output = None
-        self._tags_to_dates = None
+        self._cache: dict[str, Any] | None = None
+        self._scanner: scanner.Scanner | None = None
+        self._scanner_output: (
+            collections.OrderedDict[str, list[Any]] | None
+        ) = None
+        self._tags_to_dates: dict[str, int] | None = None
         self._cache_filename = get_cache_filename(conf)
-        self._encoding = conf.options['encoding']
+        self._encoding: str | None = conf.options['encoding']
 
         self._load_data()
 
-    def _load_data(self):
+    def _load_data(self) -> None:
         cache_file_exists = os.path.exists(self._cache_filename)
 
         if self._ignore_cache and cache_file_exists:
@@ -89,34 +95,44 @@ class Loader:
             self._scanner_output = self._scanner.get_notes_by_version()
             self._tags_to_dates = self._scanner.get_version_dates()
 
-    def close(self):
+    def close(self) -> None:
         """Close any files opened by this loader."""
         if self._scanner is not None:
             self._scanner.close()
 
-    def __enter__(self):
+    def __enter__(self) -> "Loader":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
         self.close()
 
     @property
-    def versions(self):
+    def versions(self) -> list[str]:
         "A list of all of the versions found."
+        assert self._scanner_output is not None
         return list(self._scanner_output.keys())
 
-    def __getitem__(self, version):
+    def __getitem__(self, version: str) -> list[tuple[str, str]]:
         "Return data about the files that should go into a given version."
+        assert self._scanner_output is not None
         return self._scanner_output[version]
 
-    def get_version_date(self, version):
+    def get_version_date(self, version: str) -> str:
         "Return release data for a version."
+        assert self._tags_to_dates is not None
         if version in self._tags_to_dates.keys():
             date = datetime.fromtimestamp(self._tags_to_dates[version])
             return date.strftime("%Y-%m-%d")
         return "Unknown"
 
-    def parse_note_file(self, filename, sha):
+    def parse_note_file(
+        self, filename: str, sha: str | None
+    ) -> dict[str, Any]:
         """Return the data structure encoded in the note file.
 
         Emit warnings for content that does not look valid in some
@@ -126,7 +142,9 @@ class Loader:
         if self._cache:
             content = self._cache['file-contents'][filename]
         else:
+            assert self._scanner is not None
             body = self._scanner.get_file_at_commit(filename, sha)
+            assert body is not None
             content = yaml.safe_load(body)
 
         cleaned_content = {}

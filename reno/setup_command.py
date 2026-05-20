@@ -21,9 +21,10 @@ For more information, refer to the distutils and setuptools source:
 """
 
 from distutils import cmd
+from distutils import dist
 from distutils import errors
 from distutils import log
-
+from typing import Any
 
 from reno import cache
 from reno import config
@@ -34,7 +35,9 @@ from reno import loader
 COMMAND_NAME = 'build_reno'  # duplicates what's found in setup.cfg
 
 
-def load_config(distribution):
+def load_config(
+    distribution: dist.Distribution,
+) -> tuple[config.Config, str, str]:
     """Utility method to parse distutils/setuptools configuration.
 
     This is for use by other libraries to extract the command configuration.
@@ -46,20 +49,24 @@ def load_config(distribution):
     """
     option_dict = distribution.get_option_dict(COMMAND_NAME)
 
-    if option_dict.get('repo_root') is not None:
-        repo_root = option_dict.get('repo_root')[1]
-    else:
-        repo_root = defaults.REPO_ROOT
+    repo_root_opt = option_dict.get('repo_root')
+    repo_root = (
+        repo_root_opt[1] if repo_root_opt is not None else defaults.REPO_ROOT
+    )
 
-    if option_dict.get('rel_notes_dir') is not None:
-        rel_notes_dir = option_dict.get('rel_notes_dir')[1]
-    else:
-        rel_notes_dir = defaults.RELEASE_NOTES_SUBDIR
+    rel_notes_dir_opt = option_dict.get('rel_notes_dir')
+    rel_notes_dir = (
+        rel_notes_dir_opt[1]
+        if rel_notes_dir_opt is not None
+        else defaults.RELEASE_NOTES_SUBDIR
+    )
 
-    if option_dict.get('output_file') is not None:
-        output_file = option_dict.get('output_file')[1]
-    else:
-        output_file = defaults.RELEASE_NOTES_FILENAME
+    output_file_opt = option_dict.get('output_file')
+    output_file = (
+        output_file_opt[1]
+        if output_file_opt is not None
+        else defaults.RELEASE_NOTES_FILENAME
+    )
 
     conf = config.Config(repo_root, rel_notes_dir)
     cache_file = loader.get_cache_filename(conf)
@@ -90,12 +97,12 @@ class BuildReno(cmd.Command):
         ('output-file=', None, 'the filename of the release notes file'),
     ]
 
-    def initialize_options(self):
-        self.repo_root = None
-        self.rel_notes_dir = None
-        self.output_file = None
+    def initialize_options(self) -> None:
+        self.repo_root: str | None = None
+        self.rel_notes_dir: str | None = None
+        self.output_file: str | None = None
 
-    def finalize_options(self):
+    def finalize_options(self) -> None:
         if self.repo_root is None:
             self.repo_root = defaults.REPO_ROOT
 
@@ -108,8 +115,9 @@ class BuildReno(cmd.Command):
     # Overriding distutils' Command._ensure_stringlike which doesn't support
     # unicode, causing finalize_options to fail if invoked again. Workaround
     # for http://bugs.python.org/issue19570
-    def _ensure_stringlike(self, option, what, default=None):
-        # type: (typing.unicode, typing.unicode, typing.Any) -> typing.Any
+    def _ensure_stringlike(
+        self, option: str, what: str, default: Any = None
+    ) -> Any:
         val = getattr(self, option)
         if val is None:
             setattr(self, option, default)
@@ -120,7 +128,9 @@ class BuildReno(cmd.Command):
             )
         return val
 
-    def run(self):
+    def run(self) -> None:
+        assert self.repo_root is not None
+        assert self.output_file is not None
         conf = config.Config(self.repo_root, self.rel_notes_dir)
 
         # Generate the cache using the configuration options found

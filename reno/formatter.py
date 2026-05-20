@@ -11,7 +11,11 @@
 # under the License.
 
 
-def _indent_for_list(text, prefix='  '):
+from reno import config as reno_config
+from reno import loader as reno_loader
+
+
+def _indent_for_list(text: str, prefix: str = '  ') -> str:
     """Indent some text to make it work as a list entry.
 
     Indent all lines except the first with the prefix.
@@ -20,7 +24,7 @@ def _indent_for_list(text, prefix='  '):
     return '\n'.join([lines[0]] + [prefix + x for x in lines[1:]]) + '\n'
 
 
-def _anchor(version_title, title, branch):
+def _anchor(version_title: str, title: str | None, branch: str | None) -> str:
     title = title or 'relnotes'
     return '.. _{title}_{version_title}{branch}:'.format(
         title=title,
@@ -29,20 +33,25 @@ def _anchor(version_title, title, branch):
     )
 
 
-def _section_anchor(section_title, version_title, title, branch):
+def _section_anchor(
+    section_title: str,
+    version_title: str,
+    title: str | None,
+    branch: str | None,
+) -> str:
     # Get the title and remove the trailing :
     title = _anchor(version_title, title, branch)[:-1]
     return f"{title}_{section_title}:"
 
 
 def format_report(
-    loader,
-    config,
-    versions_to_include,
-    title=None,
-    show_source=True,
-    branch=None,
-):
+    loader: reno_loader.Loader,
+    config: reno_config.Config,
+    versions_to_include: list[str],
+    title: str | None = None,
+    show_source: bool = True,
+    branch: str | None = None,
+) -> str:
     report = []
     if title:
         report.append('=' * len(title))

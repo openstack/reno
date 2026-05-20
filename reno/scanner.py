@@ -11,23 +11,28 @@
 # under the License.
 
 import collections
+import collections.abc
 import fnmatch
 import logging
 import os.path
 import re
+from typing import Any, Self
 
 from dulwich import diff_tree
 from dulwich import index as d_index
 from dulwich import objects
 from dulwich import porcelain
 from dulwich import repo
+from dulwich import walk
+
+from reno import config as reno_config
 
 LOG = logging.getLogger(__name__)
 
 
-def _parse_version(v):
+def _parse_version(v: str) -> list[int | str]:
     parts = [*v.split('.'), '0', '0', '0']
-    result = []
+    result: list[int | str] = []
     for p in parts[:3]:
         try:
             result.append(int(p))
@@ -36,18 +41,16 @@ def _parse_version(v):
     return result
 
 
-def _get_unique_id(filename):
+def _get_unique_id(filename: str) -> str:
     base = os.path.basename(filename)
     root, _ = os.path.splitext(base)
     uniqueid = root[-16:]
     if '-' in uniqueid:
-        # This is an older file with the UUID at the beginning
-        # of the name.
         uniqueid = root[:16]
     return uniqueid
 
 
-def _note_file(name):
+def _note_file(name: str | None) -> bool:
     """Return bool indicating if the filename looks like a note file.
 
     This is used to filter the files in changes based on the notes
@@ -65,7 +68,9 @@ def _note_file(name):
     return False
 
 
-def _changes_in_subdir(repo, walk_entry, subdir):
+def _changes_in_subdir(
+    repo: "RenoRepo", walk_entry: walk.WalkEntry, subdir: str
+) -> Any:
     """Iterator producing changes of interest to reno.
 
     The default changes() method of a WalkEntry computes all of the
@@ -92,23 +97,27 @@ def _changes_in_subdir(repo, walk_entry, subdir):
     parents = walk_entry._get_parents(commit)
 
     if not parents:
-        changes_func = diff_tree.tree_changes
-        parent_subtree = None
+        changes_func: Any = diff_tree.tree_changes
+        parent_subtree: Any = None
     elif len(parents) == 1:
         changes_func = diff_tree.tree_changes
-        parent_tree = repo[repo[parents[0]].tree]
-        parent_subtree = repo._get_subtree(parent_tree, subdir)
+        parent_tree = repo[repo[parents[0]].tree]  # type: ignore[attr-defined]
+        parent_subtree = repo._get_subtree(parent_tree, subdir)  # type: ignore[arg-type]
         if parent_subtree:
             parent_subtree = parent_subtree.sha().hexdigest().encode('ascii')
     else:
         changes_func = diff_tree.tree_changes_for_merge
         parent_subtree = [
-            repo._get_subtree(repo[repo[p].tree], subdir) for p in parents
+            repo._get_subtree(repo[repo[p].tree], subdir)  # type: ignore[attr-defined,arg-type]
+            for p in parents
         ]
         parent_subtree = [
             p.sha().hexdigest().encode('ascii') for p in parent_subtree if p
         ]
-    subdir_tree = repo._get_subtree(repo[commit.tree], subdir)
+    subdir_tree = repo._get_subtree(
+        repo[commit.tree],  # type: ignore[arg-type]
+        subdir,
+    )
     if subdir_tree:
         commit_subtree = subdir_tree.sha().hexdigest().encode('ascii')
     else:
@@ -147,12 +156,14 @@ class _ChangeAggregator:
     _delete_op = set([diff_tree.CHANGE_DELETE])
     _add_op = set([diff_tree.CHANGE_ADD])
 
-    def __init__(self):
-        # Track UIDs that had a duplication issue but have been
-        # deleted so we know not to throw an error for them.
-        self._deleted_bad_uids = set()
+    def __init__(self) -> None:
+        self._deleted_bad_uids: set[str] = set()
 
-    def aggregate_changes(self, walk_entry, changes):
+    def aggregate_changes(
+        self,
+        walk_entry: walk.WalkEntry,
+        changes: Any,
+    ) -> list[tuple[str, ...]]:
         sha = walk_entry.commit.id
         by_uid = collections.defaultdict(list)
         for ec in changes:
@@ -165,6 +176,7 @@ class _ChangeAggregator:
                 if c.type == diff_tree.CHANGE_ADD:
                     path = c.new.path.decode('utf-8') if c.new.path else None
                     if _note_file(path):
+                        assert path is not None
                         uid = _get_unique_id(path)
                         by_uid[uid].append((c.type, path, sha))
                     else:
@@ -172,6 +184,7 @@ class _ChangeAggregator:
                 elif c.type == diff_tree.CHANGE_DELETE:
                     path = c.old.path.decode('utf-8') if c.old.path else None
                     if _note_file(path):
+                        assert path is not None
                         uid = _get_unique_id(path)
                         by_uid[uid].append((c.type, path, sha))
                     else:
@@ -179,6 +192,7 @@ class _ChangeAggregator:
                 elif c.type == diff_tree.CHANGE_MODIFY:
                     path = c.new.path.decode('utf-8') if c.new.path else None
                     if _note_file(path):
+                        assert path is not None
                         uid = _get_unique_id(path)
                         by_uid[uid].append((c.type, path, sha))
                     else:
@@ -226,7 +240,7 @@ class _ChangeAggregator:
                     # this case and then ignore the files. We allow delete
                     # (see above) to ensure they can be cleaned up.
                     msg = (
-                        '%s: found several files in one commit (%s)'
+                        '%s: found several files in one commit (%r)'
                         ' with the same UID: %s'
                         % (uid, sha, [c[1] for c in changes])
                     )
@@ -240,22 +254,18 @@ class _ChangeAggregator:
 
 
 class _ChangeTracker:
-    def __init__(self):
-        # Track the versions we have seen and the earliest version for
-        # which we have seen a given note's unique id.
-        self.versions = []
-        self.earliest_seen = collections.OrderedDict()
-        # Remember the most current filename for each id, to allow for
-        # renames.
-        self.last_name_by_id = {}
-        # Remember uniqueids that have had files deleted.
-        self.uniqueids_deleted = set()
-        # Remember files that are changed but not explicitly added so
-        # when we do see an add we can use the more recent tracking
-        # info and if we don't see the add we know to ignore the file.
-        self.seen_but_not_added = {}
+    def __init__(self) -> None:
+        self.versions: list[str] = []
+        self.earliest_seen: collections.OrderedDict[str, str] = (
+            collections.OrderedDict()
+        )
+        self.last_name_by_id: dict[str, tuple[str, str | bytes | None]] = {}
+        self.uniqueids_deleted: set[str] = set()
+        self.seen_but_not_added: dict[str, tuple[str, str | bytes | None]] = {}
 
-    def _common(self, uniqueid, sha, version):
+    def _common(
+        self, uniqueid: str, sha: str | bytes | None, version: str
+    ) -> None:
         if version not in self.versions:
             self.versions.append(version)
         # Update the "earliest" version where a UID appears
@@ -279,7 +289,9 @@ class _ChangeTracker:
             )
         self.earliest_seen[uniqueid] = version
 
-    def add(self, filename, sha, version):
+    def add(
+        self, filename: str, sha: str | bytes | None, version: str
+    ) -> None:
         uniqueid = _get_unique_id(filename)
         self._common(uniqueid, sha, version)
         LOG.info('%s: adding %s from %s', uniqueid, filename, version)
@@ -325,7 +337,9 @@ class _ChangeTracker:
                 uniqueid,
             )
 
-    def _change(self, filename, sha, version):
+    def _change(
+        self, filename: str, sha: str | bytes | None, version: str
+    ) -> None:
         uniqueid = _get_unique_id(filename)
         self._common(uniqueid, sha, version)
 
@@ -364,13 +378,19 @@ class _ChangeTracker:
                 uniqueid,
             )
 
-    def rename(self, filename, sha, version):
+    def rename(
+        self, filename: str, sha: str | bytes | None, version: str
+    ) -> None:
         self._change(filename, sha, version)
 
-    def modify(self, filename, sha, version):
+    def modify(
+        self, filename: str, sha: str | bytes | None, version: str
+    ) -> None:
         self._change(filename, sha, version)
 
-    def delete(self, filename, sha, version):
+    def delete(
+        self, filename: str, sha: str | bytes | None, version: str
+    ) -> None:
         uniqueid = _get_unique_id(filename)
         self._common(uniqueid, sha, version)
         # This file is being deleted without a rename. If
@@ -397,12 +417,17 @@ class _ChangeTracker:
 
 
 class RenoRepo(repo.Repo):
-    # Populated by _load_tags().
-    _all_tags = None
-    _shas_to_tags = None
-    _tags_to_dates = None
+    _all_tags: dict[str, bytes] | None = None
+    _shas_to_tags: dict[bytes, list[tuple[str, int]]] | None = None
+    _tags_to_dates: dict[str, int] | None = None
 
-    def _get_commit_from_tag(self, tag, tag_sha):
+    # https://github.com/jelmer/dulwich/pull/2190
+    def __enter__(self) -> Self:
+        return self
+
+    def _get_commit_from_tag(
+        self, tag: str, tag_sha: bytes
+    ) -> tuple[bytes, int]:
         """Return the commit referenced by the tag and when it was tagged."""
         tag_obj = self[tag_sha]
 
@@ -436,7 +461,7 @@ class RenoRepo(repo.Repo):
             )
         return tagged_sha, date
 
-    def _load_tags(self):
+    def _load_tags(self) -> None:
         self._all_tags = {
             k.partition(b'/tags/')[-1].decode('utf-8'): v
             for k, v in self.get_refs().items()
@@ -449,15 +474,18 @@ class RenoRepo(repo.Repo):
             self._shas_to_tags.setdefault(tagged_sha, []).append((tag, date))
             self._tags_to_dates[tag] = date
 
-    def get_tags_on_commit(self, sha):
+    def get_tags_on_commit(self, sha: bytes) -> list[str]:
         "Return the tag(s) on a commit, in application order."
         if self._all_tags is None:
             self._load_tags()
+        assert self._shas_to_tags is not None
         tags_and_dates = self._shas_to_tags.get(sha, [])
         tags_and_dates.sort(key=lambda x: x[1])
         return [t[0] for t in tags_and_dates]
 
-    def _get_subtree(self, tree, path):
+    def _get_subtree(
+        self, tree: objects.Tree, path: str
+    ) -> objects.Tree | None:
         "Given a tree SHA and a path, return the SHA of the subtree."
         try:
             _, tree_sha = tree.lookup_path(
@@ -468,10 +496,15 @@ class RenoRepo(repo.Repo):
             # not present. Return the sentinel value.
             return None
         else:
-            tree = self[tree_sha]
+            tree = self[tree_sha]  # type: ignore[assignment]
             return tree
 
-    def get_file_at_commit(self, filename, sha, encoding=None):
+    def get_file_at_commit(
+        self,
+        filename: str,
+        sha: str | bytes | None,
+        encoding: str | None = None,
+    ) -> str | bytes | None:
         """Return the contents of the file.
 
         If sha is None, return the working copy of the file. If the
@@ -499,13 +532,13 @@ class RenoRepo(repo.Repo):
         if hasattr(sha, 'encode'):
             sha = sha.encode('ascii')
         commit = self[sha]
-        tree = self[commit.tree]
+        tree = self[commit.tree]  # type: ignore[attr-defined]
         try:
             if os.path.sep == '\\':
                 # Dulwich doesn't handle Windows paths, we need to take care of
                 # it ourselves
                 filename = filename.replace('\\', '/')
-            _, blob_sha = tree.lookup_path(
+            _, blob_sha = tree.lookup_path(  # type: ignore[attr-defined]
                 self.get_object, filename.encode('utf-8')
             )
         except KeyError:
@@ -514,11 +547,11 @@ class RenoRepo(repo.Repo):
             return None
         else:
             blob = self[blob_sha]
-            return blob.data
+            return blob.data  # type: ignore[attr-defined,no-any-return]
 
 
 class Scanner:
-    def __init__(self, conf):
+    def __init__(self, conf: reno_config.Config) -> None:
         self.conf = conf
         self.reporoot = self.conf.reporoot
         self._repo = RenoRepo(self.reporoot)
@@ -549,17 +582,22 @@ class Scanner:
         )
         self._encoding = conf.options['encoding']
 
-    def close(self):
+    def close(self) -> None:
         """Close any files opened by this scanner."""
         self._repo.close()
 
-    def __enter__(self):
+    def __enter__(self) -> "Scanner":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
         self.close()
 
-    def _get_ref(self, name):
+    def _get_ref(self, name: str | None) -> bytes:
         if name:
             candidates = [
                 'refs/heads/' + name,
@@ -587,25 +625,25 @@ class Scanner:
             for ref in candidates:
                 LOG.debug(f'looking for ref {name!r} as {ref!r}')
                 key = ref.encode('utf-8')
-                if key in self._repo.refs:
-                    sha = self._repo.refs[key]
+                if key in self._repo.refs:  # type: ignore[operator]
+                    sha = self._repo.refs[key]  # type: ignore[index]
                     o = self._repo[sha]
                     if isinstance(o, objects.Tag):
                         # Branches point directly to commits, but
                         # signed tags point to the signature and we
                         # need to dereference it to get to the commit.
                         sha = o.object[1]
-                    LOG.info(f'found ref {name!r} as {ref!r} at {sha}')
+                    LOG.info(f'found ref {name!r} as {ref!r} at {sha!r}')
                     return sha
             # If we end up here we didn't find any of the candidates.
             raise ValueError(f'Unknown reference {name!r}')
-        return self._repo.refs[b'HEAD']
+        return self._repo.refs[b'HEAD']  # type: ignore[index]
 
-    def _get_walker_for_branch(self, branch):
+    def _get_walker_for_branch(self, branch: str | None) -> walk.Walker:
         branch_head = self._get_ref(branch)
-        return self._repo.get_walker(branch_head)
+        return self._repo.get_walker(branch_head)  # type: ignore[arg-type]
 
-    def _get_valid_tags_on_commit(self, sha):
+    def _get_valid_tags_on_commit(self, sha: bytes) -> list[str]:
         """Return valid tags for a commit.
 
         If multiple tags are available, the first tags are pre-release tags.
@@ -622,7 +660,7 @@ class Scanner:
             tags, key=lambda tag: not bool(self.pre_release_tag_re.search(tag))
         )
 
-    def _get_tags_on_branch(self, branch):
+    def _get_tags_on_branch(self, branch: str | None) -> list[str]:
         "Return a list of tag names on the given branch."
         results = []
         for c in self._get_walker_for_branch(branch):
@@ -633,13 +671,13 @@ class Scanner:
             results.extend(tags)
         return results
 
-    def _get_current_version(self, branch=None):
+    def _get_current_version(self, branch: str | None = None) -> str:
         "Return the current version of the repository, like git describe."
         # This is similar to _get_tags_on_branch() except that it
         # counts up to where the tag appears and it returns when it
         # finds the first tagged commit (there is no need to scan the
         # rest of the branch).
-        commit = self._repo[self._get_ref(branch)]
+        commit: Any = self._repo[self._get_ref(branch)]
         count = 0
         while commit:
             # shas_to_tags has encoded versions of the shas
@@ -660,7 +698,7 @@ class Scanner:
                 commit = None
         return '0.0.0'
 
-    def _strip_pre_release(self, tag):
+    def _strip_pre_release(self, tag: str) -> str:
         """Return tag with pre-release identifier removed if present."""
         pre_release_match = self.pre_release_tag_re.search(tag)
         if pre_release_match:
@@ -680,7 +718,7 @@ class Scanner:
 
         return stripped_tag
 
-    def _get_branch_base(self, branch):
+    def _get_branch_base(self, branch: str | None) -> str | None:
         "Return the tag at base of the branch."
         # Based on
         # http://stackoverflow.com/questions/1527234/finding-a-branch-point-with-git
@@ -713,7 +751,9 @@ class Scanner:
         )
         return None
 
-    def _topo_traversal(self, branch):
+    def _topo_traversal(
+        self, branch: str | None
+    ) -> collections.abc.Generator[walk.WalkEntry, None, None]:
         """Generator that yields the branch entries in topological order.
 
         The topo ordering in dulwich does not match the git command line
@@ -735,15 +775,15 @@ class Scanner:
 
         # Map SHA values to Entry objects, because we will be traversing
         # commits not entries.
-        all = {}
+        all: dict[bytes, walk.WalkEntry] = {}
 
-        children = {}
+        children: dict[bytes, set[bytes]] = {}
 
         # Populate all and children structures by traversing the
         # entire graph once. It doesn't matter what order we do this
         # the first time, since we're just recording the relationships
         # of the nodes.
-        for e in self._repo.get_walker(head):
+        for e in self._repo.get_walker(head):  # type: ignore[arg-type]
             all[e.commit.id] = e
             for p in e.commit.parents:
                 children.setdefault(p, set()).add(e.commit.id)
@@ -754,7 +794,7 @@ class Scanner:
         # Use a deque as a stack with the nodes left to process. This
         # lets us avoid recursion, since we have no idea how deep some
         # branches might be.
-        todo = collections.deque()
+        todo: collections.deque[bytes] = collections.deque()
         todo.appendleft(head)
 
         ignore_null_merges = self.conf.ignore_null_merges
@@ -856,32 +896,32 @@ class Scanner:
                 # stack it.
                 pass
 
-    def get_file_at_commit(self, filename, sha):
+    def get_file_at_commit(
+        self, filename: str, sha: str | None
+    ) -> str | bytes | None:
         "Return the contents of the file if it exists at the commit, or None."
         return self._repo.get_file_at_commit(
             filename, sha, encoding=self._encoding
         )
 
-    def _file_exists_at_commit(self, filename, sha):
+    def _file_exists_at_commit(self, filename: str, sha: str | None) -> bool:
         "Return true if the file exists at the given commit."
-        return bool(
-            self.get_file_at_commit(filename, sha, encoding=self._encoding)
-        )
+        return bool(self.get_file_at_commit(filename, sha))
 
-    def _branch_sort_key(self, name):
+    def _branch_sort_key(self, name: str) -> str:
         match = self.branch_sort_re.search(name)
         if match:
             return self.branch_sort_prefix + match.group(1)
         return name
 
-    def get_series_branches(self):
+    def get_series_branches(self) -> list[str]:
         "Get branches matching the branch_name_re config option."
         refs = self._repo.get_refs()
         LOG.debug('refs %s', list(refs.keys()))
-        branch_names = set()
-        for r in refs.keys():
+        branch_names: set[str] = set()
+        for raw_r in refs.keys():
             name = None
-            r = r.decode('utf-8')
+            r = raw_r.decode('utf-8')
             if r.startswith('refs/remotes/origin/'):
                 name = r[20:]
             elif r.startswith('refs/heads/'):
@@ -905,7 +945,7 @@ class Scanner:
                 branch_names.add(name)
         return list(sorted(branch_names, key=self._branch_sort_key))
 
-    def _get_earlier_branch(self, branch):
+    def _get_earlier_branch(self, branch: str) -> str | None:
         "Return the name of the branch created before the given branch."
         # FIXME(dhellmann): Assumes branches come in order based on
         # name. That may not be true for projects that branch based on
@@ -930,8 +970,12 @@ class Scanner:
         return previous
 
     def _find_scan_stop_point(
-        self, earliest_version, versions_by_date, collapse_pre_releases, branch
-    ):
+        self,
+        earliest_version: str | None,
+        versions_by_date: list[str],
+        collapse_pre_releases: bool,
+        branch: str | None,
+    ) -> str | None:
         """Return the version to use to stop the scan.
 
         Use the list of versions_by_date to get the tag with a
@@ -979,13 +1023,15 @@ class Scanner:
                 return candidate
         return None
 
-    def get_version_dates(self):
+    def get_version_dates(self) -> dict[str, int]:
         "Return a dict mapping versions to dates."
         if self._repo._tags_to_dates is not None:
             return self._repo._tags_to_dates.copy()
         return {}
 
-    def get_notes_by_version(self, branch=None):
+    def get_notes_by_version(
+        self, branch: str | None = None
+    ) -> collections.OrderedDict[str, list[Any]]:
         """Return an OrderedDict mapping versions to lists of notes files.
 
         The versions are presented in reverse chronological order.
@@ -1146,8 +1192,10 @@ class Scanner:
             # Pretend anything known to the repo and changed but not
             # staged is part of the fake version '*working-copy*'.
             LOG.debug('scanning unstaged changes')
-            for fname in d_index.get_unstaged_changes(index, self.reporoot):
-                fname = fname.decode('utf-8')
+            for raw_fname in d_index.get_unstaged_changes(
+                index, self.reporoot
+            ):
+                fname = raw_fname.decode('utf-8')
                 LOG.debug('found unstaged file %s', fname)
                 if fname.startswith(prefix) and _note_file(fname):
                     fullpath = os.path.join(self.reporoot, fname)
@@ -1161,17 +1209,17 @@ class Scanner:
             # Pretend anything in the index is part of the fake
             # version "*working-copy*".
             LOG.debug('scanning staged schanges')
-            changes = porcelain.get_tree_changes(self._repo)
-            for fname in changes['add']:
-                fname = fname.decode('utf-8')
+            staged_changes: Any = porcelain.get_tree_changes(self._repo)
+            for raw_fname in staged_changes['add']:
+                fname = raw_fname.decode('utf-8')
                 if fname.startswith(prefix) and _note_file(fname):
                     tracker.add(fname, None, '*working-copy*')
-            for fname in changes['modify']:
-                fname = fname.decode('utf-8')
+            for raw_fname in staged_changes['modify']:
+                fname = raw_fname.decode('utf-8')
                 if fname.startswith(prefix) and _note_file(fname):
                     tracker.modify(fname, None, '*working-copy*')
-            for fname in changes['delete']:
-                fname = fname.decode('utf-8')
+            for raw_fname in staged_changes['delete']:
+                fname = raw_fname.decode('utf-8')
                 if fname.startswith(prefix) and _note_file(fname):
                     tracker.delete(fname, None, '*working-copy*')
 
@@ -1251,14 +1299,16 @@ class Scanner:
 
         # Invert earliest_seen to make a list of notes files for each
         # version.
-        files_and_tags = collections.OrderedDict()
+        files_and_tags: collections.OrderedDict[
+            str, list[tuple[str, str | bytes | None]]
+        ] = collections.OrderedDict()
         for v in tracker.versions:
             files_and_tags[v] = []
         # Produce a list of the actual files present in the repository. If
         # a note is removed, this step should let us ignore it.
         for uniqueid, version in tracker.earliest_seen.items():
             try:
-                base, sha = tracker.last_name_by_id[uniqueid]
+                base, sha = tracker.last_name_by_id[uniqueid]  # type: ignore[assignment]
                 LOG.debug(
                     '%s: sorting %s into version %s', uniqueid, base, version
                 )

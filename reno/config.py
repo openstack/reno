@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import argparse
 import logging
 import os.path
 import textwrap
@@ -41,25 +42,27 @@ class Section(NamedTuple):
             if len(entry) == 2:
                 section_level = 1
             elif len(entry) == 3:
-                section_level = entry[2]
                 if (
-                    not isinstance(section_level, int)
-                    or section_level < 1
-                    or section_level > 3
+                    not isinstance(entry[2], int)
+                    or entry[2] < 1
+                    or entry[2] > 3
                 ):
                     raise ValueError(
-                        "The third argument for each entry in the `sections` "
-                        "option config must be an integer between 1 and 3."
+                        f"The third argument for each entry in the `sections` "
+                        f"option config must be an integer between 1 and 3."
                         f"Invalid entry: {entry}"
                     )
+                section_level = entry[2]
             else:
                 raise ValueError(
-                    "Each entry in the `sections` option config must be a "
+                    f"Each entry in the `sections` option config must be a "
                     f"list with 2 or 3 values. Invalid entry: {entry}"
                 )
             result.append(
                 Section(
-                    name=entry[0], title=entry[1], section_level=section_level
+                    name=str(entry[0]),
+                    title=str(entry[1]),
+                    section_level=section_level,
                 )
             )
         return result
@@ -353,15 +356,41 @@ _OPTIONS = [
 class Config:
     _OPTS = {o.name: o for o in _OPTIONS}
 
+    notesdir: str
+    allow_subdirectories: bool
+    collapse_pre_releases: bool
+    stop_at_branch_base: bool
+    branch: str | None
+    default_branch: str
+    earliest_version: str | None
+    template: str
+    add_release_date: bool
+    release_tag_re: str
+    pre_release_tag_re: str
+    branch_name_re: str
+    closed_branch_tag_re: str
+    branch_name_prefix: str
+    branch_sort_re: str
+    branch_sort_prefix: str
+    sections: list[Section]
+    prelude_section_name: str
+    ignore_null_merges: bool
+    ignore_notes: list[str]
+    unreleased_version_title: str
+    encoding: str | None
+    semver_major: list[str]
+    semver_minor: list[str]
+    semver_patch: list[str]
+
     @classmethod
-    def get_default(cls, opt):
+    def get_default(cls, opt: str) -> Any:
         """Return the default for an option."""
         try:
             return cls._OPTS[opt].default
         except KeyError:
             raise ValueError('unknown option name %r' % (opt,))
 
-    def __init__(self, reporoot, relnotesdir=None):
+    def __init__(self, reporoot: str, relnotesdir: str | None = None) -> None:
         """Instantiate a Config object
 
         :param str reporoot:
@@ -377,10 +406,10 @@ class Config:
         # Initialize attributes from the defaults.
         self.override(**{o.name: o.default for o in _OPTIONS})
 
-        self._contents = {}
+        self._contents: dict[str, Any] = {}
         self._load_file()
 
-    def _load_file(self):
+    def _load_file(self) -> None:
         filenames = [
             os.path.join(self.reporoot, self.relnotesdir, 'config.yaml'),
             os.path.join(self.reporoot, 'reno.yaml'),
@@ -404,24 +433,24 @@ class Config:
             if self._contents:
                 self.override(**self._contents)
 
-    def _report_missing_config_files(self, filenames):
+    def _report_missing_config_files(self, filenames: list[str]) -> None:
         # NOTE(dhellmann): This is extracted so we can mock it for
         # testing.
         LOG.info('no configuration file in: %s', ', '.join(filenames))
 
-    def _report_failure_config_file(self, filename, err):
+    def _report_failure_config_file(self, filename: str, err: IOError) -> None:
         # NOTE(dhellmann): This is extracted so we can mock it for
         # testing.
         LOG.warning('did not load config file %s: %s', filename, err)
 
-    def _rename_prelude_section(self, **kwargs):
+    def _rename_prelude_section(self, **kwargs: Any) -> None:
         key = 'prelude_section_name'
         if key in kwargs and kwargs[key] != self._OPTS[key].default:
             new_prelude_name = kwargs[key]
 
             self.template = defaults.TEMPLATE.format(new_prelude_name)
 
-    def override(self, **kwds):
+    def override(self, **kwds: Any) -> None:
         """Set the values of the named configuration options.
 
         Take the values of the keyword arguments as the current value
@@ -442,7 +471,9 @@ class Config:
                     val = Section.from_raw_yaml(val)
                 setattr(self, name, val)
 
-    def override_from_parsed_args(self, parsed_args):
+    def override_from_parsed_args(
+        self, parsed_args: argparse.Namespace
+    ) -> None:
         """Set the values of the configuration options from parsed CLI args.
 
         This method assumes that the DEST values for the command line
@@ -459,16 +490,15 @@ class Config:
             self.override(**arg_values)
 
     @property
-    def reporoot(self):
+    def reporoot(self) -> str:
         return self._reporoot
 
-    # Ensure that the 'reporoot' value always only ends in one '/'.
     @reporoot.setter
-    def reporoot(self, value):
+    def reporoot(self, value: str) -> None:
         self._reporoot = value.rstrip('/') + '/'
 
     @property
-    def notespath(self):
+    def notespath(self) -> str:
         """The path in the repo where notes are kept.
 
         .. important::
@@ -479,7 +509,7 @@ class Config:
         return os.path.join(self.relnotesdir, self.notesdir)
 
     @property
-    def options(self):
+    def options(self) -> dict[str, Any]:
         """Get all configuration options as a dict.
 
         Returns the actual configuration options after overrides.
