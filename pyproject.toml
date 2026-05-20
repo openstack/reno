@@ -1,0 +1,44 @@
+[build-system]
+requires = ["pbr>=6.1.1"]
+build-backend = "pbr.build"
+
+[project]
+name = "reno"
+description = "Release Notes Manager."
+authors = [
+    {name = "OpenStack", email = "openstack-discuss@lists.openstack.org"},
+]
+readme = {file = "README.rst", content-type = "text/x-rst"}
+license = "Apache-2.0"
+dynamic = ["version", "dependencies"]
+requires-python = ">=3.11"
+classifiers = [
+  "Environment :: OpenStack",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: System Administrators",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
+[project.urls]
+Homepage = "https://docs.openstack.org/reno"
+Repository = "https://opendev.org/openstack/reno"
+
+[project.optional-dependencies]
+sphinx = [
+    "sphinx>=5.0.0", # BSD
+]
+
+[project.entry-points."distutils.commands"]
+"build_reno" = "reno.setup_command:BuildReno"
+
+[project.scripts]
+reno = "reno.main:main"
+
+[tool.setuptools.packages.find]
+include = ["reno*"]
