@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added support for configuring reno via a ``[tool.reno]`` table in a
+    ``pyproject.toml`` file in the root of the repository.

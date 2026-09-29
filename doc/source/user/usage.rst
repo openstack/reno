@@ -189,13 +189,22 @@ based on the types of release notes found since the last release.
 Configuring Reno
 ================
 
-Reno looks for an optional config file, either ``config.yaml`` in the release
-notes directory or ``reno.yaml`` in the root directory. If the values in the
-configuration file do not apply to the command being run, they are ignored. For
-example, some reno commands take inputs controlling the branch, earliest
-revision, and other common parameters that control which notes are included in
-the output. Because they are commonly set options, a configuration file may be
-the most convenient way to manage the values consistently.
+Reno looks for an optional config file, checking in order:
+
+1. ``config.yaml`` in the release notes directory (defaults to
+   ``releasenotes/config.yaml``)
+2. ``reno.yaml`` in the root directory of the repository
+3. A ``[tool.reno]`` table in ``pyproject.toml`` in the root directory of the
+   repository
+
+If the values in the configuration file do not apply to the command being run,
+they are ignored. For example, some reno commands take inputs controlling the
+branch, earliest revision, and other common parameters that control which notes
+are included in the output. Because they are commonly set options, a
+configuration file may be the most convenient way to manage the values
+consistently.
+
+Using YAML (``reno.yaml`` or ``releasenotes/config.yaml``):
 
 .. code-block:: yaml
 
@@ -219,6 +228,26 @@ the most convenient way to manage the values consistently.
               <template-used-to-create-new-notes>
               ...
     encoding: utf8
+
+Using TOML (``pyproject.toml``):
+
+.. code-block:: toml
+
+    [tool.reno]
+    branch = "master"
+    earliest_version = "12.0.0"
+    collapse_pre_releases = false
+    stop_at_branch_base = true
+    sections = [
+      ["features", "New Features"],
+      ["issues", "Known Issues"],
+      ["upgrade", "Upgrade Notes"],
+      ["api", "API Changes"],
+      ["security", "Security Issues"],
+      ["fixes", "Bug Fixes"],
+    ]
+    prelude_section_name = "release_summary"
+    encoding = "utf8"
 
 Many of the settings in the configuration file can be overridden by
 using command-line switches. For example:
@@ -298,7 +327,7 @@ error and scanner operations may fail or shadow one of the notes.
 If the collision cannot be resolved by renaming the file (for instance, if the
 note is part of a previous release that should not be re-attributed to a new
 commit), you can configure ``uid_overrides`` in your configuration file
-(``reno.yaml`` or ``releasenotes/config.yaml``).
+(``reno.yaml``, ``releasenotes/config.yaml``, or ``pyproject.toml``).
 
 ``uid_overrides`` maps note filenames to a replacement unique identifier:
 

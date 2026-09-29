@@ -41,6 +41,10 @@ class TestConfig(base.TestCase):
     EXAMPLE_CONFIG = """
 collapse_pre_releases: false
 """
+    EXAMPLE_TOML_CONFIG = """
+[tool.reno]
+collapse_pre_releases = false
+"""
 
     def setUp(self):
         super().setUp()
@@ -143,6 +147,98 @@ collapse_pre_releases: false
     def test_load_file_in_repodir(self):
         config_path = self.tempdir.join('reno.yaml')
         self._test_load_file(config_path)
+
+    def test_load_file_in_pyproject_toml(self):
+        config_path = self.tempdir.join('pyproject.toml')
+        with open(config_path, 'w') as fd:
+            fd.write(self.EXAMPLE_TOML_CONFIG)
+        self.addCleanup(os.unlink, config_path)
+        c = config.Config(self.tempdir.path)
+        self.assertEqual(False, c.collapse_pre_releases)
+
+    def test_load_file_in_pyproject_toml_empty_section(self):
+        config_path = self.tempdir.join('pyproject.toml')
+        with open(config_path, 'w') as fd:
+            fd.write('[tool.reno]\n')
+        self.addCleanup(os.unlink, config_path)
+        c = config.Config(self.tempdir.path)
+        self.assertEqual(True, c.collapse_pre_releases)
+
+    def test_load_file_in_pyproject_toml_without_reno_section(self):
+        config_path = self.tempdir.join('pyproject.toml')
+        with open(config_path, 'w') as fd:
+            fd.write('[tool.other]\nfoo = "bar"\n')
+        self.addCleanup(os.unlink, config_path)
+        missing = 'reno.config.Config._report_missing_config_files'
+        with mock.patch(missing) as error_handler:
+            c = config.Config(self.tempdir.path)
+            self.assertEqual(1, error_handler.call_count)
+        self.assertEqual(True, c.collapse_pre_releases)
+
+    def test_load_file_in_pyproject_toml_invalid_section(self):
+        config_path = self.tempdir.join('pyproject.toml')
+        with open(config_path, 'w') as fd:
+            fd.write('[tool]\nreno = "not a table"\n')
+        self.addCleanup(os.unlink, config_path)
+        with ExpectedException(ValueError):
+            config.Config(self.tempdir.path)
+
+    def test_load_file_precedence_config_yaml_over_pyproject(self):
+        rn_path = self.tempdir.join('releasenotes')
+        os.mkdir(rn_path)
+        config_yaml = self.tempdir.join('releasenotes/config.yaml')
+        with open(config_yaml, 'w') as fd:
+            fd.write('notesdir: from_config_yaml\n')
+        self.addCleanup(os.unlink, config_yaml)
+
+        pyproject = self.tempdir.join('pyproject.toml')
+        with open(pyproject, 'w') as fd:
+            fd.write('[tool.reno]\nnotesdir = "from_pyproject"\n')
+        self.addCleanup(os.unlink, pyproject)
+
+        c = config.Config(self.tempdir.path)
+        self.assertEqual('from_config_yaml', c.notesdir)
+
+    def test_load_file_precedence_reno_yaml_over_pyproject(self):
+        reno_yaml = self.tempdir.join('reno.yaml')
+        with open(reno_yaml, 'w') as fd:
+            fd.write('notesdir: from_reno_yaml\n')
+        self.addCleanup(os.unlink, reno_yaml)
+
+        pyproject = self.tempdir.join('pyproject.toml')
+        with open(pyproject, 'w') as fd:
+            fd.write('[tool.reno]\nnotesdir = "from_pyproject"\n')
+        self.addCleanup(os.unlink, pyproject)
+
+        c = config.Config(self.tempdir.path)
+        self.assertEqual('from_reno_yaml', c.notesdir)
+
+    def test_load_file_in_pyproject_toml_complex_types(self):
+        config_path = self.tempdir.join('pyproject.toml')
+        toml_content = """
+[tool.reno]
+collapse_pre_releases = false
+sections = [
+  ["features", "Features"],
+  ["fixes", "Fixes", 2],
+]
+
+[tool.reno.uid_overrides]
+"note.yaml" = "12345"
+"""
+        with open(config_path, 'w') as fd:
+            fd.write(toml_content)
+        self.addCleanup(os.unlink, config_path)
+        c = config.Config(self.tempdir.path)
+        self.assertEqual(False, c.collapse_pre_releases)
+        self.assertEqual(
+            [
+                Section("features", "Features", section_level=1),
+                Section("fixes", "Fixes", section_level=2),
+            ],
+            c.sections,
+        )
+        self.assertEqual({"note.yaml": "12345"}, c.uid_overrides)
 
     def test_load_file_empty(self):
         config_path = self.tempdir.join('reno.yaml')

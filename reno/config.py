@@ -14,6 +14,7 @@ import argparse
 import logging
 import os.path
 import textwrap
+import tomllib
 from typing import Any
 from typing import NamedTuple
 
@@ -428,25 +429,50 @@ class Config:
         filenames = [
             os.path.join(self.reporoot, self.relnotesdir, 'config.yaml'),
             os.path.join(self.reporoot, 'reno.yaml'),
+            os.path.join(self.reporoot, 'pyproject.toml'),
         ]
 
         for filename in filenames:
             LOG.debug('looking for configuration file %s', filename)
-            if os.path.isfile(filename):
+            if not os.path.isfile(filename):
+                continue
+
+            if filename.endswith('.toml'):
+                try:
+                    with open(filename, 'rb') as fd:
+                        toml_data = tomllib.load(fd)
+                except OSError as err:
+                    self._report_failure_config_file(filename, err)
+                    return
+
+                tool_section = toml_data.get('tool')
+                if isinstance(tool_section, dict) and 'reno' in tool_section:
+                    reno_config = tool_section['reno']
+                    if not isinstance(reno_config, dict):
+                        raise ValueError(
+                            f"The [tool.reno] section in {filename} must be a "
+                            f"table."
+                        )
+                    self._contents = reno_config
+                    LOG.info('loaded configuration file %s', filename)
+                    break
+                continue
+
+            try:
+                with open(filename) as fd:
+                    contents = yaml.safe_load(fd)
+                    self._contents = contents if contents else {}
+                LOG.info('loaded configuration file %s', filename)
                 break
+            except OSError as err:
+                self._report_failure_config_file(filename, err)
+                return
         else:
             self._report_missing_config_files(filenames)
             return
 
-        try:
-            with open(filename) as fd:
-                self._contents = yaml.safe_load(fd)
-            LOG.info('loaded configuration file %s', filename)
-        except OSError as err:
-            self._report_failure_config_file(filename, err)
-        else:
-            if self._contents:
-                self.override(**self._contents)
+        if self._contents:
+            self.override(**self._contents)
 
     def _report_missing_config_files(self, filenames: list[str]) -> None:
         # NOTE(dhellmann): This is extracted so we can mock it for
