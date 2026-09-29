@@ -26,13 +26,20 @@ classifiers = [
   "Typing :: Typed",
 ]
 
+[dependency-groups]
+typing = [
+  "mypy",
+  "types-docutils",
+  "types-PyYAML",
+]
+
 [project.urls]
 Homepage = "https://docs.openstack.org/reno"
 Repository = "https://opendev.org/openstack/reno"
 
 [project.optional-dependencies]
 sphinx = [
-    "sphinx>=5.0.0", # BSD
+  "sphinx>=5.0.0", # BSD
 ]
 
 [project.entry-points."distutils.commands"]
