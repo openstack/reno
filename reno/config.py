@@ -307,6 +307,20 @@ _OPTIONS = [
         """),
     ),
     Opt(
+        'uid_overrides',
+        {},
+        textwrap.dedent("""\
+        A mapping of note filenames or paths to replacement UIDs. This allows
+        resolving UID collisions when two release note files share the same
+        UID (for example, if a note file was copied).
+
+        The keys should be the filename or path of the note file, and the
+        values should be the replacement UID string (typically a 16-character
+        hexadecimal string) or another note filename from which the UID will
+        be derived.
+        """),
+    ),
+    Opt(
         'unreleased_version_title',
         '',
         textwrap.dedent("""\
@@ -376,6 +390,7 @@ class Config:
     prelude_section_name: str
     ignore_null_merges: bool
     ignore_notes: list[str]
+    uid_overrides: dict[str, str]
     unreleased_version_title: str
     encoding: str | None
     semver_major: list[str]
@@ -469,6 +484,10 @@ class Config:
             else:
                 if name == "sections":
                     val = Section.from_raw_yaml(val)
+                elif name == "uid_overrides":
+                    val = (
+                        {str(k): str(v) for k, v in val.items()} if val else {}
+                    )
                 setattr(self, name, val)
 
     def override_from_parsed_args(

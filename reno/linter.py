@@ -37,7 +37,7 @@ def lint_cmd(args: argparse.Namespace, conf: reno_config.Config) -> int:
     with loader.Loader(conf, ignore_cache=True) as ldr:
         for f in notes:
             LOG.debug('examining %s', f)
-            uid = scanner._get_unique_id(f)
+            uid = scanner._get_unique_id(f, conf.uid_overrides)
             uids.setdefault(uid, []).append(f)
 
             content = ldr.parse_note_file(f, None)

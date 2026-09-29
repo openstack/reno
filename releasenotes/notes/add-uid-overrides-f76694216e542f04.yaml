@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add a new configuration option, ``uid_overrides``, to allow mapping note
+    filenames or paths to replacement unique identifiers (UIDs). This allows
+    resolving UID collisions when multiple release notes share the same UID
+    without having to rename files in Git and risk shifting their release
+    association.

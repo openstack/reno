@@ -287,6 +287,30 @@ Git branches diverge at the branch point, commits made only on the main
 development branch are not in the Git history of the stable branch and will
 therefore not appear in documentation built from that stable branch.
 
+Resolving UID Collisions
+------------------------
+
+Because reno extracts the UID from the filename, if a release note file was
+copied or created manually with an existing UID, two distinct notes may share
+the same UID. When this happens, ``reno lint`` reports a ``UID collision``
+error and scanner operations may fail or shadow one of the notes.
+
+If the collision cannot be resolved by renaming the file (for instance, if the
+note is part of a previous release that should not be re-attributed to a new
+commit), you can configure ``uid_overrides`` in your configuration file
+(``reno.yaml`` or ``releasenotes/config.yaml``).
+
+``uid_overrides`` maps note filenames to a replacement unique identifier:
+
+.. code-block:: yaml
+
+   uid_overrides:
+     cyborg-mdev-support-a1b2c3d4e5f67890.yaml: f83b29d0e1a47c5e
+
+Keys can be paths or basenames, and values can be either a replacement UID
+string (typically 16 hexadecimal characters) or another release note filename
+from which the UID will be derived.
+
 Excluding Notes
 ---------------
 

@@ -1156,6 +1156,41 @@ class UniqueIdTest(Base):
         )
         self.assertEqual('0000000000000001', uid)
 
+    def test_uid_override_exact(self):
+        filename = 'releasenotes/notes/slug1-0000000000000001.yaml'
+        overrides = {filename: 'customuid1234567'}
+        uid = scanner._get_unique_id(filename, overrides)
+        self.assertEqual('customuid1234567', uid)
+
+    def test_uid_override_basename_key(self):
+        overrides = {'slug1-0000000000000001.yaml': 'customuid1234567'}
+        uid = scanner._get_unique_id(
+            'releasenotes/notes/slug1-0000000000000001.yaml',
+            overrides,
+        )
+        self.assertEqual('customuid1234567', uid)
+
+    def test_uid_override_full_path_key_matched_by_basename(self):
+        filename = 'releasenotes/notes/slug1-0000000000000001.yaml'
+        overrides = {filename: 'customuid1234567'}
+        uid = scanner._get_unique_id(
+            'slug1-0000000000000001.yaml',
+            overrides,
+        )
+        self.assertEqual('customuid1234567', uid)
+
+    def test_uid_override_with_yaml_filename(self):
+        overrides = {
+            'slug1-0000000000000001.yaml': (
+                'replacement-slug-9999999999999999.yaml'
+            )
+        }
+        uid = scanner._get_unique_id(
+            'releasenotes/notes/slug1-0000000000000001.yaml',
+            overrides,
+        )
+        self.assertEqual('9999999999999999', uid)
+
 
 class BranchBaseTest(Base):
     def setUp(self):
@@ -2104,6 +2139,39 @@ class AggregateChangesTest(Base):
             get_results,
         )
 
+    def test_add_multiple_with_uid_override(self):
+        # Adding multiple files in one commit using the same UID in their
+        # filenames succeeds if one has a uid_override.
+        entry = mock.Mock()
+        n = self.get_note_num()
+        uid = '%016x' % n
+        name0 = 'prefix/add0-%s.yaml' % uid
+        name1 = 'prefix/add1-%s.yaml' % uid
+        overridden_uid = 'override01234567'
+
+        aggregator = scanner._ChangeAggregator(
+            uid_overrides={name1: overridden_uid}
+        )
+
+        changes = [
+            diff_tree.TreeChange(
+                type=diff_tree.CHANGE_ADD,
+                old=objects.TreeEntry(
+                    path=b'', mode=0o000, sha=objects.ObjectID(b'')
+                ),
+                new=objects.TreeEntry(
+                    path=name.encode('utf-8'),
+                    mode=0o222,
+                    sha=objects.ObjectID(b'not-a-hash'),
+                ),
+            )
+            for name in (name0, name1)
+        ]
+        entry.commit.id = 'commit-id'
+        results = list(aggregator.aggregate_changes(entry, changes))
+        expected_uids = {r[0] for r in results}
+        self.assertEqual({uid, overridden_uid}, expected_uids)
+
     def test_delete(self):
         entry = mock.Mock()
         n = self.get_note_num()
@@ -2350,6 +2418,19 @@ class ChangeTrackerTest(base.TestCase):
         self.assertEqual(
             set(),
             self.changes.uniqueids_deleted,
+        )
+
+    def test_add_with_uid_override(self):
+        overrides = {self.filename: 'overridden_uid_1'}
+        changes = scanner._ChangeTracker(uid_overrides=overrides)
+        changes.add(self.filename, 'sha1', 'version')
+        self.assertEqual(
+            'version',
+            changes.earliest_seen['overridden_uid_1'],
+        )
+        self.assertEqual(
+            {'overridden_uid_1': (self.filename, 'sha1')},
+            changes.last_name_by_id,
         )
 
     def test_modify_with_add(self):

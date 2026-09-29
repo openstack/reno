@@ -41,8 +41,30 @@ def _parse_version(v: str) -> list[int | str]:
     return result
 
 
-def _get_unique_id(filename: str) -> str:
+def _get_unique_id(
+    filename: str, uid_overrides: dict[str, str] | None = None
+) -> str:
     base = os.path.basename(filename)
+    if uid_overrides:
+        val = None
+        if filename in uid_overrides:
+            val = uid_overrides[filename]
+        elif base in uid_overrides:
+            val = uid_overrides[base]
+        else:
+            norm_filename = os.path.normpath(filename)
+            for k, v in uid_overrides.items():
+                if (
+                    os.path.normpath(k) == norm_filename
+                    or os.path.basename(k) == base
+                ):
+                    val = v
+                    break
+        if val is not None:
+            if val.endswith('.yaml'):
+                return _get_unique_id(val)
+            return val
+
     root, _ = os.path.splitext(base)
     uniqueid = root[-16:]
     if '-' in uniqueid:
@@ -160,8 +182,9 @@ class _ChangeAggregator:
     _delete_op = set([diff_tree.CHANGE_DELETE])
     _add_op = set([diff_tree.CHANGE_ADD])
 
-    def __init__(self) -> None:
+    def __init__(self, uid_overrides: dict[str, str] | None = None) -> None:
         self._deleted_bad_uids: set[str] = set()
+        self._uid_overrides = uid_overrides or {}
 
     def aggregate_changes(
         self,
@@ -181,7 +204,7 @@ class _ChangeAggregator:
                     path = c.new.path.decode('utf-8') if c.new.path else None
                     if _note_file(path):
                         assert path is not None
-                        uid = _get_unique_id(path)
+                        uid = _get_unique_id(path, self._uid_overrides)
                         by_uid[uid].append((c.type, path, sha))
                     else:
                         LOG.debug('ignoring')
@@ -189,7 +212,7 @@ class _ChangeAggregator:
                     path = c.old.path.decode('utf-8') if c.old.path else None
                     if _note_file(path):
                         assert path is not None
-                        uid = _get_unique_id(path)
+                        uid = _get_unique_id(path, self._uid_overrides)
                         by_uid[uid].append((c.type, path, sha))
                     else:
                         LOG.debug('ignoring')
@@ -197,7 +220,7 @@ class _ChangeAggregator:
                     path = c.new.path.decode('utf-8') if c.new.path else None
                     if _note_file(path):
                         assert path is not None
-                        uid = _get_unique_id(path)
+                        uid = _get_unique_id(path, self._uid_overrides)
                         by_uid[uid].append((c.type, path, sha))
                     else:
                         LOG.debug('ignoring')
@@ -258,7 +281,7 @@ class _ChangeAggregator:
 
 
 class _ChangeTracker:
-    def __init__(self) -> None:
+    def __init__(self, *, uid_overrides: dict[str, str] | None = None) -> None:
         self.versions: list[str] = []
         self.earliest_seen: collections.OrderedDict[str, str] = (
             collections.OrderedDict()
@@ -266,6 +289,7 @@ class _ChangeTracker:
         self.last_name_by_id: dict[str, tuple[str, str | bytes | None]] = {}
         self.uniqueids_deleted: set[str] = set()
         self.seen_but_not_added: dict[str, tuple[str, str | bytes | None]] = {}
+        self.uid_overrides = uid_overrides or {}
 
     def _common(
         self, uniqueid: str, sha: str | bytes | None, version: str
@@ -296,7 +320,7 @@ class _ChangeTracker:
     def add(
         self, filename: str, sha: str | bytes | None, version: str
     ) -> None:
-        uniqueid = _get_unique_id(filename)
+        uniqueid = _get_unique_id(filename, self.uid_overrides)
         self._common(uniqueid, sha, version)
         LOG.info('%s: adding %s from %s', uniqueid, filename, version)
 
@@ -344,7 +368,7 @@ class _ChangeTracker:
     def _change(
         self, filename: str, sha: str | bytes | None, version: str
     ) -> None:
-        uniqueid = _get_unique_id(filename)
+        uniqueid = _get_unique_id(filename, self.uid_overrides)
         self._common(uniqueid, sha, version)
 
         # If we have recorded that a UID was deleted, that
@@ -395,7 +419,7 @@ class _ChangeTracker:
     def delete(
         self, filename: str, sha: str | bytes | None, version: str
     ) -> None:
-        uniqueid = _get_unique_id(filename)
+        uniqueid = _get_unique_id(filename, self.uid_overrides)
         self._common(uniqueid, sha, version)
         # This file is being deleted without a rename. If
         # we have already seen the UID before, that means
@@ -586,7 +610,8 @@ class Scanner:
             flags=re.VERBOSE | re.UNICODE,
         )
         self._ignore_uids = set(
-            _get_unique_id(fn) for fn in self.conf.ignore_notes
+            _get_unique_id(fn, conf.uid_overrides)
+            for fn in self.conf.ignore_notes
         )
         self._encoding = conf.options['encoding']
 
@@ -1189,7 +1214,7 @@ class Scanner:
 
         # Track the versions we have seen and the earliest version for
         # which we have seen a given note's unique id.
-        tracker = _ChangeTracker()
+        tracker = _ChangeTracker(uid_overrides=self.conf.uid_overrides)
 
         # Process the local index, if we are scanning the current
         # branch.
@@ -1231,7 +1256,7 @@ class Scanner:
                 if fname.startswith(prefix) and _note_file(fname):
                     tracker.delete(fname, None, '*working-copy*')
 
-        aggregator = _ChangeAggregator()
+        aggregator = _ChangeAggregator(self.conf.uid_overrides)
 
         # Process the git commit history.
         for counter, entry in enumerate(self._topo_traversal(branch), 1):

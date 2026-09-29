@@ -73,6 +73,21 @@ collapse_pre_releases: false
         expected = expected_options(notesdir='value2')
         self.assertEqual(expected, actual)
 
+    def test_override_uid_overrides(self):
+        c = config.Config(self.tempdir.path)
+        c.override(
+            uid_overrides={
+                'note1-a1b2c3d4e5f67890.yaml': 'override01234567',
+            },
+        )
+        actual = c.options
+        expected = expected_options(
+            uid_overrides={
+                'note1-a1b2c3d4e5f67890.yaml': 'override01234567',
+            },
+        )
+        self.assertEqual(expected, actual)
+
     def test_override_sections_with_subsections(self):
         c = config.Config(self.tempdir.path)
         c.override(
