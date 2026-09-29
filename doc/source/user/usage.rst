@@ -10,7 +10,7 @@ file in the correct format and with a unique name.  The ``new``
 subcommand combines a random suffix with a "slug" value to create
 the file with a unique name that is easy to identify again later.
 
-::
+.. code-block:: shell
 
     $ reno new slug-goes-here
     Created new notes file in releasenotes/notes/slug-goes-here-95915aaedd3c48d8.yaml
@@ -18,7 +18,7 @@ the file with a unique name that is easy to identify again later.
 Within OpenStack projects, ``reno`` is often run via tox instead of
 being installed globally. For example
 
-::
+.. code-block:: shell
 
     $ tox -e venv -- reno new slug-goes-here
     venv develop-inst-nodeps: /mnt/projects/release-notes-generation/reno
@@ -34,7 +34,7 @@ being installed globally. For example
 
 The ``--edit`` option opens the new note in a text editor.
 
-::
+.. code-block:: shell
 
     $ reno new slug-goes-here --edit
     ... Opens the editor set in the EDITOR environment variable, editing the new file ...
@@ -43,7 +43,7 @@ The ``--edit`` option opens the new note in a text editor.
 The ``--from-template`` option allows you to use a pre-defined file and use
 that as the release note.
 
-::
+.. code-block:: shell
 
     $ reno new slug-goes-here --from-template my-file.yaml
     ... Creates a release note using the provided file my-file.yaml ...
@@ -245,26 +245,57 @@ sphinx document directly for debugging, use the ``report`` command.
 
     $ reno report .
 
-Updating Stable Branch Release Notes
-====================================
+Fixing Release Notes
+====================
 
-Occasionally it is necessary to update release notes for past releases
-due to URLs changing or errors not being noticed until after they have
-been released. In cases like these, it is important to note that any
-updates to these release notes should be proposed directly to the stable
-branch where they were introduced.
+Occasionally it is necessary to update release notes due to typos, URLs
+changing, or errors such as invalid section names not being noticed until
+after they have been committed or released.
 
-.. note::
+Reno identifies each release note by the unique identifier (a 16-character
+hexadecimal SHA) embedded in its filename (for example,
+``my-note-95915aaedd3c48d8.yaml``). This identifier allows reno to track a
+release note across Git commits, modifications, and renames.
 
-   Due to the way reno scans release notes, if a note is updated on a
-   later branch instead of its original branch, it will then show up
-   in the release notes for the later release.
+To fix an existing release note, edit the existing file in place and commit
+the changes. The process is exactly the same regardless of what you are
+fixing:
 
-If a note is accidentally modified in a later branch causing it to show
-up in the wrong release's notes, the ``ignore-notes`` directive may be
-used to manually exclude it from the generated output:
+* Fixing typos, grammatical mistakes, or broken links in the note text.
+* Correcting an invalid or unrecognized section header (for example,
+  changing ``feature:`` to ``features:``).
+* Adding or removing content from sections.
 
-::
+Because reno tracks notes by their unique ID, when you modify an existing note
+in a new commit, reno pulls the updated contents from the newest commit while
+retaining the note's association with the release where it was first introduced.
+
+.. versionchanged:: 2.6.0
+
+   Modifying an existing release note file in Git associates the note with
+   the release where it was originally introduced while using the updated
+   content from the newest commit. In earlier versions, modifying a note
+   could cause it to be attributed to a newer release.
+
+Past Releases and Stable Branches
+---------------------------------
+
+If an update is needed for a release note that was already included in a past
+release on a stable branch, the fix should be proposed directly to the stable
+branch where the note was introduced (or cherry-picked to that branch). Because
+Git branches diverge at the branch point, commits made only on the main
+development branch are not in the Git history of the stable branch and will
+therefore not appear in documentation built from that stable branch.
+
+Excluding Notes
+---------------
+
+If a release note was added by mistake and should be removed entirely from the
+rendered output, the ``ignore-notes`` option can be used in Sphinx (or
+``ignore_notes`` in the configuration file) to exclude specific notes by
+filename or unique ID:
+
+.. code-block:: rest
 
       ===========================
        Pike Series Release Notes
@@ -275,10 +306,6 @@ used to manually exclude it from the generated output:
          :ignore-notes:
            mistake-note-1-ee6274467572906b.yaml,
            mistake-note-2-dd6274467572906b.yaml
-
-
-Even though the note will be parsed in the newer release, it will be
-excluded from the output for that release.
 
 Within OpenStack
 ================

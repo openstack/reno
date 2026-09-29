@@ -54,9 +54,9 @@ Enable the extension by adding ``'reno.sphinxext'`` to the
 
    *ignore-notes*
      A string containing a comma-delimited list of filenames or UIDs
-     for notes that should be ignored by the scanner.  It is most
-     useful to set this when a note is edited on the wrong branch,
-     making it appear to be part of a release that it is not.
+     for notes that should be ignored by the scanner. It is most
+     useful to set this when a note was created by mistake or should
+     otherwise be excluded from the generated release notes.
 
 Examples
 ========
