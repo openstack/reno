@@ -316,35 +316,11 @@ to the `Managing Release Notes
 <https://docs.openstack.org/project-team-guide/release-management.html#managing-release-notes>`__
 section of the Project Team Guide for details.
 
-Within Travis CI
-================
+Within GitHub Actions, ReadTheDocs, ...
+=======================================
 
-The `Travis CI <https://travis-ci.org/>`_ uses shallow git clones,
-and detached head, which prevents reno from accessing the repo data
-it needs.
-You'll see an error message like the one mentioned in
-`Launchpad bug 1703603 <https://bugs.launchpad.net/reno/+bug/1703603>`_.
+Both GitHub Actions (via the `actions/checkout`__ action) and ReadTheDocs
+use shallow clones by default. If running reno, you will need to configure the
+appropriate settings to ensure clones include all tags and branches.
 
-To use reno within a Travis CI job, the cloned repository needs to be
-unshallowed and checked out in the right branch from your ``.travis.yml``,
-like in the following example:
-
-.. code-block:: yaml
-
-   ---
-   language: python
-
-   python:
-     - 3.5
-
-   install:
-     - |
-        # Force unshallow and checkout the current branch
-        # https://docs.openstack.org/reno/latest/user/usage.html#within-travis-ci
-        git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
-        git fetch --unshallow --tags
-        git symbolic-ref --short HEAD || git checkout -b ${TRAVIS_BRANCH}-test $TRAVIS_BRANCH
-        # Ref: https://stackoverflow.com/questions/32580821/how-can-i-customize-override-the-git-clone-step-in-travis-ci
-
-   script:
-     - reno report .
+.. __: https://github.com/marketplace/actions/checkout
