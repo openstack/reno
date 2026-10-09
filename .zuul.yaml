@@ -7,3 +7,4 @@
       - openstack-python3-next-jobs
       - openstack-cover-jobs
       - publish-openstack-docs-pti
+      - release-notes-jobs-python3

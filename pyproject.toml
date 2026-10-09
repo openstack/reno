@@ -28,6 +28,10 @@ classifiers = [
 ]
 
 [dependency-groups]
+doc = [
+    "openstackdocstheme>=2.2.1", # Apache-2.0
+    "sphinx>=5.0.0", # BSD
+]
 typing = [
     "mypy",
     "types-docutils",
