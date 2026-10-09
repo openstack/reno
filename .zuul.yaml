@@ -1,5 +1,9 @@
+---
+
 - project:
     templates:
+      - check-requirements
       - openstack-python3-jobs
+      - openstack-python3-next-jobs
       - openstack-cover-jobs
       - publish-openstack-docs-pti
