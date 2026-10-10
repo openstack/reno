@@ -18,6 +18,7 @@ from docutils.parsers.rst import directives
 from docutils import statemachine
 from dulwich import repo
 import sphinx.application
+from sphinx.util import console
 from sphinx.util import logging
 from sphinx.util.nodes import nested_parse_with_titles
 
@@ -116,11 +117,9 @@ class ReleaseNotesDirective(rst.Directive):
 
         notesdir = os.path.join(relnotessubdir, conf.notesdir)
         LOG.info(
-            'scanning %s for %s release notes'
-            % (
-                os.path.join(conf.reporoot, notesdir),
-                branch or 'current branch',
-            )
+            console.bold('[reno] scanning %s for %s release notes'),
+            os.path.join(conf.reporoot, notesdir),
+            branch or 'current branch',
         )
 
         with loader.Loader(conf) as ldr:
@@ -128,7 +127,10 @@ class ReleaseNotesDirective(rst.Directive):
                 versions = [v.strip() for v in version_opt.split(',')]
             else:
                 versions = ldr.versions
-            LOG.info('got versions %s' % (versions,))
+            LOG.info(
+                console.bold('[reno] got versions:') + ' %s',
+                ', '.join(versions),
+            )
             text = formatter.format_report(
                 ldr,
                 conf,
