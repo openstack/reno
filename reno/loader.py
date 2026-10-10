@@ -12,6 +12,7 @@
 
 import collections
 from datetime import datetime
+import glob
 import logging
 import os.path
 from typing import Any
@@ -95,6 +96,40 @@ class Loader:
             self._scanner_output = self._scanner.get_notes_by_version()
             self._tags_to_dates = self._scanner.get_version_dates()
 
+        self._check_duplicate_uids()
+
+    def _check_duplicate_uids(self) -> None:
+        """Check for duplicate UIDs across note files."""
+        uids: dict[str, list[str]] = {}
+
+        notesdir = os.path.join(self._config.reporoot, self._config.notespath)
+        if os.path.exists(notesdir):
+            if self._config.allow_subdirectories:
+                disk_notes = glob.glob(
+                    os.path.join(notesdir, '**', '*.yaml'), recursive=True
+                )
+            else:
+                disk_notes = glob.glob(os.path.join(notesdir, '*.yaml'))
+            for f in disk_notes:
+                uid = scanner._get_unique_id(f, self._config.uid_overrides)
+                uids.setdefault(uid, []).append(f)
+
+        if self._scanner_output:
+            for files in self._scanner_output.values():
+                for filename, _ in files:
+                    fullpath = os.path.join(self._config.reporoot, filename)
+                    uid = scanner._get_unique_id(
+                        filename, self._config.uid_overrides
+                    )
+                    file_list = uids.setdefault(uid, [])
+                    if fullpath not in file_list and filename not in file_list:
+                        file_list.append(filename)
+
+        for uid, names in sorted(uids.items()):
+            if len(names) > 1:
+                msg = 'UID collision: %s'
+                LOG.warning(msg, names)
+
     def close(self) -> None:
         """Close any files opened by this loader."""
         if self._scanner is not None:
@@ -137,7 +172,6 @@ class Loader:
 
         Emit warnings for content that does not look valid in some
         way, but return it anyway for backwards-compatibility.
-
         """
         if self._cache:
             content = self._cache['file-contents'][filename]

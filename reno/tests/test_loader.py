@@ -11,6 +11,7 @@
 # under the License.
 
 import logging
+import os
 import textwrap
 from unittest import mock
 
@@ -20,6 +21,7 @@ import yaml
 from reno import config
 from reno import loader
 from reno.tests import base
+from reno.tests import test_scanner
 
 
 class TestValidate(base.TestCase):
@@ -128,3 +130,53 @@ class TestValidate(base.TestCase):
             'does not appear to be structured as a YAML mapping',
             self.logger.output,
         )
+
+
+class TestLoaderDuplicateUIDs(test_scanner.Base):
+    def setUp(self):
+        super().setUp()
+        self.repo.add_file('README.txt')
+        self.notesdir = os.path.join(self.reporoot, 'releasenotes', 'notes')
+        os.makedirs(self.notesdir, exist_ok=True)
+        self.fake_logger = self.useFixture(
+            fixtures.FakeLogger(
+                format='%(message)s',
+                level=logging.WARNING,
+            )
+        )
+
+    def _create_note(self, filename: str, content: str) -> str:
+        filepath = os.path.join(self.notesdir, filename)
+        with open(filepath, 'w') as f:
+            f.write(content)
+        return filepath
+
+    def test_duplicate_uid(self):
+        self._create_note(
+            'note1-a1b2c3d4e5f67890.yaml',
+            'features:\n  - Feature note 1.\n',
+        )
+        self._create_note(
+            'note2-a1b2c3d4e5f67890.yaml',
+            'features:\n  - Feature note 2.\n',
+        )
+        with loader.Loader(self.c):
+            pass
+        self.assertIn('UID collision', self.fake_logger.output)
+
+    def test_duplicate_uid_resolved_with_override(self):
+        self._create_note(
+            'note1-a1b2c3d4e5f67890.yaml',
+            'features:\n  - Feature note 1.\n',
+        )
+        self._create_note(
+            'note2-a1b2c3d4e5f67890.yaml',
+            'features:\n  - Feature note 2.\n',
+        )
+        self.c.override(
+            uid_overrides={
+                'note2-a1b2c3d4e5f67890.yaml': 'override01234567',
+            }
+        )
+        with loader.Loader(self.c):
+            pass
