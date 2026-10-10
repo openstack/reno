@@ -170,6 +170,12 @@ deterministic, but not necessarily predictable or mutable.
 Checking Notes
 ==============
 
+.. warning::
+
+   The ``lint`` command is deprecated and will be removed in a future
+   release. Note validation is now performed automatically by the loader
+   during all operations (such as ``reno report`` or Sphinx builds).
+
 Run ``reno lint <path-to-git-repository>`` to test the existing
 release notes files against some rules for catching common
 mistakes. The command exits with an error code if there are any
@@ -321,7 +327,7 @@ Resolving UID Collisions
 
 Because reno extracts the UID from the filename, if a release note file was
 copied or created manually with an existing UID, two distinct notes may share
-the same UID. When this happens, ``reno lint`` reports a ``UID collision``
+the same UID. When this happens, reno reports a ``UID collision``
 error and scanner operations may fail or shadow one of the notes.
 
 If the collision cannot be resolved by renaming the file (for instance, if the

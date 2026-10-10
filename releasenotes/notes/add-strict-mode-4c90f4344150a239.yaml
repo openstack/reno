@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Added a new ``strict`` configuration option along with an equivalent
+    ``--(no-)strict`` CLI option. When strict mode is enabled, release note
+    validation errors (such as unrecognized section names, invalid note
+    structures, or duplicate unique IDs) are treated as hard errors. This is
+    currently disabled by default and warnings are logged instead.

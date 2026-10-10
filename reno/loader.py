@@ -128,6 +128,8 @@ class Loader:
         for uid, names in sorted(uids.items()):
             if len(names) > 1:
                 msg = 'UID collision: %s'
+                if self._config.strict:
+                    raise ValueError(msg % names)
                 LOG.warning(msg, names)
 
     def close(self) -> None:
@@ -171,7 +173,8 @@ class Loader:
         """Return the data structure encoded in the note file.
 
         Emit warnings for content that does not look valid in some
-        way, but return it anyway for backwards-compatibility.
+        way when strict mode is disabled (the default), or raise ValueError
+        if strict mode is enabled.
         """
         if self._cache:
             content = self._cache['file-contents'][filename]
@@ -184,62 +187,75 @@ class Loader:
         cleaned_content = {}
 
         if not isinstance(content, dict):
-            LOG.warning(
+            msg = (
                 '%s does not appear to be structured as a YAML mapping. '
-                'Did you forget a top-level key?',
-                filename,
+                'Did you forget a top-level key?'
             )
-            raise ValueError(
-                f'{filename} does not appear to be structured as a YAML '
-                f'mapping. Did you forget a top-level key?'
-            )
+            LOG.warning(msg, filename)
+            raise ValueError(msg % filename)
 
         valid_section_names = {
             section.name for section in self._config.sections
         }
         for section_name, section_content in content.items():
             if section_name == self._config.prelude_section_name:
+                if section_content is None:
+                    continue
                 if not isinstance(section_content, str):
-                    LOG.warning(
+                    msg = (
                         'The %s section of %s does not parse as a single '
-                        'string. Is the YAML input escaped properly?',
-                        section_name,
-                        filename,
+                        'string. Is the YAML input escaped properly?'
                     )
+                    if self._config.strict:
+                        raise ValueError(msg % (section_name, filename))
+                    LOG.warning(msg, section_name, filename)
             else:
                 if section_name not in valid_section_names:
-                    # TODO(stephenfin): Make this an error in a future release
-                    LOG.warning(
+                    msg = (
                         'The %s section of %s is not a recognized section. '
-                        'It should be one of: %s. '
-                        'This will be an error in a future release.',
-                        section_name,
-                        filename,
-                        ', '.join(valid_section_names),
+                        'It should be one of: %s.'
                     )
-                if isinstance(section_content, str):
+                    valid_names = ', '.join(sorted(valid_section_names))
+                    if self._config.strict:
+                        raise ValueError(
+                            msg % (section_name, filename, valid_names)
+                        )
+                    LOG.warning(msg, section_name, filename, valid_names)
+                if section_content is None:
+                    section_content = []
+                elif isinstance(section_content, str):
                     # A single string is OK, but wrap it with a list
                     # so the rest of the code can treat the data model
                     # consistently.
                     section_content = [section_content]
                 elif not isinstance(section_content, list):
-                    LOG.warning(
+                    msg = (
                         'The %s section of %s does not parse as a string or '
-                        'list of strings. Is the YAML input escaped properly?',
-                        section_name,
-                        filename,
+                        'list of strings. Is the YAML input escaped properly?'
                     )
+                    if self._config.strict:
+                        raise ValueError(msg % (section_name, filename))
+                    LOG.warning(msg, section_name, filename)
                 else:
                     for item in section_content:
                         if not isinstance(item, str):
-                            LOG.warning(
+                            msg = (
                                 'The item %r in the %s section of %s parses '
                                 'as a %s instead of a string. '
-                                'Is the YAML input escaped properly?',
-                                item,
-                                section_name,
-                                filename,
-                                type(item),
+                                'Is the YAML input escaped properly?'
+                            )
+                            if self._config.strict:
+                                raise ValueError(
+                                    msg
+                                    % (
+                                        item,
+                                        section_name,
+                                        filename,
+                                        type(item),
+                                    )
+                                )
+                            LOG.warning(
+                                msg, item, section_name, filename, type(item)
                             )
 
             cleaned_content[section_name] = section_content

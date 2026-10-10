@@ -365,6 +365,15 @@ _OPTIONS = [
         updates for the next release, from X.Y.Z to X.Y.Z+1.
         """),
     ),
+    Opt(
+        'strict',
+        False,
+        textwrap.dedent("""\
+        Treat note validation errors (such as unrecognized sections, invalid
+        note structures, or duplicate unique IDs) as hard errors. By default,
+        this is False and warnings are logged instead.
+        """),
+    ),
 ]
 
 
@@ -397,6 +406,7 @@ class Config:
     semver_major: list[str]
     semver_minor: list[str]
     semver_patch: list[str]
+    strict: bool
 
     @classmethod
     def get_default(cls, opt: str) -> Any:

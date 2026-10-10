@@ -14,17 +14,30 @@ import argparse
 import glob
 import logging
 import os.path
+import warnings
 
 from reno import config as reno_config
 from reno import loader
-from reno import scanner
 
 LOG = logging.getLogger(__name__)
 
 
 def lint_cmd(args: argparse.Namespace, conf: reno_config.Config) -> int:
     """Check some common mistakes"""
+    warnings.warn(
+        "The 'reno lint' command is deprecated and will be removed in a "
+        "future release. Note validation is now performed automatically by "
+        "the loader.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    LOG.warning(
+        "The 'reno lint' command is deprecated and will be removed in a "
+        "future release. Note validation is now performed automatically by "
+        "the loader."
+    )
     LOG.debug('starting lint')
+    conf.override(strict=True)
     notesdir = os.path.join(conf.reporoot, conf.notespath)
     notes = glob.glob(os.path.join(notesdir, '*.yaml'))
 
@@ -33,26 +46,27 @@ def lint_cmd(args: argparse.Namespace, conf: reno_config.Config) -> int:
         s.name for s in conf.sections
     ]
 
-    uids: dict[str, list[str]] = {}
-    with loader.Loader(conf, ignore_cache=True) as ldr:
-        for f in notes:
-            LOG.debug('examining %s', f)
-            uid = scanner._get_unique_id(f, conf.uid_overrides)
-            uids.setdefault(uid, []).append(f)
-
-            content = ldr.parse_note_file(f, None)
-            for section_name in content.keys():
-                if section_name not in allowed_section_names:
-                    LOG.warning(
-                        'unrecognized section name %s in %s',
-                        section_name,
-                        f,
-                    )
+    try:
+        with loader.Loader(conf, ignore_cache=True) as ldr:
+            for f in notes:
+                LOG.debug('examining %s', f)
+                try:
+                    content = ldr.parse_note_file(f, None)
+                except ValueError as e:
+                    LOG.warning('%s', e)
                     error = 1
+                    continue
 
-    for uid, names in sorted(uids.items()):
-        if len(names) > 1:
-            LOG.warning('UID collision: %s', names)
-            error = 1
+                for section_name in content.keys():
+                    if section_name not in allowed_section_names:
+                        LOG.warning(
+                            'unrecognized section name %s in %s',
+                            section_name,
+                            f,
+                        )
+                        error = 1
+    except ValueError as e:
+        LOG.warning('%s', e)
+        error = 1
 
     return error

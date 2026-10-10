@@ -87,6 +87,23 @@ _query_args = [
             help='do not stop scanning when the branch meets master',
         ),
     ),
+    (
+        ('--strict',),
+        dict(
+            action='store_true',
+            default=None,
+            dest='strict',
+            help='fail on note validation errors',
+        ),
+    ),
+    (
+        ('--no-strict',),
+        dict(
+            action='store_false',
+            dest='strict',
+            help='downgrade note validation errors to warnings (the default)',
+        ),
+    ),
 ]
 
 
@@ -223,7 +240,7 @@ def main(argv: list[str] = sys.argv[1:]) -> int | None:
 
     do_linter = subparsers.add_parser(
         'lint',
-        help='check some common mistakes',
+        help='(Deprecated) check some common mistakes',
     )
     do_linter.add_argument(
         'reporoot',

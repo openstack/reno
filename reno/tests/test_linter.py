@@ -12,6 +12,7 @@
 
 import argparse
 import os
+import warnings
 
 from reno import linter
 from reno.tests import test_scanner
@@ -71,3 +72,19 @@ class TestLinter(test_scanner.Base):
             }
         )
         self.assertEqual(0, linter.lint_cmd(self.args, self.c))
+
+    def test_lint_deprecated(self):
+        self._create_note(
+            'note-0000000000000001.yaml',
+            'features:\n  - Clean feature note.\n',
+        )
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            warnings.simplefilter('always')
+            linter.lint_cmd(self.args, self.c)
+        self.assertTrue(
+            any(
+                issubclass(w.category, DeprecationWarning)
+                and "The 'reno lint' command is deprecated" in str(w.message)
+                for w in recorded_warnings
+            )
+        )

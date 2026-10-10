@@ -292,6 +292,26 @@ sections = [
         expected = expected_options(collapse_pre_releases=True)
         self.assertEqual(expected, actual)
 
+    def test_override_from_parsed_args_strict_true(self):
+        c = self._run_override_from_parsed_args(
+            [
+                '--strict',
+            ]
+        )
+        actual = c.options
+        expected = expected_options(strict=True)
+        self.assertEqual(expected, actual)
+
+    def test_override_from_parsed_args_strict_false(self):
+        c = self._run_override_from_parsed_args(
+            [
+                '--no-strict',
+            ]
+        )
+        actual = c.options
+        expected = expected_options(strict=False)
+        self.assertEqual(expected, actual)
+
     def test_override_from_parsed_args_string(self):
         c = self._run_override_from_parsed_args(
             [

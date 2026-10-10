@@ -1,0 +1,7 @@
+---
+deprecations:
+  - |
+    The ``reno lint`` command has been deprecated and will be removed in a
+    future release. Note validation, including unrecognized section checking
+    and duplicate UID detection, is now performed automatically by the loader
+    during all operations.

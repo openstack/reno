@@ -70,7 +70,7 @@ class TestValidate(base.TestCase):
             parse_results = ldr.parse_note_file('note1', None)
         self.assertIsInstance(parse_results['issues'], list)
 
-    def test_invalid_note_with_prelude_as_list(self):
+    def test_invalid_note_with_prelude_as_list_strict(self):
         note_bodies = yaml.safe_load(
             textwrap.dedent('''
         prelude:
@@ -78,11 +78,24 @@ class TestValidate(base.TestCase):
         ''')
         )
         self.assertIsInstance(note_bodies['prelude'], list)
+        self.c.override(strict=True)
+        with self._make_loader(note_bodies) as ldr:
+            self.assertRaises(ValueError, ldr.parse_note_file, 'note1', None)
+
+    def test_invalid_note_with_prelude_as_list_lenient(self):
+        note_bodies = yaml.safe_load(
+            textwrap.dedent('''
+        prelude:
+          - The prelude should not be a list.
+        ''')
+        )
+        self.assertIsInstance(note_bodies['prelude'], list)
+        self.c.override(strict=False)
         with self._make_loader(note_bodies) as ldr:
             ldr.parse_note_file('note1', None)
         self.assertIn('does not parse as a single string', self.logger.output)
 
-    def test_invalid_note_with_colon_as_dict(self):
+    def test_invalid_note_with_colon_as_dict_strict(self):
         note_bodies = yaml.safe_load(
             textwrap.dedent('''
         issues:
@@ -91,12 +104,29 @@ class TestValidate(base.TestCase):
         ''')
         )
         self.assertIsInstance(note_bodies['issues'][-1], dict)
+        self.c.override(strict=True)
+        with self._make_loader(note_bodies) as ldr:
+            self.assertRaises(ValueError, ldr.parse_note_file, 'note1', None)
+
+    def test_invalid_note_with_colon_as_dict_lenient(self):
+        note_bodies = yaml.safe_load(
+            textwrap.dedent('''
+        issues:
+          - This line is fine.
+          - dict: But this is parsed as a mapping (dictionary), which is bad.
+        ''')
+        )
+        self.assertIsInstance(note_bodies['issues'][-1], dict)
+        self.c.override(strict=False)
         with self._make_loader(note_bodies) as ldr:
             ldr.parse_note_file('note1', None)
         self.assertIn('instead of a string', self.logger.output)
 
-    def test_invalid_note_with_unrecognized_key(self):
-        """Test behavior when note contains an unrecognized section."""
+    def test_invalid_note_with_unrecognized_key_strict(self):
+        """Test behavior when note contains an unrecognized section.
+
+        In strict mode, this should raise a ValueError.
+        """
         note_bodies = yaml.safe_load(
             textwrap.dedent('''
         foobar:
@@ -105,6 +135,24 @@ class TestValidate(base.TestCase):
         ''')
         )
         self.assertIsInstance(note_bodies, dict)
+        self.c.override(strict=True)
+        with self._make_loader(note_bodies) as ldr:
+            self.assertRaises(ValueError, ldr.parse_note_file, 'note1', None)
+
+    def test_invalid_note_with_unrecognized_key_lenient(self):
+        """Test behavior when note contains an unrecognized section.
+
+        In lenient mode, this should log a warning.
+        """
+        note_bodies = yaml.safe_load(
+            textwrap.dedent('''
+        foobar:
+        - |
+          This is an issue but we're using an unrecognized section key.
+        ''')
+        )
+        self.assertIsInstance(note_bodies, dict)
+        self.c.override(strict=False)
         with self._make_loader(note_bodies) as ldr:
             ldr.parse_note_file('note1', None)
         self.assertIn(
@@ -151,7 +199,19 @@ class TestLoaderDuplicateUIDs(test_scanner.Base):
             f.write(content)
         return filepath
 
-    def test_duplicate_uid(self):
+    def test_duplicate_uid_raises_in_strict(self):
+        self._create_note(
+            'note1-a1b2c3d4e5f67890.yaml',
+            'features:\n  - Feature note 1.\n',
+        )
+        self._create_note(
+            'note2-a1b2c3d4e5f67890.yaml',
+            'features:\n  - Feature note 2.\n',
+        )
+        self.c.override(strict=True)
+        self.assertRaises(ValueError, loader.Loader, self.c)
+
+    def test_duplicate_uid_warns_in_lenient(self):
         self._create_note(
             'note1-a1b2c3d4e5f67890.yaml',
             'features:\n  - Feature note 1.\n',
