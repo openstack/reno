@@ -16,12 +16,9 @@ from docutils import nodes
 from docutils.parsers import rst
 from docutils.statemachine import ViewList
 import sphinx.application
-from sphinx.util import logging
 from sphinx.util.nodes import nested_parse_with_titles
 
 from reno import config
-
-LOG = logging.getLogger(__name__)
 
 
 def _multi_line_string(
@@ -64,7 +61,6 @@ class ShowConfigDirective(rst.Directive):
         result: ViewList[str] = ViewList()
         source_name = '<' + __name__ + '>'
         for line in _format_option_help(config._OPTIONS):
-            LOG.info(line)
             result.append(line, source_name)
 
         node = nodes.section()
