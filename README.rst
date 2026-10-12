@@ -258,8 +258,7 @@ Presentations
 Project Metadata
 ----------------
 
-.. .. image:: https://governance.openstack.org/tc/badges/reno.svg
-    :target: https://governance.openstack.org/tc/reference/tags/index.html
+.. image:: https://governance.openstack.org/tc/badges/reno.svg
 
 * Free software: Apache license
 * Documentation: https://docs.openstack.org/reno/latest/
