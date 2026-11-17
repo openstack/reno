@@ -22,9 +22,7 @@ For more information, refer to the distutils and setuptools source:
 
 from distutils import cmd
 from distutils import dist
-from distutils import errors
 from distutils import log
-from typing import Any
 
 from reno import cache
 from reno import config
@@ -111,22 +109,6 @@ class BuildReno(cmd.Command):
 
         if self.output_file is None:
             self.output_file = defaults.RELEASE_NOTES_FILENAME
-
-    # Overriding distutils' Command._ensure_stringlike which doesn't support
-    # unicode, causing finalize_options to fail if invoked again. Workaround
-    # for http://bugs.python.org/issue19570
-    def _ensure_stringlike(
-        self, option: str, what: str, default: Any = None
-    ) -> Any:
-        val = getattr(self, option)
-        if val is None:
-            setattr(self, option, default)
-            return default
-        elif not isinstance(val, str):
-            raise errors.DistutilsOptionError(
-                "'%s' must be a %s (got `%s`)" % (option, what, val)
-            )
-        return val
 
     def run(self) -> None:
         assert self.repo_root is not None
