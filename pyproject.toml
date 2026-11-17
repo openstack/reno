@@ -70,10 +70,6 @@ disallow_untyped_calls = false
 disallow_untyped_defs = false
 disallow_subclassing_any = false
 
-[[tool.mypy.overrides]]
-module = ["sphinx.*"]
-follow_imports = "skip"
-
 [tool.ruff]
 line-length = 79
 

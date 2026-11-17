@@ -14,7 +14,7 @@ import collections.abc
 
 from docutils import nodes
 from docutils.parsers import rst
-from docutils.statemachine import ViewList
+from docutils.statemachine import StringList
 import sphinx.application
 from sphinx.util.nodes import nested_parse_with_titles
 
@@ -58,7 +58,7 @@ class ShowConfigDirective(rst.Directive):
     has_content = True
 
     def run(self) -> list[nodes.Node]:
-        result: ViewList[str] = ViewList()
+        result = StringList()
         source_name = '<' + __name__ + '>'
         for line in _format_option_help(config._OPTIONS):
             result.append(line, source_name)

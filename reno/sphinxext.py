@@ -117,7 +117,9 @@ class ReleaseNotesDirective(rst.Directive):
 
         notesdir = os.path.join(relnotessubdir, conf.notesdir)
         LOG.info(
-            console.bold('[reno] scanning %s for %s release notes'),
+            console.colorize(
+                'bold', '[reno] scanning %s for %s release notes'
+            ),
             os.path.join(conf.reporoot, notesdir),
             branch or 'current branch',
         )
@@ -128,7 +130,7 @@ class ReleaseNotesDirective(rst.Directive):
             else:
                 versions = ldr.versions
             LOG.info(
-                console.bold('[reno] got versions:') + ' %s',
+                console.colorize('bold', '[reno] got versions:') + ' %s',
                 ', '.join(versions),
             )
             text = formatter.format_report(
@@ -140,7 +142,7 @@ class ReleaseNotesDirective(rst.Directive):
             )
 
         source_name = '<%s %s>' % (__name__, branch or 'current branch')
-        result: statemachine.ViewList[str] = statemachine.ViewList()
+        result = statemachine.StringList()
         for line_num, line in enumerate(text.splitlines(), 1):
             LOG.debug('%4d: %s', line_num, line)
             result.append(line, source_name, line_num)
