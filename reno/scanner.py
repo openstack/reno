@@ -656,7 +656,7 @@ class Scanner:
             if name.startswith('origin/'):
                 candidates.append('refs/heads/' + name.partition('/')[-1])
             for ref in candidates:
-                LOG.debug(f'looking for ref {name!r} as {ref!r}')
+                LOG.debug('looking for ref %r as %r', name, ref)
                 key = ref.encode('utf-8')
                 if key in self._repo.refs:  # type: ignore[operator]
                     sha = self._repo.refs[key]  # type: ignore[index]
@@ -666,7 +666,7 @@ class Scanner:
                         # signed tags point to the signature and we
                         # need to dereference it to get to the commit.
                         sha = o.object[1]
-                    LOG.info(f'found ref {name!r} as {ref!r} at {sha!r}')
+                    LOG.info('found ref %r as %r at %r', name, ref, sha)
                     return sha
             # If we end up here we didn't find any of the candidates.
             raise ValueError(f'Unknown reference {name!r}')
@@ -1099,14 +1099,14 @@ class Scanner:
         # dev version if there are unreleased commits at the head of the
         # branch in question.
         current_version = self._get_current_version(branch)
-        LOG.debug('current repository version: %s' % current_version)
+        LOG.debug('current repository version: %s', current_version)
 
         # Determine all of the tags known on the branch, in their date
         # order. We scan the commit history in topological order to ensure
         # we have the commits in the right version, so we might encounter
         # the tags in a different order during that phase.
         versions_by_date = self._get_tags_on_branch(branch)
-        LOG.debug('versions by date %r' % (versions_by_date,))
+        LOG.debug('versions by date %r', versions_by_date)
         if earliest_version and earliest_version not in versions_by_date:
             raise ValueError(
                 f'earliest-version set to unknown revision '

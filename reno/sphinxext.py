@@ -130,7 +130,8 @@ class ReleaseNotesDirective(rst.Directive):
             else:
                 versions = ldr.versions
             LOG.info(
-                console.colorize('bold', '[reno] got versions:') + ' %s',
+                '%s %s',
+                console.colorize('bold', '[reno] got versions:'),
                 ', '.join(versions),
             )
             text = formatter.format_report(
