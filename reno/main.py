@@ -13,6 +13,7 @@
 import argparse
 import logging
 import sys
+from typing import Any
 
 from reno import cache
 from reno import config
@@ -23,7 +24,7 @@ from reno import lister
 from reno import report
 from reno import semver
 
-_query_args = [
+_query_args: list[tuple[tuple[str, ...], dict[str, Any]]] = [
     (
         ('--version',),
         dict(

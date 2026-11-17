@@ -16,7 +16,7 @@ import fnmatch
 import logging
 import os.path
 import re
-from typing import Any, Self
+from typing import Any, cast, Self
 
 from dulwich import diff_tree
 from dulwich import index as d_index
@@ -28,6 +28,12 @@ from dulwich import walk
 from reno import config as reno_config
 
 LOG = logging.getLogger(__name__)
+
+_TreeChanges = collections.abc.Iterable[
+    diff_tree.TreeChange
+    | list[diff_tree.TreeChange]
+    | list[diff_tree.TreeChange | None]
+]
 
 
 def _parse_version(v: str) -> list[int | str]:
@@ -92,7 +98,7 @@ def _note_file(name: str | None) -> bool:
 
 def _changes_in_subdir(
     repo: "RenoRepo", walk_entry: walk.WalkEntry, subdir: str
-) -> Any:
+) -> _TreeChanges:
     """Iterator producing changes of interest to reno.
 
     The default changes() method of a WalkEntry computes all of the
@@ -150,7 +156,9 @@ def _changes_in_subdir(
         commit_subtree = None
     if parent_subtree == commit_subtree:
         return []
-    return changes_func(store, parent_subtree, commit_subtree)
+    return cast(
+        _TreeChanges, changes_func(store, parent_subtree, commit_subtree)
+    )
 
 
 class _ChangeAggregator:
@@ -189,18 +197,20 @@ class _ChangeAggregator:
     def aggregate_changes(
         self,
         walk_entry: walk.WalkEntry,
-        changes: Any,
-    ) -> list[tuple[str, ...]]:
+        tree_changes: _TreeChanges,
+    ) -> list[tuple[str, str, str, bytes] | tuple[str, str, str, str, bytes]]:
         sha = walk_entry.commit.id
         by_uid = collections.defaultdict(list)
-        for ec in changes:
+        for ec in tree_changes:
             if not isinstance(ec, list):
                 ec = [ec]
             else:
                 ec = ec
             for c in ec:
+                assert c is not None
                 LOG.debug('change %r', c)
                 if c.type == diff_tree.CHANGE_ADD:
+                    assert c.new is not None
                     path = c.new.path.decode('utf-8') if c.new.path else None
                     if _note_file(path):
                         assert path is not None
@@ -209,6 +219,7 @@ class _ChangeAggregator:
                     else:
                         LOG.debug('ignoring')
                 elif c.type == diff_tree.CHANGE_DELETE:
+                    assert c.old is not None
                     path = c.old.path.decode('utf-8') if c.old.path else None
                     if _note_file(path):
                         assert path is not None
@@ -217,6 +228,7 @@ class _ChangeAggregator:
                     else:
                         LOG.debug('ignoring')
                 elif c.type == diff_tree.CHANGE_MODIFY:
+                    assert c.new is not None
                     path = c.new.path.decode('utf-8') if c.new.path else None
                     if _note_file(path):
                         assert path is not None
@@ -227,7 +239,9 @@ class _ChangeAggregator:
                 else:
                     raise ValueError(f'unhandled change type: {c!r}')
 
-        results = []
+        results: list[
+            tuple[str, str, str, bytes] | tuple[str, str, str, str, bytes]
+        ] = []
         for uid, changes in sorted(by_uid.items()):
             if len(changes) == 1:
                 results.append((uid,) + changes[0])
@@ -248,9 +262,9 @@ class _ChangeAggregator:
                 elif types == self._modify_op:
                     # Merge commit with modifications to the same files in
                     # different commits.
-                    for c in changes:
+                    for change in changes:
                         results.append(
-                            (uid, diff_tree.CHANGE_MODIFY, c[1], sha)
+                            (uid, diff_tree.CHANGE_MODIFY, change[1], sha)
                         )
                 elif types == self._delete_op:
                     # There were multiple files in one commit using the

@@ -78,7 +78,7 @@ quote-style = "preserve"
 docstring-code-format = true
 
 [tool.ruff.lint]
-select = ["E", "F", "G", "LOG", "RUF", "S", "UP", "W"]
+select = ["ANN", "E", "F", "G", "LOG", "RUF", "S", "UP", "W"]
 ignore = [
     # there are a lot of these to fix
     "RUF012",
@@ -89,3 +89,6 @@ ignore = [
     "S603",
 ]
 external = ["H"]
+
+[tool.ruff.lint.per-file-ignores]
+"reno/tests/*" = ["ANN", "S"]

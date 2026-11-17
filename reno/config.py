@@ -15,8 +15,7 @@ import logging
 import os.path
 import textwrap
 import tomllib
-from typing import Any
-from typing import NamedTuple
+from typing import Any, cast, NamedTuple
 
 import yaml
 
@@ -409,7 +408,7 @@ class Config:
     strict: bool
 
     @classmethod
-    def get_default(cls, opt: str) -> Any:
+    def get_default(cls, opt: str) -> object:
         """Return the default for an option."""
         try:
             return cls._OPTS[opt].default
@@ -494,14 +493,14 @@ class Config:
         # testing.
         LOG.warning('did not load config file %s: %s', filename, err)
 
-    def _rename_prelude_section(self, **kwargs: Any) -> None:
+    def _rename_prelude_section(self, **kwargs: object) -> None:
         key = 'prelude_section_name'
         if key in kwargs and kwargs[key] != self._OPTS[key].default:
             new_prelude_name = kwargs[key]
 
             self.template = defaults.TEMPLATE.format(new_prelude_name)
 
-    def override(self, **kwds: Any) -> None:
+    def override(self, **kwds: object) -> None:
         """Set the values of the named configuration options.
 
         Take the values of the keyword arguments as the current value
@@ -519,10 +518,15 @@ class Config:
                 )
             else:
                 if name == "sections":
-                    val = Section.from_raw_yaml(val)
+                    val = Section.from_raw_yaml(
+                        cast(list[list[str | int]], val)
+                    )
                 elif name == "uid_overrides":
+                    overrides = cast(dict[object, object], val)
                     val = (
-                        {str(k): str(v) for k, v in val.items()} if val else {}
+                        {str(k): str(v) for k, v in overrides.items()}
+                        if overrides
+                        else {}
                     )
                 setattr(self, name, val)
 
