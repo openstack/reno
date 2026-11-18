@@ -88,8 +88,10 @@ class Loader:
             self._scanner_output = collections.OrderedDict(
                 (n['version'], n['files']) for n in self._cache['notes']
             )
+            # Caches generated before release dates were added have no
+            # 'dates' key. Keep them usable, including without git history.
             self._tags_to_dates = collections.OrderedDict(
-                (n['version'], n['date']) for n in self._cache['dates']
+                (n['version'], n['date']) for n in self._cache.get('dates', [])
             )
         else:
             self._scanner = scanner.Scanner(self._config)
